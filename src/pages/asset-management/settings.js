@@ -1,3287 +1,1893 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { useDispatch, useSelector } from 'react-redux';
 import AssetManagementLayout from '@/components/AssetManagementLayout';
+import { fetchAssetByAssetId, fetchAssetById, patchAssetByAssetId, clearCurrentAsset, createAssetWithDTO } from '@/redux/slices/assetSlice';
+import { fetchDepartments } from '@/redux/slices/departmentSlice';
+import { fetchEmployees } from '@/redux/slices/employeeSlice';
+import { fetchAssetCategories } from '@/redux/slices/assetCategorySlice';
+import { fetchAssetLocations } from '@/redux/slices/assetLocationSlice';
+import { fetchAssetStatuses } from '@/redux/slices/assetStatusSlice';
+import { 
+    FaEdit, FaHistory, FaFileAlt, FaUser, FaMapMarkerAlt, 
+    FaCalendarAlt, FaRupeeSign, FaBarcode, FaLaptop, FaMemory, 
+    FaMicrochip, FaHdd, FaDesktop, FaArrowLeft, FaTimes, FaCheck,
+    FaExclamationTriangle, FaPlus, FaClock
+} from 'react-icons/fa';
 import { toast } from 'sonner';
-import { FaPlus, FaTrash, FaListAlt, FaMapMarkedAlt, FaCheckSquare, FaFont, FaCog, FaQuestionCircle, FaTags, FaEdit, FaSave, FaTimes, FaArrowLeft, FaDatabase, FaFlask, FaClipboardList } from 'react-icons/fa';
-import { useSelector, useDispatch } from 'react-redux';
-
-// Enhanced Redux imports
-import { 
-    fetchAssetCategories, 
-    addAssetCategory, 
-    updateAssetCategory, 
-    batchUpdateAssetCategories, 
-    deleteAssetCategory,
-    addSubCategory,
-    updateSubCategory,
-    deleteSubCategory,
-    fetchSubCategoriesByCategory,
-    fetchSubCategoryById,
-    updateCategoryLocal,
-    updateSubCategoryLocal,
-    addSubCategoryLocal,
-    removeSubCategoryLocal
-} from '@/redux/slices/assetCategorySlice';
-
-import { 
-    fetchAssetLocations, 
-    addAssetLocation, 
-    updateAssetLocation,
-    deleteAssetLocation, 
-    batchUpdateAssetLocations,
-    updateLocationLocal
-} from '@/redux/slices/assetLocationSlice';
-
-import { 
-    fetchAssetStatuses, 
-    addAssetStatus, 
-    updateAssetStatus,
-    deleteAssetStatus, 
-    batchUpdateAssetStatuses,
-    fetchSystemDefaultStatuses,
-    updateStatusLocal
-} from '@/redux/slices/assetStatusSlice';
-
-import { 
-    fetchCustomForms,
-    createCustomForm,
-    updateCustomForm,
-    deleteCustomForm,
-    toggleFormStatus,
-    setCurrentForm,
-     clearCurrentForm,
-     assignFormToSubCategory
-} from '@/redux/slices/customFormsSlice';
-
-import { 
-    fetchIdFormattings, 
-    addIdFormatting, 
-    updateIdFormatting,
-    deleteIdFormatting,
-    previewNextAssetId,
-    generateAssetId
-} from '@/redux/slices/idFormattingSlice';
-
-// Import asset management functions
-import {
-    fetchAllAssets,
-    fetchAllAssetsDetailed,
-    fetchAssetById,
-    fetchAssetByAssetId,
-    fetchAssetsByCategory,
-    createAssetWithDTO,
-    patchAssetByAssetId,
-    deleteAsset,
-    fetchAssetWithCustomForms,
-    updateAssetCustomFields,
-    validateAsset
-} from '@/redux/slices/assetSlice';
-
-// Import custom form management functions based on CustomFormController.java
-import {
-    fetchCustomForms as fetchCustomFormsNew,
-    fetchCustomFormById,
-    createCustomForm as createCustomFormNew,
-    updateCustomForm as updateCustomFormNew,
-    deleteCustomForm as deleteCustomFormNew,
-    fetchFormFields,
-    addFieldToForm,
-    updateField,
-    deleteField,
-    assignFormToCategory,
-    unassignFormFromCategory,
-    fetchFormsByCategory,
-    previewForm,
-    duplicateForm,
-    toggleFormStatus as toggleFormStatusNew,
-    submitFormData,
-    fetchFormDataForAsset,
-    fetchAllFormDataForAsset,
-    deleteFormData
-} from '@/redux/slices/customFormSlice';
-
-import axios from 'axios';
 import getConfig from 'next/config';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
 const { publicRuntimeConfig } = getConfig();
 
-// Helper component for a consistent setting section layout
-const SettingsSection = ({ title, subtitle, children }) => (
-    <div>
-        <h3 className="text-xl font-bold text-gray-800">{title}</h3>
-        <p className="text-sm text-gray-500 mb-6">{subtitle}</p>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            {children}
-        </div>
-    </div>
-);
-
-// --- Individual Setting Components ---
-
-
-
-const CategorySettings = ({ 
-    editing, 
-    editedCategories, 
-    setEditedCategories, 
-    newCategory, 
-    setNewCategory, 
-    onAdd, 
-    onFieldChange, 
-    loading, 
-    onDelete, 
-    onSave, 
-    onCancel, 
-    onAddSubCategory, 
-    onEditSubCategory, 
-    onDeleteSubCategory, 
-    onSaveSubCategory, 
-    onCancelSubCategory, 
-    onFetchSubCategoriesByCategory,
-    onFetchSubCategoryById,
-    onAddIdFormat, 
-    onEditIdFormat, 
-    onDeleteIdFormat, 
-    onSaveIdFormat, 
-    onCancelIdFormat 
-}) => {
-    const isAddDisabled = !newCategory.name || loading;
-    const [newSubCatFieldsByCategory, setNewSubCatFieldsByCategory] = useState({});
+// Mock data - replace with actual API call
+const MOCK_ASSET_DETAIL = {
+    id: 'ASSET-2024-0001',
+    name: 'Dell Latitude 5420',
+    category: 'IT Equipment',
+    serialNumber: 'DL5420-2024-001',
+    status: 'Assigned',
+    location: 'Mumbai Head Office',
+    assignedTo: 'Ankit Matwa',
+    assignmentDate: '2024-01-15',
     
-    console.log('CategorySettings rendered with categories:', editedCategories);
-    console.log('Categories structure in CategorySettings:', editedCategories?.map(cat => ({
-        id: cat.id,
-        categoryId: cat.categoryId,
-        name: cat.name,
-        subCategoriesCount: cat.subCategories?.length || 0,
-        subCategories: cat.subCategories
-    })));
+    // Financial Details
+    purchaseDate: '2024-01-10',
+    vendor: 'Dell India Pvt. Ltd.',
+    invoiceNumber: 'INV-DEL-2024-001',
+    purchaseCost: 65000,
+    gstRate: 18,
+    itcEligible: 'Yes',
+    currentValue: 58000,
     
-    // Helper function to get first 3 letters of a string
-    const getFirstThreeLetters = (str) => {
-        return str ? str.substring(0, 3).toUpperCase() : '';
-    };
+    // IT Specific Details
+    team: 'Development',
+    laptopCompany: 'Dell',
+    processor: 'Intel Core i7-11th Gen',
+    ram: '16GB DDR4',
+    memory: '512GB SSD',
+    condition: 'Good',
+    accessories: 'Charger, Mouse, Laptop Bag',
+    graphicsCard: 'Intel Iris Xe Graphics',
     
-    // Helper function to generate auto ID for sub-category (4-digit sequence)
-    const generateAutoId = (categoryName, subCategoryName, startNumber = 1) => {
-        const categoryCode = getFirstThreeLetters(categoryName);
-        const subCategoryCode = getFirstThreeLetters(subCategoryName);
-        const number = startNumber.toString().padStart(4, '0');
-        return `${categoryCode}-${subCategoryCode}-${number}`;
-    };
-
-    const formatSuffix = (value) => {
-        const onlyDigits = String(value ?? '').replace(/\D/g, '').slice(0, 4);
-        const numeric = parseInt(onlyDigits || '1', 10);
-        return numeric.toString().padStart(4, '0');
-    };
+    // Warranty & Maintenance
+    warrantyExpiry: '2027-01-10',
+    lastMaintenanceDate: '2024-06-15',
+    nextMaintenanceDate: '2024-12-15',
     
-    return (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 -mt-4">
-
-            
-            {/* Step 1: Add New Category */}
-            <div className="flex items-end gap-4 mb-6 w-full max-w-3xl mx-auto">
-                <input 
-                    value={newCategory.name} 
-                    onChange={e => setNewCategory({...newCategory, name: e.target.value})} 
-                    placeholder="New Category Name (e.g., IT Equipment)" 
-                    className="flex-1 min-w-[220px] p-3 border rounded-md text-base" 
-                />
-                <button 
-                    onClick={onAdd} 
-                    className={`px-7 py-3 bg-blue-600 text-white rounded-md whitespace-nowrap text-base font-semibold shadow-sm transition-all duration-150 ${isAddDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={isAddDisabled}
-                >
-                    <FaPlus className="inline mr-1" /> Add Category
-                </button>
-            </div>
-            
-            {loading && <div className="text-blue-600 mb-4">Loading...</div>}
-            
-            {/* Step 2: Category Cards with Sub-Categories */}
-            <div className="space-y-6">
-                {editedCategories.map(cat => {
-                    const categoryId = cat.id || cat.categoryId;
-                    const subCategories = cat.subCategories || [];
-                    const categoryCode = getFirstThreeLetters(cat.name);
-                    
-                    console.log(`Rendering category ${cat.name} with subcategories:`, subCategories);
-                    
-                    return (
-                        <div key={categoryId} className="border border-gray-200 rounded-lg p-6 bg-white shadow-sm">
-                            {/* Category Header */}
-                            <div className="flex justify-between items-center mb-6">
-                                <div className="flex items-center gap-3">
-                                    {cat.editing ? (
-                                        <div className="flex items-center gap-3">
-                                            <input
-                                                className="text-xl font-bold text-gray-800 border border-blue-300 rounded px-3 py-1 bg-white"
-                                                value={cat.name}
-                                                onChange={e => onFieldChange(categoryId, 'name', e.target.value)}
-                                                placeholder="Category name"
-                                                autoFocus
-                                            />
-                                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-mono rounded">
-                                                {getFirstThreeLetters(cat.name)}
-                                            </span>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center gap-3">
-                                            <h3 className="text-xl font-bold text-gray-800">{cat.name}</h3>
-                                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-mono rounded">
-                                                {categoryCode}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    {cat.editing ? (
-                                        <>
-                                            <button
-                                                onClick={() => onSave(categoryId)}
-                                                className="text-green-600 hover:text-green-800 p-2 hover:bg-green-50 rounded"
-                                                title="Save Changes"
-                                            >
-                                                <FaSave />
-                                            </button>
-                                            <button
-                                                onClick={() => onCancel(categoryId)}
-                                                className="text-gray-600 hover:text-gray-800 p-2 hover:bg-gray-50 rounded"
-                                                title="Cancel"
-                                            >
-                                                <FaTimes />
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <button
-                                                onClick={() => onFieldChange(categoryId, 'editing', true)}
-                                                className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded"
-                                                title="Edit Category"
-                                            >
-                                                <FaEdit />
-                                            </button>
-                                            <button
-                                                className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded"
-                                                title="Delete Category"
-                                                onClick={() => onDelete(categoryId, cat.name)}
-                                            >
-                                                <FaTrash />
-                                            </button>
-
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                            
-                        {/* Add Sub-Category Input */}
-            <div className="mb-6">
-                {(() => {
-                    const current = newSubCatFieldsByCategory[categoryId] || { name: '', prefix: '', suffix: '' };
-                    const setField = (key, val) => {
-                        setNewSubCatFieldsByCategory(prev => ({
-                            ...prev,
-                            [categoryId]: { ...(prev[categoryId] || {}), [key]: val }
-                        }));
-                    };
-                    const sanitizePrefix = (val) => val; // allow arbitrary prefix
-                    const sanitizeSuffix = (val) => val.replace(/\D/g, '').slice(0, 4);
-                    const isValidPrefix = () => Boolean((current.prefix || '').trim());
-                    const isValid = current.name?.trim() && isValidPrefix() && (current.suffix && /\d+/.test(current.suffix));
-                    const previewSuffix = (current.suffix && current.suffix.length > 0) ? String(Math.max(1, Math.min(9999, parseInt(current.suffix, 10)))).padStart(4, '0') : '0001';
-                    const previewPrefix = (current.prefix || '').trim();
-                    const fullPreview = previewPrefix && current.suffix ? `${previewPrefix}-${previewSuffix}` : '';
-                    return (
-                        <div className="space-y-3">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Sub-Category Name</label>
-                                    <input
-                                        value={current.name}
-                                        onChange={(e) => setField('name', e.target.value)}
-                                        placeholder="e.g., Laptop, Monitor, Printer"
-                                        className="w-full p-3 border border-gray-300 rounded-md text-base"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Asset ID Prefix ({categoryCode}-{getFirstThreeLetters(current.name)})</label>
-                                    <input
-                                        value={current.prefix}
-                                        onChange={(e) => setField('prefix', sanitizePrefix(e.target.value))}
-                                        placeholder="CAT-SUB"
-                                        className="w-full p-3 border border-gray-300 rounded-md text-base font-mono"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Suffix (4 digits)</label>
-                                    <input
-                                        value={current.suffix}
-                                        onChange={(e) => setField('suffix', sanitizeSuffix(e.target.value))}
-                                        placeholder="0001"
-                                        className="w-full p-3 border border-gray-300 rounded-md text-base font-mono"
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm text-gray-600">
-                                    {fullPreview ? (
-                                        <span>Preview: <span className="font-mono font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded">{fullPreview}</span></span>
-                                    ) : (
-                                        <span className="text-gray-400">Enter prefix and suffix to see preview</span>
-                                    )}
-                                </div>
-                                <button
-                                    onClick={async () => {
-                                        const payload = {
-                                            name: (current.name || '').trim(),
-                                            prefix: (current.prefix || '').trim(),
-                                            suffix: current.suffix
-                                        };
-                                        if (!payload.name || !isValidPrefix() || !payload.suffix) return;
-                                        try {
-                                            await onAddSubCategory(categoryId, payload);
-                                            setNewSubCatFieldsByCategory(prev => ({ ...prev, [categoryId]: { name: '', prefix: '', suffix: '' } }));
-                                        } catch (e) {
-                                            // Keep inputs for correction
-                                        }
-                                    }}
-                                    disabled={!isValid || loading}
-                                    className={`px-6 py-3 rounded-md flex items-center gap-2 font-medium ${(!isValid || loading) ? 'bg-gray-400 text-gray-700 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700'}`}
-                                >
-                                    <FaPlus /> Create Sub-Category
-                                </button>
-                            </div>
-                        </div>
-                    );
-                })()}
-            </div>
-                            
-                            {/* Sub-Categories Table */}
-                            {subCategories.length > 0 && (
-                                <div className="mb-6">
-                                    <h4 className="font-semibold text-gray-800 mb-3">Sub-Categories</h4>
-                                    <div className="bg-gray-50 rounded-lg overflow-hidden">
-                                        <table className="w-full">
-                                            <thead className="bg-gray-100">
-                                                <tr>
-                                                    <th className="text-left p-3 font-medium text-gray-700">Sub-Category Name</th>
-                                                    <th className="text-left p-3 font-medium text-gray-700">
-                                                        <div className="flex items-center gap-2">
-                                                            <span>Asset ID</span>
-                                                            <button
-                                                                className="text-gray-400 hover:text-gray-600 p-1"
-                                                                title="Asset IDs are automatically generated and can be edited after asset creation. Format: [Category Code]-[Sub-Category Code]-[Number]"
-                                                            >
-                                                                <FaQuestionCircle className="text-xs" />
-                                                            </button>
-                                                        </div>
-                                                    </th>
-                                                    <th className="text-left p-3 font-medium text-gray-700">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                    {subCategories.map((subCat, index) => {
-                                                    console.log(`Rendering subcategory:`, subCat);
-                                                    return (
-                                                    <tr key={subCat.id || subCat.subCategoryId} className="border-t border-gray-200 hover:bg-gray-50">
-                                                        <td className="p-3">
-                                                            {subCat.editing ? (
-                                                                <input
-                                                                    className="w-full p-2 border rounded-md text-sm"
-                                                                    value={subCat.name}
-                                                                    onChange={e => onEditSubCategory(categoryId, subCat.id || subCat.subCategoryId, 'name', e.target.value)}
-                                                                    placeholder="Sub-category name"
-                                                                    autoFocus
-                                                                />
-                                                            ) : (
-                                                                <span className="font-medium">{subCat.name || 'NO NAME'}</span>
-                                                            )}
-                                                        </td>
-                                                                                                                <td className="p-3">
-                                                            <div className="flex items-center gap-2">
-                                                                {(() => {
-                                                                     const prefixBase = (subCat.prefix && String(subCat.prefix).trim())
-                                                                         ? String(subCat.prefix).trim()
-                                                                         : `${getFirstThreeLetters(cat.name)}-${getFirstThreeLetters(subCat.name)}`;
-                                                                     const prefix = `${prefixBase}-`;
-                                                                     const suffix = subCat.suffix || '0001';
-                                                                     return (
-                                                                        <div className="flex items-center gap-1">
-                                                                            {subCat.editing ? (
-                                                                                <input
-                                                                                    className="w-20 font-mono text-sm border border-blue-300 rounded-l px-2 py-1"
-                                                                                    value={subCat.prefix || prefixBase}
-                                                                                    placeholder="CAT-SUB"
-                                                                                    onChange={(e) => {
-                                                                                        onEditSubCategory(
-                                                                                            categoryId,
-                                                                                            subCat.id || subCat.subCategoryId,
-                                                                                            'prefix',
-                                                                                            e.target.value
-                                                                                        );
-                                                                                    }}
-                                                                                />
-                                                                            ) : (
-                                                                                <span className="font-mono text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-l select-none">
-                                                                                    {prefix}
-                                                                                </span>
-                                                                            )}
-                                                                            <span className="font-mono text-sm bg-blue-100 text-blue-800 px-1 py-1 select-none">-</span>
-                                                                            {subCat.editing ? (
-                                                                                <input
-                                                                                    className="w-16 font-mono text-sm border border-blue-300 rounded-r px-2 py-1"
-                                                                                    value={suffix}
-                                                                                    placeholder="0001"
-                                                                                    maxLength={4}
-                                                                                    onChange={(e) => {
-                                                                                        const raw = e.target.value;
-                                                                                        const digits = raw.replace(/\D/g, '').slice(0, 4);
-                                                                                        onEditSubCategory(
-                                                                                            categoryId,
-                                                                                            subCat.id || subCat.subCategoryId,
-                                                                                            'suffix',
-                                                                                            digits
-                                                                                        );
-                                                                                    }}
-                                                                                />
-                                                                            ) : (
-                                                                                <span className="font-mono text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-r">
-                                                                                    {suffix}
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                    );
-                                                                })()}
-                                                                <button
-                                                                    className="text-gray-400 hover:text-gray-600 p-1"
-                                                                    title="Asset ID Format: CAT-SUB-0001. You can manually set the last 4 digits per sub-category while editing."
-                                                                >
-                                                                    <FaQuestionCircle className="text-xs" />
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                        <td className="p-3">
-                                                            <div className="flex items-center gap-2">
-                                                                {subCat.editing ? (
-                                                                    <>
-                                                                        <button
-                                                                            onClick={() => onSaveSubCategory(categoryId, subCat.id || subCat.subCategoryId)}
-                                                                            className="text-green-600 hover:text-green-800 p-1"
-                                                                            title="Save"
-                                                                        >
-                                                                            <FaSave />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => onCancelSubCategory(categoryId, subCat.id || subCat.subCategoryId)}
-                                                                            className="text-gray-600 hover:text-gray-800 p-1"
-                                                                            title="Cancel"
-                                                                        >
-                                                                            <FaTimes />
-                                                                        </button>
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <button
-                                                                            onClick={() => onEditSubCategory(categoryId, subCat.id || subCat.subCategoryId, 'editing', true)}
-                                                                            className="text-blue-600 hover:text-blue-800 p-1"
-                                                                            title="Edit"
-                                                                        >
-                                                                            <FaEdit />
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => onDeleteSubCategory(categoryId, subCat.id || subCat.subCategoryId)}
-                                                                            className="text-red-500 hover:text-red-700 p-1"
-                                                                            title="Delete"
-                                                                        >
-                                                                            <FaTrash />
-                                                                        </button>
-
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );})}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            )}
-                            
-                            {/* Empty State */}
-                            {subCategories.length === 0 && (
-                                <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
-                                    <div className="text-4xl mb-2">📋</div>
-                                    <h4 className="text-lg font-semibold mb-2">No sub-categories yet</h4>
-                                    <p className="text-sm">Add your first sub-category above to get started</p>
-                                </div>
-                            )}
-                            
-
-                        </div>
-                    );
-                })}
-                
-                {/* Empty State for Categories */}
-                {editedCategories.length === 0 && (
-                    <div className="text-center py-12 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
-                        <div className="text-4xl mb-4">📁</div>
-                        <h4 className="text-lg font-semibold mb-2">No categories yet</h4>
-                        <p className="text-sm mb-4">Create your first category to get started</p>
-                        <button
-                            onClick={() => {
-                                const input = document.querySelector('input[placeholder="New Category Name (e.g., IT Equipment)"]');
-                                if (input) input.focus();
-                            }}
-                            className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium"
-                        >
-                            Create Your First Category
-                        </button>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
+    // History
+    history: [
+        { date: '2024-01-15', action: 'Assigned', details: 'Assigned to Ankit Matwa', user: 'Admin' },
+        { date: '2024-01-10', action: 'Purchased', details: 'Asset purchased from Dell India', user: 'Admin' },
+        { date: '2024-06-15', action: 'Maintenance', details: 'Routine maintenance completed', user: 'IT Support' }
+    ],
+    
+    // Maintenance Records
+    maintenanceRecords: [
+        { date: '2024-06-15', type: 'Preventive', description: 'System cleanup and updates', cost: 500, vendor: 'IT Support Team' }
+    ],
+    
+    // Files/Documents
+    documents: [
+        { name: 'Purchase Invoice', type: 'PDF', uploadDate: '2024-01-10' },
+        { name: 'Warranty Certificate', type: 'PDF', uploadDate: '2024-01-10' }
+    ]
 };
 
-const LocationSettings = ({ editing, editedLocations, setEditedLocations, newLocation, setNewLocation, onAdd, onFieldChange, loading, onDelete, onSave, onCancel }) => {
-    const isAddDisabled = !newLocation.name || loading;
-    return (
-        <SettingsSection title="Asset Locations" subtitle="Manage the physical locations where assets are stored or assigned.">
-            <div className="flex items-end gap-4 mb-4 w-full max-w-3xl mx-auto">
-                <input 
-                    value={newLocation.name} 
-                    onChange={e => setNewLocation({...newLocation, name: e.target.value})} 
-                    placeholder="New Location Name (e.g., Mumbai Office)" 
-                    className="flex-1 min-w-[220px] p-3 border rounded-md text-base" 
-                />
-                <input 
-                    value={newLocation.address} 
-                    onChange={e => setNewLocation({...newLocation, address: e.target.value})} 
-                    placeholder="Address (Optional)" 
-                    className="w-56 p-3 border rounded-md text-base" 
-                />
-                <button 
-                    onClick={onAdd} 
-                    className={`px-7 py-3 bg-blue-600 text-white rounded-md whitespace-nowrap text-base font-semibold shadow-sm transition-all duration-150 ${isAddDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={isAddDisabled}
-                >
-                    <FaPlus className="inline mr-1" /> Add
-                </button>
-            </div>
-            {loading && <div className="text-blue-600">Loading...</div>}
-            <div className="space-y-2">
-                {editedLocations.map(loc => (
-                    <div key={loc.id || loc.locationId} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                        <div className="flex-1 flex gap-2 items-center">
-                            {editing ? (
-                                <>
-                                    <input
-                                        className="flex-1 p-2 border rounded-md"
-                                        value={loc.name}
-                                        onChange={e => onFieldChange(loc.id, 'name', e.target.value)}
-                                        placeholder="Location name"
-                                    />
-                                    <input
-                                        className="flex-1 p-2 border rounded-md"
-                                        value={loc.address}
-                                        onChange={e => onFieldChange(loc.id, 'address', e.target.value)}
-                                        placeholder="Address (optional)"
-                                    />
-                                </>
-                            ) : (
-                                <span className="flex-1">{loc.name}{loc.address && ` - ${loc.address}`}</span>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                            {editing ? (
-                                <>
-                                    <button
-                                        onClick={() => onSave(loc.id)}
-                                        className="text-green-600 hover:text-green-800"
-                                        title="Save Changes"
-                                    >
-                                        <FaSave />
-                                    </button>
-                                    <button
-                                        onClick={() => onCancel(loc.id)}
-                                        className="text-gray-600 hover:text-gray-800"
-                                        title="Cancel"
-                                    >
-                                        <FaTimes />
-                                    </button>
-                                </>
-                            ) : (
-                                <button
-                                    onClick={() => onFieldChange(loc.id, 'editing', true)}
-                                    className="text-blue-600 hover:text-blue-800"
-                                    title="Edit Location"
-                                >
-                                    <FaEdit />
-                                </button>
-                            )}
-                            <button
-                                className="text-red-500 hover:text-red-700"
-                                title="Delete Location"
-                                onClick={() => onDelete(loc.locationId || loc.id, loc.name)}
-                            >
-                                <FaTrash />
-                            </button>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </SettingsSection>
-    );
-};
-
-const StatusSettings = ({ editing, editedStatuses, setEditedStatuses, newStatus, setNewStatus, onAdd, onFieldChange, loading, onDelete, onSave, onCancel }) => {
-    const isAddDisabled = !newStatus.name || loading;
-    return (
-        <SettingsSection title="Asset Status Labels" subtitle="Customize the lifecycle statuses for your assets.">
-            <div className="flex items-end gap-4 mb-4 w-full max-w-2xl mx-auto">
-                <input 
-                    value={newStatus.name} 
-                    onChange={e => setNewStatus({ name: e.target.value })} 
-                    placeholder="New Status Name (e.g., In Transit)" 
-                    className="flex-1 min-w-[220px] p-3 border rounded-md text-base" 
-                />
-                <button 
-                    onClick={onAdd} 
-                    className={`px-7 py-3 bg-blue-600 text-white rounded-md whitespace-nowrap text-base font-semibold shadow-sm transition-all duration-150 ${isAddDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={isAddDisabled}
-                >
-                    <FaPlus className="inline mr-1" /> Add
-                </button>
-            </div>
-            {loading && <div className="text-blue-600">Loading...</div>}
-            <div className="space-y-2">
-                {editedStatuses.map(s => {
-                    // Debug: Log the status object structure
-                    console.log('Status object:', s);
-                    return (
-                        <div key={s.id || s.statusId} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                            <div className="flex-1 flex gap-2 items-center">
-                                {editing ? (
-                                    <input
-                                        className="flex-1 p-2 border rounded-md"
-                                        value={s.name}
-                                        onChange={e => onFieldChange(s.id, 'name', e.target.value)}
-                                        placeholder="Status name"
-                                    />
-                                ) : (
-                                    <span className="flex-1">{s.name}</span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                {editing ? (
-                                    <>
-                                        <button
-                                            onClick={() => onSave(s.id)}
-                                            className="text-green-600 hover:text-green-800"
-                                            title="Save Changes"
-                                        >
-                                            <FaSave />
-                                        </button>
-                                        <button
-                                            onClick={() => onCancel(s.id)}
-                                            className="text-gray-600 hover:text-gray-800"
-                                            title="Cancel"
-                                        >
-                                            <FaTimes />
-                                        </button>
-                                    </>
-                                ) : (
-                                    <button
-                                        onClick={() => onFieldChange(s.id, 'editing', true)}
-                                        className="text-blue-600 hover:text-blue-800"
-                                        title="Edit Status"
-                                    >
-                                        <FaEdit />
-                                    </button>
-                                )}
-                                <button
-                                    className="text-red-500 hover:text-red-700"
-                                    title="Delete Status Label"
-                                    onClick={() => onDelete(s.statusLabelId || s.statusId || s.id, s.name)}
-                                >
-                                    <FaTrash />
-                                </button>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </SettingsSection>
-    );
-};
-
-// Enhanced Custom Form Builder Component with proper Redux integration
-const CustomFormBuilder = ({ editing }) => {
-    const dispatch = useDispatch();
-    const { categories, loading: categoriesLoading } = useSelector(state => state.assetCategories);
-    const { forms, currentForm, loading: formsLoading, creating: creatingForm, updating: updatingForm } = useSelector(state => state.customForms);
+const EditAssetModal = ({ isOpen, onClose, asset, onSave, categories, locations, statuses, loading }) => {
+    const [formData, setFormData] = useState({});
     
-    const [view, setView] = useState('list'); // 'list', 'create', 'edit'
-    const [editingFormId, setEditingFormId] = useState(null);
-    const [formName, setFormName] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('');
-    const [selectedSubCategory, setSelectedSubCategory] = useState('');
-    const [fields, setFields] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-
-    // Load forms and categories on component mount
     useEffect(() => {
-        dispatch(fetchCustomForms());
-        dispatch(fetchAssetCategories()); // Always load categories upfront
-    }, [dispatch]);
-
-    // Load categories for form creation (backup)
-    useEffect(() => {
-        if (view === 'create' || view === 'edit') {
-            dispatch(fetchAssetCategories());
-        }
-    }, [view, dispatch]);
-
-    // Compute sub-categories for the selected category
-    const subCategoriesForSelectedCategory = useMemo(() => {
-        if (!selectedCategory) return [];
-        const matchingCategory = categories.find(cat => 
-            cat.categoryId === selectedCategory || cat.id === selectedCategory
-        );
-        return matchingCategory?.subCategories || [];
-    }, [selectedCategory, categories]);
-
-    // When category changes, clear sub-category if it doesn't belong to the category
-    useEffect(() => {
-        if (!selectedCategory) {
-            setSelectedSubCategory('');
-            return;
-        }
-        const exists = subCategoriesForSelectedCategory.some(sub => {
-            const id = sub.subCategoryId || sub.id;
-            return String(id) === String(selectedSubCategory);
-        });
-        if (!exists) setSelectedSubCategory('');
-    }, [selectedCategory, subCategoriesForSelectedCategory]);
-
-    // Ensure selectedCategory is properly set when editing and categories are loaded
-    useEffect(() => {
-        if (view === 'edit' && editingFormId && categories.length > 0) {
-            const form = forms.find(f => f.id === editingFormId || f.formId === editingFormId);
-            const formCategoryId = form?.categoryId || form?.assignedCategoryId;
-            
-            if (form && formCategoryId) {
-                console.log('Setting selectedCategory from form data:', {
-                    formCategoryId: form.categoryId,
-                    formAssignedCategoryId: form.assignedCategoryId,
-                    actualCategoryId: formCategoryId,
-                    currentSelectedCategory: selectedCategory,
-                    availableCategories: categories.map(c => ({ id: c.id, categoryId: c.categoryId, name: c.name }))
-                });
-                
-                // Find matching category ID (form category might match either cat.id or cat.categoryId)
-                const matchingCategory = categories.find(cat => 
-                    cat.categoryId === formCategoryId || cat.id === formCategoryId
-                );
-                
-                if (matchingCategory) {
-                    const categoryIdToUse = matchingCategory.categoryId || matchingCategory.id;
-                    console.log('Found matching category, setting selectedCategory to:', categoryIdToUse);
-                    setSelectedCategory(categoryIdToUse);
-                } else {
-                    console.warn('No matching category found for form categoryId:', formCategoryId);
-                    // Still set it in case it's valid but not found due to timing
-                    setSelectedCategory(formCategoryId);
-                }
-                // Attempt to set sub-category from form if available
-                const formSubCatId = form?.subCategoryId || form?.assignedSubCategoryId || form?.subCategory?.id;
-                if (formSubCatId) {
-                    setSelectedSubCategory(formSubCatId);
-                } else {
-                    setSelectedSubCategory('');
-                }
-            }
-        }
-    }, [view, editingFormId, categories, forms]);
-
-    // Ensure fields are properly mapped when form data is available
-    useEffect(() => {
-        if (view === 'edit' && editingFormId && forms.length > 0) {
-            const form = forms.find(f => f.id === editingFormId || f.formId === editingFormId);
-            if (form && form.fields && form.fields.length > 0) {
-                const currentFieldsCount = fields.length;
-                const apiFieldsCount = form.fields.length;
-                
-                console.log('Checking fields mapping:', {
-                    currentFieldsCount,
-                    apiFieldsCount,
-                    hasFieldsMismatch: currentFieldsCount !== apiFieldsCount,
-                    currentFields: fields,
-                    apiFields: form.fields
-                });
-                
-                // If fields count doesn't match, re-map the fields
-                if (currentFieldsCount !== apiFieldsCount) {
-                    console.log('Re-mapping fields due to count mismatch');
-                    const mappedFields = mapApiFieldsToFrontend(form.fields);
-                    setFields(mappedFields);
-                }
-            } else if (form && (!form.fields || form.fields.length === 0)) {
-                console.log('Form has no fields, clearing fields state');
-                setFields([]);
-            }
-        }
-    }, [view, editingFormId, forms]);
-
-    // Monitor fields state changes for debugging
-    useEffect(() => {
-        console.log('Fields state changed:', {
-            fieldsCount: fields.length,
-            fields: fields.map(f => ({ id: f.id, name: f.name, type: f.type }))
-        });
-    }, [fields]);
-
-    const handleNewForm = () => {
-        setView('create');
-        setFormName('');
-        setSelectedCategory('');
-        setSelectedSubCategory('');
-        setFields([]);
-        setError('');
-        dispatch(clearCurrentForm());
-    };
-
-    // Helper function to map API fields to frontend format
-    const mapApiFieldsToFrontend = (apiFields) => {
-        if (!apiFields || !Array.isArray(apiFields)) {
-            console.log('No API fields to map, returning empty array');
-            return [];
-        }
-        
-        console.log('Mapping API fields:', apiFields);
-        
-        const mappedFields = apiFields.map((apiField, index) => {
-            const mappedField = {
-                id: apiField.id || `field_${Date.now()}_${index}_${Math.random()}`,
-                name: apiField.fieldLabel || apiField.fieldName || apiField.name || '',
-                type: apiField.fieldType || apiField.type || 'text',
-                required: Boolean(apiField.required),
-                placeholder: apiField.defaultValue || apiField.placeholder || '',
-                options: []
-            };
-
-            // Handle dropdown options
-            if (apiField.options && Array.isArray(apiField.options)) {
-                mappedField.options = apiField.options.map((opt, optIndex) => ({
-                    id: `option_${Date.now()}_${optIndex}_${Math.random()}`,
-                    value: typeof opt === 'string' ? opt : opt.value || opt.label || ''
-                }));
-            }
-
-            console.log('Mapped API field:', { original: apiField, mapped: mappedField });
-            return mappedField;
-        });
-        
-        console.log('Total mapped fields:', mappedFields.length);
-        return mappedFields;
-    };
-
-    const handleEditForm = (formId) => {
-        const form = forms.find(f => f.id === formId || f.formId === formId);
-        console.log('handleEditForm called with:', { formId, form, categoriesCount: categories?.length });
-        if (form) {
-            setView('edit');
-            setEditingFormId(formId);
-            setFormName(form.name);
-            // Use assignedCategoryId if categoryId is null/empty
-            const categoryToUse = form.categoryId || form.assignedCategoryId || '';
-            setSelectedCategory(categoryToUse);
-            
-            // Map API fields to frontend format and ensure proper state update
-            const mappedFields = mapApiFieldsToFrontend(form.fields || []);
-            
-            // Clear any existing fields first, then set new ones
-            setFields([]);
-            
-            // Use setTimeout to ensure state is cleared before setting new fields
-            setTimeout(() => {
-                setFields(mappedFields);
-                console.log('Fields set after edit:', mappedFields);
-            }, 0);
-            
-            setError('');
-            dispatch(setCurrentForm(form));
-            
-            console.log('Form details set:', {
-                formName: form.name,
-                categoryId: form.categoryId,
-                assignedCategoryId: form.assignedCategoryId,
-                categoryToUse: categoryToUse,
-                fieldsCount: form.fields?.length || 0,
-                originalFields: form.fields,
-                mappedFields: mappedFields
+        if (asset) {
+            setFormData({
+                name: asset.name || '',
+                statusLabelId: asset.statusLabelId || '',
+                locationId: asset.locationId || '',
+                assignedTo: asset.assignedTo || '',
             });
+        }
+    }, [asset]);
+    
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+    
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(formData);
+        onClose();
+    };
+    
+    if (!isOpen) return null;
+    
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+                <div className="flex justify-between items-center p-6 border-b">
+                    <h2 className="text-xl font-bold text-gray-800">Edit Asset</h2>
+                    <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <FaTimes />
+                    </button>
+                </div>
+                
+                <div className="p-6 overflow-y-auto">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Asset Name</label>
+                            <input
+                                name="name"
+                                value={formData.name || ''}
+                                onChange={handleChange}
+                                className="w-full p-3 border border-gray-300 rounded-md"
+                            />
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                            <select
+                                name="statusLabelId"
+                                value={formData.statusLabelId || ''}
+                                onChange={handleChange}
+                                className="w-full p-3 border border-gray-300 rounded-md"
+                            >
+                                <option value="">Select Status...</option>
+                                {Array.isArray(statuses) && statuses.map(status => (
+                                    <option key={status.statusLabelId || status.id} value={status.statusLabelId || status.id}>
+                                        {status.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                            <select
+                                name="locationId"
+                                value={formData.locationId || ''}
+                                onChange={handleChange}
+                                className="w-full p-3 border border-gray-300 rounded-md"
+                            >
+                                <option value="">Select Location...</option>
+                                {Array.isArray(locations) && locations.map(location => (
+                                    <option key={location.locationId || location.id} value={location.locationId || location.id}>
+                                        {location.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Assigned To</label>
+                            <input
+                                name="assignedTo"
+                                value={formData.assignedTo || ''}
+                                onChange={handleChange}
+                                className="w-full p-3 border border-gray-300 rounded-md"
+                            />
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="bg-gray-50 px-6 py-3 flex justify-end items-center gap-2 rounded-b-lg">
+                    <button 
+                        type="button" 
+                        onClick={onClose} 
+                        disabled={loading}
+                        className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        type="submit" 
+                        disabled={loading}
+                        className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                    >
+                        {loading ? 'Saving...' : 'Save Changes'}
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+};
+
+const AssetDetailPage = () => {
+    const router = useRouter();
+    const { id } = router.query; // This is now the assetId (e.g., "D-03-3001")
+    const dispatch = useDispatch();
+    const [activeTab, setActiveTab] = useState('overview');
+    // Inline edit states for summary cards
+    const [editingField, setEditingField] = useState(null); // 'assignedTo' | 'locationId' | 'purchaseCost' | 'warrantyExpiry'
+    const [draftValues, setDraftValues] = useState({
+        assignedTo: '',
+        locationId: '',
+        purchaseCost: '',
+        warrantyExpiry: '',
+    });
+    const [isDocumentModalOpen, setIsDocumentModalOpen] = useState(false);
+    const [documentFile, setDocumentFile] = useState(null);
+    const [uploadingDoc, setUploadingDoc] = useState(false);
+    const [editingOverview, setEditingOverview] = useState(false);
+    const [overviewDraft, setOverviewDraft] = useState({
+        serialNumber: '',
+        statusLabelId: '',
+        purchaseDate: '',
+        purchaseCost: '',
+        gstRate: '',
+        invoiceNumber: '',
+    });
+    const [savingOverview, setSavingOverview] = useState(false);
+    const [editingSpecs, setEditingSpecs] = useState(false);
+    const [specsDraft, setSpecsDraft] = useState({ customFields: {}, formData: {} });
+    const [savingSpecs, setSavingSpecs] = useState(false);
+    // History state from API
+    const [historyEvents, setHistoryEvents] = useState([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [historyError, setHistoryError] = useState(null);
+    // Close document modal when leaving Documents tab
+    useEffect(() => {
+        if (activeTab !== 'documents' && isDocumentModalOpen) {
+            setIsDocumentModalOpen(false);
+        }
+    }, [activeTab]);
+    
+    // Get data from Redux store
+    const { currentAsset: asset, loading: fetchingAsset, error: fetchAssetError, updatingAsset, updateAssetError } = useSelector(state => state.assets);
+    const { categories } = useSelector(state => state.assetCategories);
+    const { locations } = useSelector(state => state.assetLocations);
+    const { statuses } = useSelector(state => state.assetStatuses);
+    const { departments } = useSelector(state => state.department || {});
+    const { employees } = useSelector(state => state.employees || {});
+    
+
+    
+    useEffect(() => {
+        if (id) {
+            // Clear previous asset data
+            dispatch(clearCurrentAsset());
             
-            // Ensure categories are loaded if not already
-            if (!categories || categories.length === 0) {
-                console.log('Loading categories as they are not available');
+            // Fetch the specific asset by asset ID (e.g., "D-03-3001")
+            dispatch(fetchAssetByAssetId(id));
+        }
+        
+        // Cleanup when component unmounts
+        return () => {
+            dispatch(clearCurrentAsset());
+        };
+    }, [id, dispatch]);
+
+    // Ensure departments and employees are loaded for assignment editing
+    useEffect(() => {
+        if (!departments || departments.length === 0) {
+            dispatch(fetchDepartments());
+        }
+        if (!employees || employees.length === 0) {
+            dispatch(fetchEmployees());
+        }
+    }, [dispatch]);
+    
+    // Fetch reference data when asset is loaded and we need to display names
+    useEffect(() => {
+        if (asset && (asset.categoryId || asset.locationId)) {
+            // Only fetch categories and locations if we have IDs to resolve
+            if (asset.categoryId && (!categories || categories.length === 0)) {
                 dispatch(fetchAssetCategories());
             }
-        }
-    };
-
-    const handleBackToList = () => {
-        setView('list');
-        setEditingFormId(null);
-        setFormName('');
-        setSelectedCategory('');
-        setSelectedSubCategory('');
-        setFields([]);
-        setError('');
-        dispatch(clearCurrentForm());
-    };
-
-    const handleToggleFormStatus = async (formId) => {
-        try {
-            const form = forms.find(f => f.id === formId);
-            if (form) {
-                await dispatch(toggleFormStatus({ 
-                    formId, 
-                    enabled: !form.enabled 
-                })).unwrap();
-                toast.success("Form status updated successfully!");
-            }
-        } catch (error) {
-            console.error('Error toggling form status:', error);
-            toast.error("Failed to update form status");
-        }
-    };
-
-    const handleDeleteForm = async (formId) => {
-        if (window.confirm('Are you sure you want to delete this form?')) {
-            try {
-                await dispatch(deleteCustomForm(formId)).unwrap();
-                toast.success("Form deleted successfully!");
-            } catch (error) {
-                console.error('Error deleting form:', error);
-                toast.error("Failed to delete form");
+            if (asset.locationId && (!locations || locations.length === 0)) {
+                dispatch(fetchAssetLocations());
             }
         }
+    }, [asset, categories, locations, dispatch]);
+    
+    // Ensure statuses are available to display status name/badge
+    useEffect(() => {
+        if (asset?.statusLabelId && (!statuses || statuses.length === 0)) {
+            dispatch(fetchAssetStatuses());
+        }
+    }, [asset?.statusLabelId, statuses, dispatch]);
+
+    // Ensure reference data when editing overview
+    useEffect(() => {
+        if (editingOverview) {
+            if (!categories || categories.length === 0) dispatch(fetchAssetCategories());
+            if (!statuses || statuses.length === 0) dispatch(fetchAssetStatuses());
+        }
+    }, [editingOverview, categories, statuses, dispatch]);
+    
+    // Debug: Log asset object when it's loaded
+    useEffect(() => {
+        if (asset) {
+            console.log('Asset loaded:', asset);
+            console.log('Asset fields:', Object.keys(asset));
+            console.log('Asset subcategory fields:', {
+                subCategoryId: asset.subCategoryId,
+                subcategoryId: asset.subcategoryId,
+                sub_category_id: asset.sub_category_id,
+                subcategory_id: asset.subcategory_id,
+                subCategory: asset.subCategory,
+                subcategory: asset.subcategory
+            });
+        }
+    }, [asset]);
+    
+    // Handle errors with toast notifications
+    useEffect(() => {
+        if (fetchAssetError) {
+            toast.error(`Failed to fetch asset: ${fetchAssetError}`);
+        }
+        if (updateAssetError) {
+            toast.error(`Failed to update asset: ${updateAssetError}`);
+        }
+    }, [fetchAssetError, updateAssetError]);
+    
+    // Helper functions to map IDs to names
+    const getCategoryName = (categoryId) => {
+        if (!categoryId) return 'No Category';
+        if (!Array.isArray(categories) || categories.length === 0) return 'Loading...';
+        const category = categories.find(c => (c.categoryId || c.id) === categoryId);
+        return category ? category.name : 'Unknown Category';
     };
 
-    const addField = () => {
-        console.log('addField called. Current fields count:', fields.length);
+    const getLocationName = (locationId) => {
+        if (!locationId) return 'No Location';
+        if (!Array.isArray(locations) || locations.length === 0) return 'Loading...';
+        const location = locations.find(l => (l.locationId || l.id) === locationId);
+        return location ? location.name : 'Unknown Location';
+    };
+
+    const getStatusName = (statusLabelId) => {
+        if (!statusLabelId) return 'No Status'; // More accurate when no statusLabelId
+        if (!Array.isArray(statuses)) return 'Loading...';
+        const status = statuses.find(s => (s.statusLabelId || s.id) === statusLabelId);
+        return status ? status.name : 'Unknown Status';
+    };
+
+    const getDepartmentName = (departmentId) => {
+        if (!departmentId) return 'No Department';
+        if (!Array.isArray(departments) || departments.length === 0) return 'Loading...';
+        const dept = departments.find(d => (d.departmentId || d.id) === departmentId);
+        return dept ? dept.name : 'Unknown Department';
+    };
+
+    const getEmployeeName = (employeeId) => {
+        if (!employeeId) return '';
+        if (!Array.isArray(employees) || employees.length === 0) return '';
         
-        // Check if we've reached the maximum limit of 15 fields
-        if (fields.length >= 15) {
-            toast.error("Maximum limit of 15 fields reached. Please remove some fields before adding new ones.");
-            return;
-        }
-        
-        // Generate a unique ID using timestamp + random number to avoid conflicts
-        const newField = {
-            id: `field_${Date.now()}_${Math.random()}`,
-            name: '',
-            type: 'text',
-            required: false,
-            placeholder: '',
-            options: []
-        };
-        
-        console.log('Creating new field:', newField);
-        
-        // Use functional update to ensure we're working with the latest state
-        setFields(prevFields => {
-            const updatedFields = [...prevFields, newField];
-            console.log('Added new field. Previous count:', prevFields.length, 'New count:', updatedFields.length);
-            return updatedFields;
+        const emp = employees.find(e => {
+            const eId = e.employeeId || e.id || e._id;
+            return String(eId) === String(employeeId);
         });
+        
+        if (!emp) return '';
+        
+        return emp.name || emp.fullName || `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
     };
 
-    const removeField = (fieldId) => {
-        console.log('Removing field with ID:', fieldId);
-        const updatedFields = fields.filter(field => field.id !== fieldId);
-        console.log('Updated fields after removal:', updatedFields);
-        setFields(updatedFields);
-    };
-
-    const updateField = (fieldId, key, value) => {
-        console.log('Updating field:', { fieldId, key, value });
-        const updatedFields = fields.map(field => 
-            field.id === fieldId ? { ...field, [key]: value } : field
-        );
-        console.log('Updated fields after field update:', updatedFields);
-        setFields(updatedFields);
-    };
-
-    const addDropdownOption = (fieldId) => {
-        setFields(fields.map(field => 
-            field.id === fieldId 
-                ? { 
-                    ...field, 
-                    options: [...field.options, { id: Date.now(), value: '' }] 
-                } 
-                : field
-        ));
-    };
-
-    const removeDropdownOption = (fieldId, optionId) => {
-        setFields(fields.map(field => 
-            field.id === fieldId 
-                ? { 
-                    ...field, 
-                    options: field.options.filter(opt => opt.id !== optionId) 
-                } 
-                : field
-        ));
-    };
-
-    const updateDropdownOption = (fieldId, optionId, value) => {
-        setFields(fields.map(field => 
-            field.id === fieldId 
-                ? { 
-                    ...field, 
-                    options: field.options.map(opt => 
-                        opt.id === optionId ? { ...opt, value } : opt
-                    ) 
-                } 
-                : field
-        ));
-    };
-
-    const handleSaveForm = async () => {
-        if (!formName || !formName.trim()) {
-            setError('Form name is required');
-            return;
-        }
-
-        if (!selectedCategory) {
-            setError('Please select a category');
-            return;
-        }
-
-        if (fields.length === 0) {
-            setError('At least one field is required');
-            return;
-        }
-
-        // Validate fields
-        for (let field of fields) {
-            if (!field.name || !field.name.trim()) {
-                setError('All fields must have a name');
-                return;
-            }
-            if (field.type === 'dropdown' && field.options.length === 0) {
-                setError('Dropdown fields must have at least one option');
-                return;
-            }
-        }
-
-        setLoading(true);
-        setError('');
-
+    // Build a robust, ordered asset timeline from various possible shapes
+    const parseDateSafe = (value) => {
+        if (!value) return null;
         try {
-            const formData = {
-                name: formName.trim(),
-                categoryId: selectedCategory,
-                enabled: true,
-                fields: fields.map(field => ({
-                    name: field.name.trim(),
-                    type: field.type,
-                    required: field.required,
-                    placeholder: field.placeholder || '',
-                    ...(field.type === 'dropdown' && { 
-                        options: field.options.map(opt => opt.value.trim()) 
-                    })
-                })),
-                ...(selectedSubCategory ? { subCategoryId: selectedSubCategory } : {})
+            if (typeof value === 'number') return new Date(value);
+            if (typeof value === 'string') {
+                // support ISO, yyyy-mm-dd, dd/mm/yyyy
+                const asNum = Number(value);
+                if (!Number.isNaN(asNum) && asNum > 0) return new Date(asNum);
+                const replaced = value.includes('/')
+                    ? value.split('/').reverse().join('-')
+                    : value;
+                const d = new Date(replaced);
+                return isNaN(d.getTime()) ? null : d;
+            }
+            if (value instanceof Date) return value;
+        } catch (_) { /* ignore */ }
+        return null;
+    };
+
+    const formatDateTime = (d) => {
+        if (!(d instanceof Date) || isNaN(d.getTime())) return '';
+        return d.toLocaleString();
+    };
+
+    const buildAssetTimeline = (assetObj) => {
+        const events = [];
+
+        // 1) Server-provided history array (preferred if present)
+        const serverHistory = Array.isArray(assetObj?.history) ? assetObj.history : [];
+        for (const h of serverHistory) {
+            const date = parseDateSafe(h.date || h.createdAt || h.time || h.timestamp);
+            const action = h.action || h.type || 'Update';
+            const byUser = h.user || h.performedBy || h.actor;
+            const details = h.details || h.message || '';
+            if (date) {
+                events.push({ date, label: action, right: [details, byUser ? `by ${byUser}` : ''].filter(Boolean).join(' • ') });
+            }
+        }
+
+        // 2) Creation
+        const creationDate = parseDateSafe(
+            assetObj?.createdAt || assetObj?.createdOn || assetObj?.creationDate || assetObj?.purchaseDate
+        );
+        if (creationDate) {
+            events.push({ date: creationDate, label: 'Asset created', right: assetObj.assetId || '' });
+        }
+
+        // 3) Assignment changes
+        const assignmentHistory = assetObj?.assignmentHistory || assetObj?.assignmentLogs || [];
+        if (Array.isArray(assignmentHistory) && assignmentHistory.length > 0) {
+            for (const a of assignmentHistory) {
+                const date = parseDateSafe(a.date || a.on || a.timestamp);
+                const from = a.from || a.fromUser || a.prev || a.previous || 'Unassigned';
+                const to = a.to || a.toUser || a.next || a.new || a.assignedTo;
+                if (date && to) {
+                    events.push({ date, label: 'Assigned', right: `${from ? `${from} → ` : ''}${to}` });
+                }
+            }
+        } else if (assetObj?.assignedTo && (assetObj.assignmentDate || creationDate)) {
+            // Fallback: single assignment
+            const date = parseDateSafe(assetObj.assignmentDate || creationDate);
+            if (date) events.push({ date, label: 'Assigned', right: `Unassigned → ${assetObj.assignedTo}` });
+        }
+
+        // 4) Location changes
+        const locationHistory = assetObj?.locationHistory || assetObj?.locationLogs || [];
+        if (Array.isArray(locationHistory) && locationHistory.length > 0) {
+            for (const l of locationHistory) {
+                const date = parseDateSafe(l.date || l.on || l.timestamp);
+                const fromId = l.from || l.prev || l.previousLocationId;
+                const toId = l.to || l.next || l.newLocationId || l.locationId;
+                const fromName = fromId ? getLocationName(fromId) : '';
+                const toName = toId ? getLocationName(toId) : '';
+                if (date && (fromName || toName)) {
+                    events.push({ date, label: 'Location changed', right: `${fromName ? `${fromName} → ` : ''}${toName}` });
+                }
+            }
+        }
+
+        // 5) Status changes
+        const statusHistory = assetObj?.statusHistory || assetObj?.statusLogs || [];
+        if (Array.isArray(statusHistory) && statusHistory.length > 0) {
+            for (const s of statusHistory) {
+                const date = parseDateSafe(s.date || s.on || s.timestamp);
+                const fromId = s.from || s.prev || s.previousStatusId;
+                const toId = s.to || s.next || s.newStatusId || s.statusLabelId;
+                const fromName = fromId ? getStatusName(fromId) : '';
+                const toName = toId ? getStatusName(toId) : '';
+                if (date && (fromName || toName)) {
+                    events.push({ date, label: 'Status changed', right: `${fromName ? `${fromName} → ` : ''}${toName}` });
+                }
+            }
+
+        }
+
+        // Sort ascending by date
+        events.sort((a, b) => (a.date?.getTime?.() || 0) - (b.date?.getTime?.() || 0));
+        return events;
+    };
+
+    // --- History formatting helpers ---
+    const isDeptField = (f) => {
+        const s = String(f || '').toLowerCase();
+        return (
+            /^(assigneddepartmentid|assigneddepartment)$/.test(s) ||
+            s.includes('assigned department') ||
+            s === 'department'
+        );
+    };
+    const isEmpField = (f) => {
+        const s = String(f || '').toLowerCase();
+        return (
+            /^(assignedemployeeid|assignedto)$/.test(s) ||
+            s.includes('assigned employee') ||
+            s.includes('assignee') ||
+            s === 'employee'
+        );
+    };
+
+    const displayFieldName = (f) => {
+        if (isDeptField(f)) return 'Department';
+        if (isEmpField(f)) return 'Assignee';
+        const s = String(f || 'Field');
+        return s.charAt(0).toUpperCase() + s.slice(1);
+    };
+
+    const formatValueForField = (fieldName, rawValue) => {
+        if (rawValue === null || rawValue === undefined || rawValue === '') return '—';
+        const lower = String(fieldName || '').toLowerCase();
+        // Assigned department/employee mapping to names
+        if (lower === 'assigneddepartmentid') return getDepartmentName(rawValue);
+        if (lower === 'assignedemployeeid') return getEmployeeName(rawValue);
+        if (lower === 'assigneddepartment') return String(rawValue);
+        if (lower === 'assignedto') return String(rawValue);
+        // ID to label resolvers
+        if (lower.includes('status')) {
+            if (typeof rawValue === 'string' && !/^STAT[-_]/i.test(rawValue)) {
+                return String(rawValue);
+            }
+            return getStatusName(rawValue);
+        }
+        if (lower.includes('location')) {
+            if (typeof rawValue === 'string' && !/^LOC[-_]/i.test(rawValue)) {
+                return String(rawValue);
+            }
+            return getLocationName(rawValue);
+        }
+        if (lower.includes('category')) return getCategoryName(rawValue);
+
+        // Dates
+        if (lower.includes('date') || lower.endsWith('at')) {
+            const d = parseDateSafe(rawValue);
+            if (d) return d.toLocaleString();
+        }
+
+        // Currency / numeric
+        if (lower.includes('cost') || lower.includes('amount') || lower.includes('price') || lower.includes('value')) {
+            const n = Number(rawValue);
+            if (!Number.isNaN(n)) return `₹${n.toLocaleString('en-IN')}`;
+        }
+
+        if (typeof rawValue === 'boolean') return rawValue ? 'Yes' : 'No';
+        if (typeof rawValue === 'number') return String(rawValue);
+        if (typeof rawValue === 'object') {
+            try { return JSON.stringify(rawValue); } catch (_) { return String(rawValue); }
+        }
+        return String(rawValue);
+    };
+
+    const extractChangesFromEvent = (evt) => {
+        try {
+            // 1) Array of change objects
+            if (Array.isArray(evt?.changes)) {
+                return evt.changes.map((c) => {
+                    const field = c.field || c.key || c.name || c.attribute || 'Field';
+                    const from = c.from ?? c.old ?? c.previous ?? c.prev ?? null;
+                    const to = c.to ?? c.new ?? c.next ?? null;
+                    return { field, from, to };
+                }).filter(Boolean);
+            }
+
+            // 2) Object diff map
+            const diffMaps = [evt?.diff, evt?.fields, evt?.updates, evt?.changesMap];
+            for (const map of diffMaps) {
+                if (map && typeof map === 'object') {
+                    return Object.entries(map).map(([field, val]) => {
+                        if (val && typeof val === 'object') {
+                            const from = val.from ?? val.old ?? val.previous ?? (Array.isArray(val) ? val[0] : null);
+                            const to = val.to ?? val.new ?? val.next ?? (Array.isArray(val) ? val[1] : null);
+                            return { field, from, to };
+                        }
+                        return { field, from: undefined, to: val };
+                    });
+                }
+            }
+
+            // 3) Before/after maps
+            const before = evt?.oldValues || evt?.previous || evt?.before;
+            const after = evt?.newValues || evt?.next || evt?.after;
+            if (before || after) {
+                const keys = new Set([
+                    ...Object.keys(before || {}),
+                    ...Object.keys(after || {}),
+                ]);
+                const out = [];
+                for (const key of keys) {
+                    const from = before ? before[key] : undefined;
+                    const to = after ? after[key] : undefined;
+                    if (from !== to) out.push({ field: key, from, to });
+                }
+                return out;
+            }
+        } catch (_) { /* ignore */ }
+        return [];
+    };
+
+    // Fetch history events from server
+    const fetchAssetHistory = async (assetIdParam, assetData = null) => {
+        if (!assetIdParam) return;
+        setLoadingHistory(true);
+        setHistoryError(null);
+        try {
+            const tokenRaw = getItemFromSessionStorage('token', null);
+            const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            const url = `${publicRuntimeConfig.apiURL}/api/assets/${encodeURIComponent(assetIdParam)}/history`;
+            const resp = await fetch(url, { headers });
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                throw new Error(err.message || `Failed to fetch history (${resp.status})`);
+            }
+            const data = await resp.json();
+            
+            // If no data returned from API, create a default creation event
+            if (!data || data.length === 0) {
+                const assetToUse = assetData || asset;
+                if (assetToUse) {
+                    const creationDate = parseDateSafe(
+                        assetToUse.createdAt || assetToUse.createdOn || assetToUse.creationDate || assetToUse.purchaseDate
+                    );
+                    if (creationDate) {
+                        setHistoryEvents([{
+                            date: creationDate,
+                            label: 'Asset Created',
+                            right: `Asset ID: ${assetToUse.assetId || 'N/A'}`,
+                            type: 'creation',
+                            priority: 1,
+                            changes: []
+                        }]);
+                        setLoadingHistory(false);
+                        return;
+                    }
+                }
+            }
+
+            const resolveHistoryValue = (field, raw, evt, which) => {
+                // Prefer explicit name/display fields if provided by API
+                if (isDeptField(field)) {
+                    const deptOld = evt?.assignedOldDepartment || evt?.oldDepartment || evt?.oldDepartmentName;
+                    const deptNew = evt?.assignedNewDepartment || evt?.newDepartment || evt?.newDepartmentName;
+                    if (which === 'from' && deptOld) return String(deptOld);
+                    if (which === 'to' && deptNew) return String(deptNew);
+                    // If server sent the name directly
+                    if (typeof raw === 'string' && !/^[A-Z]+-/.test(raw)) return raw;
+                    return getDepartmentName(raw);
+                }
+                if (isEmpField(field)) {
+                    const empOld = evt?.assignedOldEmployee || evt?.oldEmployee || evt?.oldEmployeeName;
+                    const empNew = evt?.assignedNewEmployee || evt?.newEmployee || evt?.newEmployeeName;
+                    if (which === 'from' && empOld) return String(empOld);
+                    if (which === 'to' && empNew) return String(empNew);
+                    if (typeof raw === 'string' && !/^[A-Z]+-/.test(raw)) return raw;
+                    return getEmployeeName(raw) || String(raw || '');
+                }
+                return formatValueForField(field, raw);
+            };
+            const toLabel = (evtType, field) => {
+                switch (evtType) {
+                    case 'STATUS_CHANGED': return 'Status changed';
+                    case 'LOCATION_CHANGED': return 'Location changed';
+                    case 'ASSIGNED': return 'Assigned';
+                    case 'UNASSIGNED': return 'Unassigned';
+                    case 'CREATED': return 'Asset created';
+                    case 'UPDATED': return 'Updated';
+                    default:
+                        if (isDeptField(field)) return 'Department changed';
+                        if (isEmpField(field)) return 'Assignee changed';
+                        if (field) return `${String(field)} updated`;
+                        return 'Update';
+                }
+            };
+            const equalish = (a, b) => {
+                const norm = (v) => {
+                    if (v === null || v === undefined) return '';
+                    if (typeof v === 'string') return v.trim().toLowerCase();
+                    return String(v).trim().toLowerCase();
+                };
+                return norm(a) === norm(b);
+            };
+
+            const normalized = Array.isArray(data)
+                ? data.map((h) => {
+                      const date = parseDateSafe(h.timestamp || h.date || h.createdAt || h.time);
+                      const field = h.field || h.attribute;
+                      let label = (typeof h.eventType === 'string' && h.eventType.trim() !== '')
+                          ? String(h.eventType)
+                          : toLabel(h.type || h.action, field);
+                      const actor = h.actorUserId || h.user || h.performedBy || h.actor;
+                      const fromResolved = resolveHistoryValue(field, h.oldValue, h, 'from');
+                      const toResolved = resolveHistoryValue(field, h.newValue, h, 'to');
+                      const changes = [{ field, from: h.oldValue, to: h.newValue, displayFrom: fromResolved, displayTo: toResolved }];
+
+                      // Enrich with implicit dept/emp/status/location changes if present in payload
+                      if (h.assignedOldDepartment !== undefined || h.assignedNewDepartment !== undefined) {
+                          const dFrom = h.assignedOldDepartment ?? h.oldDepartment ?? h.oldDepartmentName ?? null;
+                          const dTo = h.assignedNewDepartment ?? h.newDepartment ?? h.newDepartmentName ?? null;
+                          changes.push({ field: 'assignedDepartment', from: dFrom, to: dTo, displayFrom: dFrom || undefined, displayTo: dTo || undefined });
+                      }
+                      if ((h.assignedOldEmployee !== undefined || h.assignedNewEmployee !== undefined) && !isEmpField(field)) {
+                          const eFrom = h.assignedOldEmployee ?? h.oldEmployee ?? h.oldEmployeeName ?? null;
+                          const eTo = h.assignedNewEmployee ?? h.newEmployee ?? h.newEmployeeName ?? null;
+                          changes.push({ field: 'assignedTo', from: eFrom, to: eTo, displayFrom: eFrom || undefined, displayTo: eTo || undefined });
+                      }
+                      if (h.oldStatus !== undefined || h.newStatus !== undefined) {
+                          changes.push({ field: 'status', from: h.oldStatus ?? null, to: h.newStatus ?? null, displayFrom: h.oldStatus || undefined, displayTo: h.newStatus || undefined });
+                      }
+                      if (h.oldLocation !== undefined || h.newLocation !== undefined) {
+                          changes.push({ field: 'location', from: h.oldLocation ?? null, to: h.newLocation ?? null, displayFrom: h.oldLocation || undefined, displayTo: h.newLocation || undefined });
+                      }
+
+                      // Keep only true changes (from != to) using display values when available
+                      const filteredChanges = changes.filter((c) => !equalish(c.displayFrom ?? c.from, c.displayTo ?? c.to));
+
+                      const hasDeptLocal = filteredChanges.some((c) => isDeptField(c.field));
+                      const hasEmpLocal = filteredChanges.some((c) => isEmpField(c.field));
+
+                      const summaryParts = [];
+                      for (const c of filteredChanges) {
+                          const isD = isDeptField(c.field);
+                          const isE = isEmpField(c.field);
+                          const fVal = c.displayFrom ?? (isD ? formatValueForField('assignedDepartment', c.from) : isE ? formatValueForField('assignedTo', c.from) : formatValueForField(c.field, c.from));
+                          const tVal = c.displayTo ?? (isD ? formatValueForField('assignedDepartment', c.to) : isE ? formatValueForField('assignedTo', c.to) : formatValueForField(c.field, c.to));
+                          if (isD) summaryParts.push(`Department: ${fVal || '—'} → ${tVal || '—'}`);
+                          else if (isE) summaryParts.push(`Assignee: ${fVal || '—'} → ${tVal || '—'}`);
+                          else summaryParts.push(`${displayFieldName(c.field)}: ${fVal || '—'} → ${tVal || '—'}`);
+                      }
+                      if (actor) summaryParts.push(`by ${actor}`);
+                      const right = summaryParts.join(' • ');
+                      if (!date) return null;
+                      if (filteredChanges.length === 0) return null; // nothing changed
+                      return { date, label, right, raw: h, changes: filteredChanges };
+                  }).filter(Boolean)
+                : [];
+            // Group events that happened at the same second into a single card
+            const bySecond = new Map();
+            for (const evt of normalized) {
+                const sec = Math.floor((evt.date?.getTime?.() || 0) / 1000);
+                if (!bySecond.has(sec)) {
+                    bySecond.set(sec, { date: evt.date, raw: [evt.raw], changes: [...(evt.changes || [])] });
+                } else {
+                    const g = bySecond.get(sec);
+                    g.raw.push(evt.raw);
+                    g.changes.push(...(evt.changes || []));
+                }
+            }
+            // Build combined entries with smart labels and right summaries
+            const combined = Array.from(bySecond.values()).map((g) => {
+                // Prefer backend eventType as-is if available on the first raw record in the group
+                let label = String((g.raw && g.raw[0] && (g.raw[0].eventType || g.raw[0].type || g.raw[0].action)) || 'Update');
+
+                const parts = [];
+                const pushPart = (title, from, to) => {
+                    parts.push(`${title}: ${from || '—'} → ${to || '—'}`);
+                };
+                for (const c of g.changes) {
+                    const isD = isDeptField(c.field);
+                    const isE = isEmpField(c.field);
+                    const fromVal = c.displayFrom ?? (isD ? formatValueForField('assignedDepartment', c.from) : isE ? formatValueForField('assignedTo', c.from) : formatValueForField(c.field, c.from));
+                    const toVal = c.displayTo ?? (isD ? formatValueForField('assignedDepartment', c.to) : isE ? formatValueForField('assignedTo', c.to) : formatValueForField(c.field, c.to));
+                    if (equalish(fromVal, toVal)) continue; // skip unchanged
+                    if (isD) pushPart('Department', fromVal, toVal);
+                    else if (isE) pushPart('Assignee', fromVal, toVal);
+                    else pushPart(displayFieldName(c.field), fromVal, toVal);
+                }
+                // After skipping unchanged, if nothing left, drop this card
+                if (parts.length === 0) return null;
+                return { date: g.date, label, right: parts.join(' • '), raw: g.raw[0], changes: g.changes };
+            });
+
+            const nonEmpty = combined.filter(Boolean);
+            nonEmpty.sort((a, b) => (a.date?.getTime?.() || 0) - (b.date?.getTime?.() || 0));
+            
+            // Always add the asset creation event if we have asset data
+            const assetToUse = assetData || asset;
+            if (assetToUse) {
+                const creationDate = parseDateSafe(
+                    assetToUse.createdAt || assetToUse.createdOn || assetToUse.creationDate || assetToUse.purchaseDate
+                );
+                if (creationDate) {
+                    // Check if creation event already exists in the history
+                    const existingCreation = nonEmpty.find(evt => evt.label === 'Asset Created');
+                    if (!existingCreation) {
+                        nonEmpty.unshift({
+                            date: creationDate,
+                            label: 'Asset Created',
+                            right: `Asset ID: ${assetToUse.assetId || 'N/A'}`,
+                            type: 'creation',
+                            priority: 1,
+                            changes: []
+                        });
+                    }
+                }
+            }
+            
+            setHistoryEvents(nonEmpty);
+        } catch (e) {
+            setHistoryError(e?.message || 'Failed to fetch history');
+            
+            // Even if API fails, show the creation event if we have asset data
+            const assetToUse = assetData || asset;
+            if (assetToUse) {
+                const creationDate = parseDateSafe(
+                    assetToUse.createdAt || assetToUse.createdOn || assetToUse.creationDate || assetToUse.purchaseDate
+                );
+                if (creationDate) {
+                    setHistoryEvents([{
+                        date: creationDate,
+                        label: 'Asset Created',
+                        right: `Asset ID: ${assetToUse.assetId || 'N/A'}`,
+                        type: 'creation',
+                        priority: 1,
+                        changes: []
+                    }]);
+                }
+            }
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
+
+    // Fetch when asset changes
+    useEffect(() => {
+        if (asset?.assetId) {
+            fetchAssetHistory(asset.assetId, asset);
+            
+
+        }
+    }, [asset?.assetId]);
+    
+    // Ensure creation event is always shown when asset is available
+    useEffect(() => {
+        if (asset && !loadingHistory && historyEvents.length === 0) {
+            const creationDate = parseDateSafe(
+                asset.createdAt || asset.createdOn || asset.creationDate || asset.purchaseDate
+            );
+            if (creationDate) {
+                setHistoryEvents([{
+                    date: creationDate,
+                    label: 'Asset Created',
+                    right: `Asset ID: ${asset.assetId || 'N/A'}`,
+                    type: 'creation',
+                    priority: 1,
+                    changes: []
+                }]);
+            }
+        }
+    }, [asset, loadingHistory, historyEvents.length]);
+
+    // Derive Asset display name from custom form data, preferring an "Asset" field
+    const getAssetDisplayName = (assetObj) => {
+        if (!assetObj) return 'Asset';
+        if (assetObj.name) return assetObj.name;
+        const fd = assetObj.formData || assetObj.customFields || {};
+        const preferredKeys = ['Asset', 'asset', 'Asset Name', 'assetName', 'Name', 'name', 'Model', 'model', 'Title', 'title'];
+        for (const key of preferredKeys) {
+            const value = fd && fd[key];
+            if (value != null && value !== '') return String(value);
+        }
+        return '';
+    };
+
+    // Derive ID display; keep using auto-generated assetId when available
+    const getAssetIdDisplay = (assetObj) => {
+        if (!assetObj) return '';
+        // Only show the auto-generated Asset ID
+        if (assetObj.assetId) return String(assetObj.assetId);
+        const fd = assetObj.formData || assetObj.customFields || {};
+        const formKeys = ['assetId', 'Asset ID', 'AssetId', 'assetID', 'asset_id'];
+        for (const key of formKeys) {
+            const value = fd && fd[key];
+            if (value != null && value !== '') return String(value);
+        }
+        return '';
+    };
+    
+    const handleSaveAsset = async (updatedAsset) => {
+        try {
+            // Prepare the asset data for the API
+            const assetData = {
+                name: updatedAsset.name,
+                statusLabelId: updatedAsset.statusLabelId,
+                locationId: updatedAsset.locationId,
+                assignedTo: updatedAsset.assignedTo,
+                // Add other fields as needed
             };
             
-            let savedFormId = editingFormId;
-            if (editingFormId) {
-                const updated = await dispatch(updateCustomForm({ 
-                    formId: editingFormId, 
-                    formData 
-                })).unwrap();
-                savedFormId = updated?.id || editingFormId;
-                toast.success("Form updated successfully!");
-            } else {
-                const created = await dispatch(createCustomForm(formData)).unwrap();
-                savedFormId = created?.id || created?.formId;
-                toast.success("Form created successfully!");
-            }
-
-            // Assign to sub-category via dedicated endpoint if provided
-            if (savedFormId && selectedSubCategory) {
-                try {
-                    await dispatch(assignFormToSubCategory({ formId: savedFormId, subCategoryId: selectedSubCategory })).unwrap();
-                    toast.success("Sub-category assigned to form");
-                } catch (e) {
-                    console.error('Failed to assign sub-category:', e);
-                    toast.error("Failed to assign sub-category");
-                }
-            }
+            await dispatch(patchAssetByAssetId({ assetId: id, assetData })).unwrap();
+            toast.success('Asset updated successfully!');
             
-            // Return to listing view
-            handleBackToList();
-            
-        } catch (error) {
-            console.error('Error saving form:', error);
-            setError('Failed to save form. Please try again.');
-            toast.error("Failed to save form");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    // Render field input based on type
-    const renderFieldInput = (field) => {
-        switch (field.type) {
-            case 'dropdown':
-                return (
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">Options:</span>
-                            <button
-                                type="button"
-                                onClick={() => addDropdownOption(field.id)}
-                                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                            >
-                                + Add Option
-                            </button>
-                        </div>
-                        <div className="space-y-1">
-                            {field.options.map(option => (
-                                <div key={option.id} className="flex items-center gap-2">
-                                    <input
-                                        type="text"
-                                        value={option.value}
-                                        onChange={(e) => updateDropdownOption(field.id, option.id, e.target.value)}
-                                        placeholder="Option value"
-                                        className="flex-1 p-2 text-sm border rounded"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeDropdownOption(field.id, option.id)}
-                                        className="text-red-500 hover:text-red-700"
-                                    >
-                                        <FaTimes />
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                );
-            case 'textarea':
-                return (
-                    <input
-                        type="text"
-                        value={field.placeholder || ''}
-                        onChange={(e) => updateField(field.id, 'placeholder', e.target.value)}
-                        placeholder="Placeholder text (optional)"
-                        className="w-full p-2 text-sm border rounded"
-                    />
-                );
-            default:
-                return (
-                    <input
-                        type="text"
-                        value={field.placeholder || ''}
-                        onChange={(e) => updateField(field.id, 'placeholder', e.target.value)}
-                        placeholder="Placeholder text (optional)"
-                        className="w-full p-2 text-sm border rounded"
-                    />
-                );
-        }
-    };
-
-    // Render preview of the form
-    const renderFormPreview = () => {
-        if (fields.length === 0) {
-            return (
-                <div className="text-center py-8 text-gray-500">
-                    <div className="text-4xl mb-2">📝</div>
-                    <p>Add fields to see a preview of your form</p>
-                </div>
-            );
-        }
-
-        return (
-            <div className="space-y-4">
-                <h4 className="font-semibold text-gray-800 mb-4">Form Preview</h4>
-                <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-4">
-                    <h3 className="text-xl font-bold text-gray-800">{formName || 'Untitled Form'}</h3>
-                    {fields.map(field => (
-                        <div key={field.id} className="space-y-2">
-                            <label className="block text-sm font-medium text-gray-700">
-                                {field.name}
-                                {field.required && <span className="text-red-500 ml-1">*</span>}
-                            </label>
-                            {field.type === 'text' && (
-                                <input
-                                    type="text"
-                                    placeholder={field.placeholder}
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                    disabled
-                                />
-                            )}
-                            {field.type === 'number' && (
-                                <input
-                                    type="number"
-                                    placeholder={field.placeholder}
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                    disabled
-                                />
-                            )}
-                            {field.type === 'date' && (
-                                <input
-                                    type="date"
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                    disabled
-                                />
-                            )}
-                            {field.type === 'file' && (
-                                <input
-                                    type="file"
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                    disabled
-                                />
-                            )}
-                            {field.type === 'dropdown' && (
-                                <select className="w-full p-2 border border-gray-300 rounded-md" disabled>
-                                    <option value="">Select an option...</option>
-                                    {field.options.map((option, index) => (
-                                        <option key={index} value={option.value}>
-                                            {option.value}
-                                        </option>
-                                    ))}
-                                </select>
-                            )}
-                            {field.type === 'checkbox' && (
-                                <label className="flex items-center gap-2">
-                                    <input
-                                        type="checkbox"
-                                        className="rounded border-gray-300"
-                                        disabled
-                                    />
-                                    <span className="text-sm text-gray-700">{field.placeholder || 'Check this option'}</span>
-                                </label>
-                            )}
-                            {field.type === 'textarea' && (
-                                <textarea
-                                    placeholder={field.placeholder}
-                                    rows={3}
-                                    className="w-full p-2 border border-gray-300 rounded-md"
-                                    disabled
-                                />
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    };
-
-    return (
-        <SettingsSection title="Custom Form Builder" subtitle="Create dynamic forms for data collection across different categories.">
-            {view === 'list' ? (
-                // Form Listing View
-                <div>
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-semibold text-gray-800">📋 Form Listing</h3>
-                        <button
-                            onClick={handleNewForm}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2"
-                        >
-                            <FaPlus /> New Form
-                        </button>
-                    </div>
-
-                    {formsLoading ? (
-                        <div className="text-center py-12">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                            <p className="mt-4 text-gray-600">Loading forms...</p>
-                        </div>
-                    ) : forms.length === 0 ? (
-                        <div className="text-center py-12 text-gray-500">
-                            <div className="text-4xl mb-4">📝</div>
-                            <h4 className="text-lg font-semibold mb-2">No forms created yet</h4>
-                            <p className="mb-4">Create your first custom form to get started</p>
-                            <button
-                                onClick={handleNewForm}
-                                className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                            >
-                                Create Your First Form
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                            <table className="w-full">
-                                <thead className="bg-gray-50 border-b border-gray-200">
-                                    <tr>
-                                        <th className="text-left p-4 font-semibold text-gray-700">Form Name</th>
-                                        <th className="text-left p-4 font-semibold text-gray-700">Assigned Category</th>
-                                        <th className="text-left p-4 font-semibold text-gray-700">Status</th>
-                                        <th className="text-left p-4 font-semibold text-gray-700">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {forms.map((form) => (
-                                        <tr 
-                                            key={form.id || form.formId} 
-                                            className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                                            onClick={() => handleEditForm(form.id || form.formId)}
-                                        >
-                                            <td className="p-4 font-medium">{form.name}</td>
-                                            <td className="p-4 text-gray-600">
-                                                {(() => {
-                                                    const formCategoryId = form.categoryId || form.assignedCategoryId;
-                                                    const matchingCategory = categories.find(cat => 
-                                                        cat.categoryId === formCategoryId || cat.id === formCategoryId
-                                                    );
-                                                    return matchingCategory?.name || formCategoryId || 'No Category';
-                                                })()}
-                                            </td>
-                                            <td className="p-4">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                    form.enabled
-                                                        ? 'bg-green-100 text-green-700' 
-                                                        : 'bg-gray-100 text-gray-600'
-                                                }`}>
-                                                    {form.enabled ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleEditForm(form.id || form.formId);
-                                                        }}
-                                                        className="text-blue-600 hover:text-blue-800"
-                                                        title="Edit Form"
-                                                    >
-                                                        <FaEdit />
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleToggleFormStatus(form.id || form.formId);
-                                                        }}
-                                                        className={`text-sm px-2 py-1 rounded ${
-                                                            form.enabled
-                                                                ? 'text-orange-600 hover:text-orange-800'
-                                                                : 'text-green-600 hover:text-green-800'
-                                                        }`}
-                                                        title={form.enabled ? 'Deactivate' : 'Activate'}
-                                                    >
-                                                        {form.enabled ? 'Deactivate' : 'Activate'}
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleDeleteForm(form.id || form.formId);
-                                                        }}
-                                                        className="text-red-600 hover:text-red-800"
-                                                        title="Delete Form"
-                                                    >
-                                                        <FaTrash />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-            ) : view === 'create' ? (
-                                            // Create New Form View
-                <div>
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={handleBackToList}
-                                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md"
-                            >
-                                <FaArrowLeft />
-                            </button>
-                            <h3 className="text-lg font-semibold text-gray-800">
-                                Create New Form
-                            </h3>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Form Details Section */}
-                        <div className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    📝 Form Name
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formName}
-                                    onChange={(e) => setFormName(e.target.value)}
-                                    placeholder="e.g., Employee Onboarding Form, Asset Upload Form"
-                                    className="w-full p-3 border border-gray-300 rounded-md"
-                                />
-                            </div>
-
-                            <div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            📂 Select Category
-                                        </label>
-                                        <select
-                                            value={selectedCategory}
-                                            onChange={(e) => setSelectedCategory(e.target.value)}
-                                            className="w-full p-3 border border-gray-300 rounded-md"
-                                            disabled={categoriesLoading}
-                                        >
-                                            <option value="">Select a category...</option>
-                                            {categories.map(cat => (
-                                                <option key={cat.categoryId || cat.id} value={cat.categoryId || cat.id}>
-                                                    {cat.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {categoriesLoading && <div className="text-blue-600 text-sm mt-1">Loading categories...</div>}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            🧩 Select Sub-Category
-                                        </label>
-                                        <select
-                                            value={selectedSubCategory}
-                                            onChange={(e) => setSelectedSubCategory(e.target.value)}
-                                            className="w-full p-3 border border-gray-300 rounded-md"
-                                            disabled={!selectedCategory || categoriesLoading}
-                                        >
-                                            <option value="">Select a sub-category...</option>
-                                            {subCategoriesForSelectedCategory.map(sub => (
-                                                <option key={sub.subCategoryId || sub.id} value={sub.subCategoryId || sub.id}>
-                                                    {sub.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className="flex justify-between items-center mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <h4 className="font-semibold text-gray-800">➕ Form Fields</h4>
-                                        <span className="text-sm text-gray-500">
-                                            {fields.length}/15 fields
-                                        </span>
-                                    </div>
-                                    <button
-                                        onClick={addField}
-                                        disabled={fields.length >= 15}
-                                        className={`px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-150 ${
-                                            fields.length >= 15
-                                                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                                        }`}
-                                    >
-                                        <FaPlus /> Add Field
-                                    </button>
-                                </div>
-
-                                {fields.length === 0 && (
-                                    <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
-                                        <div className="text-4xl mb-2">📋</div>
-                                        <p>No fields added yet. Click &quot;Add Field&quot; to get started.</p>
-                                    </div>
-                                )}
-
-                                <div className="space-y-4">
-                                    {fields.map((field, index) => (
-                                        <div key={field.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                                            <div className="flex justify-between items-start mb-3">
-                                                <h5 className="font-medium text-gray-800">Field {index + 1}</h5>
-                                                <button
-                                                    onClick={() => removeField(field.id)}
-                                                    className="text-red-500 hover:text-red-700"
-                                                >
-                                                    <FaTrash />
-                                                </button>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {/* Field Name */}
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Field Name (Label)
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={field.name}
-                                                        onChange={(e) => updateField(field.id, 'name', e.target.value)}
-                                                        placeholder="e.g., Asset Name, Employee ID"
-                                                        className="w-full p-2 border border-gray-300 rounded-md"
-                                                    />
-                                                </div>
-
-                                                {/* Field Type */}
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Field Type
-                                                    </label>
-                                                    <select
-                                                        value={field.type}
-                                                        onChange={(e) => updateField(field.id, 'type', e.target.value)}
-                                                        className="w-full p-2 border border-gray-300 rounded-md"
-                                                    >
-                                                        <option value="text">Text</option>
-                                                        <option value="number">Number</option>
-                                                        <option value="date">Date</option>
-                                                        <option value="file">File Upload</option>
-                                                        <option value="dropdown">Dropdown</option>
-                                                        <option value="checkbox">Checkbox</option>
-                                                        <option value="textarea">Textarea</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-
-                                            {/* Field-specific options */}
-                                            <div className="mt-3">
-                                                {renderFieldInput(field)}
-                                            </div>
-
-                                            {/* Required toggle */}
-                                            <div className="mt-3">
-                                                <label className="flex items-center gap-2">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={field.required}
-                                                        onChange={(e) => updateField(field.id, 'required', e.target.checked)}
-                                                        className="rounded border-gray-300"
-                                                    />
-                                                    <span className="text-sm font-medium text-gray-700">Required field</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Save Button */}
-                            <div className="pt-4">
-                                <button
-                                    onClick={handleSaveForm}
-                                    disabled={loading || !formName.trim() || !selectedCategory || fields.length === 0}
-                                    className="w-full px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                                >
-                                    {loading ? 'Saving...' : '💾 Save Form'}
-                                </button>
-                                {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
-                            </div>
-                        </div>
-
-                        {/* Preview Section */}
-                        <div className="lg:border-l lg:pl-8">
-                            {renderFormPreview()}
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                                            // Edit Form View
-                <div>
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={handleBackToList}
-                                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md"
-                            >
-                                <FaArrowLeft />
-                            </button>
-                            <h3 className="text-lg font-semibold text-gray-800">
-                                Edit Form: {formName || 'Untitled Form'}
-                            </h3>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Form Details Section */}
-                        <div className="space-y-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    📝 Form Name
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formName}
-                                    onChange={(e) => setFormName(e.target.value)}
-                                    placeholder="e.g., Employee Onboarding Form, Asset Upload Form"
-                                    className="w-full p-3 border border-gray-300 rounded-md"
-                                />
-                            </div>
-
-                            <div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            📂 Select Category
-                                        </label>
-                                        <select
-                                            value={selectedCategory}
-                                            onChange={(e) => setSelectedCategory(e.target.value)}
-                                            className="w-full p-3 border border-gray-300 rounded-md"
-                                            disabled={categoriesLoading}
-                                        >
-                                            <option value="">Select a category...</option>
-                                            {categories.map(cat => (
-                                                <option key={cat.categoryId || cat.id} value={cat.categoryId || cat.id}>
-                                                    {cat.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {categoriesLoading && <div className="text-blue-600 text-sm mt-1">Loading categories...</div>}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            🧩 Select Sub-Category
-                                        </label>
-                                        <select
-                                            value={selectedSubCategory}
-                                            onChange={(e) => setSelectedSubCategory(e.target.value)}
-                                            className="w-full p-3 border border-gray-300 rounded-md"
-                                            disabled={!selectedCategory || categoriesLoading}
-                                        >
-                                            <option value="">Select a sub-category...</option>
-                                            {subCategoriesForSelectedCategory.map(sub => (
-                                                <option key={sub.subCategoryId || sub.id} value={sub.subCategoryId || sub.id}>
-                                                    {sub.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <div className="flex justify-between items-center mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <h4 className="font-semibold text-gray-800">➕ Form Fields</h4>
-                                        <span className="text-sm text-gray-500">
-                                            {fields.length}/15 fields
-                                        </span>
-                                    </div>
-                                    <button
-                                        onClick={addField}
-                                        disabled={fields.length >= 15}
-                                        className={`px-4 py-2 rounded-md flex items-center gap-2 transition-all duration-150 ${
-                                            fields.length >= 15
-                                                ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                                        }`}
-                                    >
-                                        <FaPlus /> Add Field
-                                    </button>
-                                </div>
-
-                                {fields.length === 0 && (
-                                    <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
-                                        <div className="text-4xl mb-2">📋</div>
-                                        <p>No fields added yet. Click &quot;Add Field&quot; to get started.</p>
-                                    </div>
-                                )}
-
-                                <div className="space-y-4">
-                                    {fields.map((field, index) => (
-                                        <div key={field.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                                            <div className="flex justify-between items-start mb-3">
-                                                <h5 className="font-medium text-gray-800">Field {index + 1}</h5>
-                                                <button
-                                                    onClick={() => removeField(field.id)}
-                                                    className="text-red-500 hover:text-red-700"
-                                                >
-                                                    <FaTrash />
-                                                </button>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                {/* Field Name */}
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Field Name (Label)
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        value={field.name}
-                                                        onChange={(e) => updateField(field.id, 'name', e.target.value)}
-                                                        placeholder="e.g., Asset Name, Employee ID"
-                                                        className="w-full p-2 border border-gray-300 rounded-md"
-                                                    />
-                                                </div>
-
-                                                {/* Field Type */}
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                        Field Type
-                                                    </label>
-                                                    <select
-                                                        value={field.type}
-                                                        onChange={(e) => updateField(field.id, 'type', e.target.value)}
-                                                        className="w-full p-2 border border-gray-300 rounded-md"
-                                                    >
-                                                        <option value="text">Text</option>
-                                                        <option value="number">Number</option>
-                                                        <option value="date">Date</option>
-                                                        <option value="file">File Upload</option>
-                                                        <option value="dropdown">Dropdown</option>
-                                                        <option value="checkbox">Checkbox</option>
-                                                        <option value="textarea">Textarea</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-
-                                            {/* Field-specific options */}
-                                            <div className="mt-3">
-                                                {renderFieldInput(field)}
-                                            </div>
-
-                                            {/* Required toggle */}
-                                            <div className="mt-3">
-                                                <label className="flex items-center gap-2">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={field.required}
-                                                        onChange={(e) => updateField(field.id, 'required', e.target.checked)}
-                                                        className="rounded border-gray-300"
-                                                    />
-                                                    <span className="text-sm font-medium text-gray-700">Required field</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Save Button */}
-                            <div className="pt-4">
-                                <button
-                                    onClick={handleSaveForm}
-                                    disabled={loading || !formName.trim() || !selectedCategory || fields.length === 0}
-                                    className="w-full px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                                >
-                                    {loading ? 'Saving...' : '💾 Update Form'}
-                                </button>
-                                {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
-                            </div>
-                        </div>
-
-                        {/* Preview Section */}
-                        <div className="lg:border-l lg:pl-8">
-                            {renderFormPreview()}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </SettingsSection>
-    );
-};
-
-// Delete confirmation modals
-const DeleteCategoryModal = ({ open, onClose, onConfirm, categoryName }) => {
-    if (!open) return null;
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
-                <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
-                    <FaTrash /> Delete Category
-                </h2>
-                <p className="mb-4 text-gray-700">Are you sure you want to delete the category <span className="font-semibold">&quot;{categoryName}&quot;</span>?<br/>This action <span className="text-red-600 font-semibold">cannot be undone</span> and may affect assets linked to this category.</p>
-                <div className="flex justify-end gap-3 mt-6">
-                    <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">Cancel</button>
-                    <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">Delete</button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const DeleteLocationModal = ({ open, onClose, onConfirm, locationName, warning, assetsCount, assetsList }) => {
-    if (!open) return null;
-    
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
-                <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
-                    <FaTrash /> Delete Location
-                </h2>
-                
-                {warning ? (
-                    <div>
-                        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                            <p className="text-yellow-800 font-medium mb-2">
-                                ⚠️ Cannot Delete Location
-                            </p>
-                            <p className="text-yellow-700 text-sm">
-                                The location <span className="font-semibold">&quot;{locationName}&quot;</span> is currently being used by <span className="font-semibold">{assetsCount} asset(s)</span>.
-                            </p>
-                        </div>
-                        
-                        {assetsList && assetsList.length > 0 && (
-                            <div className="mb-4">
-                                <p className="text-sm font-medium text-gray-700 mb-2">Assets using this location:</p>
-                                <div className="max-h-32 overflow-y-auto bg-gray-50 rounded p-2">
-                                    {assetsList.map((asset, index) => (
-                                        <div key={asset.id || asset.assetId} className="text-sm text-gray-600 py-1">
-                                            • {asset.name || asset.assetId} ({asset.assetId})
-                                        </div>
-                                    ))}
-                                    {assetsCount > 5 && (
-                                        <div className="text-sm text-gray-500 italic">
-                                            ... and {assetsCount - 5} more
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                        
-                        <p className="text-sm text-gray-600 mb-4">
-                            Please change the location of these assets to a different location before deleting this one.
-                        </p>
-                    </div>
-                ) : (
-                    <p className="mb-4 text-gray-700">
-                        Are you sure you want to delete the location <span className="font-semibold">&quot;{locationName}&quot;</span>?<br/>
-                        This action <span className="text-red-600 font-semibold">cannot be undone</span>.
-                    </p>
-                )}
-                
-                <div className="flex justify-end gap-3 mt-6">
-                    <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">
-                        {warning ? 'Close' : 'Cancel'}
-                    </button>
-                    {!warning && (
-                        <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">
-                            Delete
-                        </button>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const DeleteStatusModal = ({ open, onClose, onConfirm, statusName, warning, assetsCount, assetsList }) => {
-    if (!open) return null;
-    
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
-                <h2 className="text-xl font-bold text-red-600 mb-2 flex items-center gap-2">
-                    <FaTrash /> Delete Status Label
-                </h2>
-                
-                {warning ? (
-                    <div>
-                        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                            <p className="text-yellow-800 font-medium mb-2">
-                                ⚠️ Cannot Delete Status Label
-                            </p>
-                            <p className="text-yellow-700 text-sm">
-                                The status label <span className="font-semibold">&quot;{statusName}&quot;</span> is currently being used by <span className="font-semibold">{assetsCount} asset(s)</span>.
-                            </p>
-                        </div>
-                        
-                        {assetsList && assetsList.length > 0 && (
-                            <div className="mb-4">
-                                <p className="text-sm font-medium text-gray-700 mb-2">Assets using this status:</p>
-                                <div className="max-h-32 overflow-y-auto bg-gray-50 rounded p-2">
-                                    {assetsList.map((asset, index) => (
-                                        <div key={asset.id || asset.assetId} className="text-sm text-gray-600 py-1">
-                                            • {asset.name || asset.assetId} ({asset.assetId})
-                                        </div>
-                                    ))}
-                                    {assetsCount > 5 && (
-                                        <div className="text-sm text-gray-500 italic">
-                                            ... and {assetsCount - 5} more
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                        
-                        <p className="text-sm text-gray-600 mb-4">
-                            Please change the status of these assets to a different status label before deleting this one.
-                        </p>
-                    </div>
-                ) : (
-                    <p className="mb-4 text-gray-700">
-                        Are you sure you want to delete the status label <span className="font-semibold">&quot;{statusName}&quot;</span>?<br/>
-                        This action <span className="text-red-600 font-semibold">cannot be undone</span>.
-                    </p>
-                )}
-                
-                <div className="flex justify-end gap-3 mt-6">
-                    <button onClick={onClose} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">
-                        {warning ? 'Close' : 'Cancel'}
-                    </button>
-                    {!warning && (
-                        <button onClick={onConfirm} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 font-semibold">
-                            Delete
-                        </button>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- Main Page Component ---
-const AssetSettingsPage = () => {
-    const dispatch = useDispatch();
-    
-    // Enhanced Redux state selectors
-    const { 
-        categories, 
-        loading, 
-        error, 
-        addingSubCategory, 
-        updatingSubCategory, 
-        deletingSubCategory,
-        fetchingSubCategories,
-        fetchingSubCategory
-    } = useSelector(state => state.assetCategories);
-    const { locations, loading: locationsLoading, error: locationsError } = useSelector(state => state.assetLocations);
-    const { statuses, loading: statusesLoading, error: statusesError } = useSelector(state => state.assetStatuses);
-    const { forms, loading: formsLoading } = useSelector(state => state.customForms);
-    const { formattingsByCategory, loading: formattingLoading } = useSelector(state => state.idFormatting);
-    
-    // New Redux state selectors for assets and custom forms
-    const { 
-        assets, 
-        loading: assetsLoading, 
-        error: assetsError,
-        creatingAsset,
-        updatingAsset,
-        deletingAsset,
-        validatingAsset
-    } = useSelector(state => state.assets);
-    
-    const { 
-        forms: customFormsList, 
-        currentForm, 
-        formFields, 
-        formData, 
-        loading: customFormLoading, 
-        error: customFormError,
-        creatingForm,
-        updatingForm,
-        deletingForm,
-        addingField,
-        updatingField,
-        deletingField,
-        submittingData,
-        previewingForm,
-        duplicatingForm,
-        togglingStatus
-    } = useSelector(state => state.customForm);
-    
-    const [activeTab, setActiveTab] = useState('categories');
-    
-    // Fetch assets when component mounts for status deletion validation
-    useEffect(() => {
-        dispatch(fetchAllAssets());
-    }, [dispatch]);
-    
-    // Separate editing states for each section
-    const [editingCategories, setEditingCategories] = useState(false);
-    const [editingLocations, setEditingLocations] = useState(false);
-    const [editingStatuses, setEditingStatuses] = useState(false);
-    const [editingCustomFields, setEditingCustomFields] = useState(false);
-    const [editingIdFormats, setEditingIdFormats] = useState(false);
-    
-    // State for editing
-    const [editedCategories, setEditedCategories] = useState([]);
-    const [newCategory, setNewCategory] = useState({ name: '' });
-
-    const [editedLocations, setEditedLocations] = useState([]);
-    const [newLocation, setNewLocation] = useState({ name: '', address: '' });
-    const [deleteLocationModal, setDeleteLocationModal] = useState({ 
-        open: false, 
-        locationId: null, 
-        name: '', 
-        warning: false,
-        assetsCount: 0,
-        assetsList: []
-    });
-
-    const [editedStatuses, setEditedStatuses] = useState([]);
-    const [newStatus, setNewStatus] = useState({ name: '' });
-    const [deleteStatusModal, setDeleteStatusModal] = useState({ 
-        open: false, 
-        statusId: null, 
-        name: '', 
-        warning: false,
-        assetsCount: 0,
-        assetsList: []
-    });
-
-    const [deleteModal, setDeleteModal] = useState({ open: false, categoryId: null, name: '' });
-
-    // Initialize data
-    useEffect(() => {
-        console.log('Loading asset management data...');
-        
-        // Debug function to test API response - commented out to avoid network errors
-        // const debugApiResponse = async () => {
-        //     try {
-        //         const token = getItemFromSessionStorage('token', null);
-        //         const response = await axios.get(`${publicRuntimeConfig.apiURL}/api/asset-settings/categories`, {
-        //             headers: { Authorization: `Bearer ${token}` }
-        //         });
-        //         console.log('Raw API response:', response.data);
-        //         
-        //         // Test subcategory creation
-        //         if (response.data?.data?.length > 0) {
-        //             const firstCategory = response.data.data[0];
-        //             console.log('First category:', firstCategory);
-        //             console.log('Subcategories in first category:', firstCategory.subCategories);
-        //         }
-        //     } catch (error) {
-        //         console.error('Debug API call failed:', error);
-        //     }
-        // };
-        // 
-        // debugApiResponse();
-        
-        dispatch(fetchAssetCategories());
-        dispatch(fetchAssetLocations());
-        dispatch(fetchAssetStatuses());
-        dispatch(fetchCustomForms());
-        dispatch(fetchIdFormattings());
-    }, [dispatch]);
-
-    useEffect(() => {
-        console.log('Categories updated in component:', categories);
-        console.log('Categories structure:', categories?.map(cat => ({
-            id: cat.id,
-            categoryId: cat.categoryId,
-            name: cat.name,
-            subCategoriesCount: cat.subCategories?.length || 0,
-            subCategories: cat.subCategories
-        })));
-        
-        // Only update editedCategories if categories have actually changed
-        if (categories && categories.length > 0) {
-            console.log('Updating editedCategories with new categories');
-            setEditedCategories([...categories]);
-        } else if (!categories || categories.length === 0) {
-            console.log('Setting editedCategories to empty array');
-            setEditedCategories([]);
-        }
-    }, [categories]);
-
-    useEffect(() => {
-        setEditedLocations(locations || []);
-    }, [locations]);
-
-    useEffect(() => {
-        setEditedStatuses(statuses || []);
-    }, [statuses]);
-
-    // Enhanced category management functions
-    const handleAddCategory = async () => {
-        console.log('handleAddCategory called with name:', newCategory.name);
-        
-        if (!newCategory.name) { 
-            toast.error("Category name is required."); 
-            return; 
-        }
-        
-        try {
-            await dispatch(addAssetCategory({ name: newCategory.name })).unwrap();
-            setNewCategory({ name: '' });
-            toast.success("Category added successfully!");
-        } catch (error) {
-            toast.error("Failed to add category");
-        }
-    };
-
-    const handleCategoryFieldChange = (catId, key, value) => {
-        console.log('handleCategoryFieldChange called with:', { catId, key, value });
-        
-        if (key === 'editing' && value === true) {
-            // Start editing mode
-            dispatch(updateCategoryLocal({ categoryId: catId, field: key, value }));
-        } else {
-            // Update field
-            dispatch(updateCategoryLocal({ categoryId: catId, field: key, value }));
-        }
-        
-        // Also update local state for immediate UI feedback
-        setEditedCategories(editedCategories.map(cat => {
-            if (cat.id === catId || cat.categoryId === catId) {
-                console.log('Updating category in local state:', { catId, key, value });
-                return { ...cat, [key]: value };
-            }
-            return cat;
-        }));
-    };
-
-    const handleSaveCategories = async (categoryId = null) => {
-        console.log('handleSaveCategories called with categoryId:', categoryId);
-        
-        if (categoryId) {
-            // Save individual category
-            const category = editedCategories.find(cat => cat.id === categoryId || cat.categoryId === categoryId);
-            console.log('Found category to save:', category);
-            
-            if (category) {
-                try {
-                    await dispatch(updateAssetCategory({
-                        categoryId: category.categoryId || category.id,
-                        assetData: { name: category.name }
-                    })).unwrap();
-                    
-                    // Clear editing state
-                    handleCategoryFieldChange(categoryId, 'editing', false);
-                    toast.success("Category updated successfully!");
-                } catch (error) {
-                    toast.error("Failed to update category");
-                }
-            }
-        }
-    };
-
-    const handleCancelCategories = (categoryId = null) => {
-        console.log('handleCancelCategories called with categoryId:', categoryId);
-        
-        if (categoryId) {
-            // Cancel individual category editing
-            const originalCategory = categories.find(cat => cat.id === categoryId || cat.categoryId === categoryId);
-            console.log('Found original category for cancel:', originalCategory);
-            
-            if (originalCategory) {
-                setEditedCategories(editedCategories.map(cat => 
-                    (cat.id === categoryId || cat.categoryId === categoryId) 
-                        ? { ...originalCategory, editing: false }
-                        : cat
-                ));
-                toast.info("Category changes cancelled.");
-            }
-        }
-    };
-
-    const handleDeleteCategory = (categoryId, name) => {
-        console.log('handleDeleteCategory called with:', { categoryId, name });
-        
-        // Check if category has sub-categories
-        const category = editedCategories.find(cat => cat.id === categoryId || cat.categoryId === categoryId);
-        console.log('Found category for deletion:', category);
-        
-        const hasSubCategories = category && category.subCategories && category.subCategories.length > 0;
-        
-        if (hasSubCategories) {
-            toast.error(`Cannot delete category "${name}" because it has ${category.subCategories.length} sub-category(ies). Please delete all sub-categories first.`);
-            return;
-        }
-        
-        setDeleteModal({ open: true, categoryId, name });
-    };
-    
-    const confirmDeleteCategory = async () => {
-        console.log('confirmDeleteCategory called with categoryId:', deleteModal.categoryId);
-        
-        try {
-            await dispatch(deleteAssetCategory(deleteModal.categoryId)).unwrap();
-            toast.success("Category deleted successfully!");
-        } catch (error) {
-            toast.error("Failed to delete category");
-        }
-        setDeleteModal({ open: false, categoryId: null, name: '' });
-    };
-    
-    const cancelDeleteCategory = () => {
-        console.log('cancelDeleteCategory called');
-        setDeleteModal({ open: false, categoryId: null, name: '' });
-    };
-
-    // Enhanced sub-category management functions
-    const handleAddSubCategory = (categoryId, payloadOrName = '') => {
-        console.log('handleAddSubCategory called with:', { categoryId, payloadOrName });
-        console.log('Current editedCategories:', editedCategories.map(cat => ({
-            id: cat.id,
-            categoryId: cat.categoryId,
-            name: cat.name,
-            subCategories: cat.subCategories
-        })));
-
-        // If called with the new object payload { name, prefix, suffix }
-        if (typeof payloadOrName === 'object' && payloadOrName !== null) {
-            const name = (payloadOrName.name || '').trim();
-            const prefix = (payloadOrName.prefix || '').trim();
-            const suffix = String(payloadOrName.suffix || '');
-            if (!name || !prefix || !suffix) {
-                toast.error('Please provide sub-category name, prefix and suffix');
-                return;
-            }
-
-            console.log('Adding subcategory to server with actual field values:', { categoryId, name, prefix, suffix });
-            dispatch(addSubCategory({
-                categoryId,
-                subCategoryData: { name, prefix, suffix }
-            })).then((result) => {
-                if (result.meta.requestStatus === 'fulfilled') {
-                    console.log('Subcategory added successfully:', result.payload);
-                    toast.success('Sub-category added successfully!');
-                } else {
-                    console.error('Failed to add subcategory:', result.error);
-                    toast.error('Failed to add sub-category');
-                }
-            });
-            return;
-        }
-
-        // Backward-compat: simple name string
-        const subCategoryName = String(payloadOrName || '');
-        if (subCategoryName.trim()) {
-            // Add to server
-            console.log('Adding subcategory to server (legacy):', { categoryId, subCategoryData: { name: subCategoryName.trim() } });
-            dispatch(addSubCategory({
-                categoryId,
-                subCategoryData: { name: subCategoryName.trim() }
-            })).then((result) => {
-                if (result.meta.requestStatus === 'fulfilled') {
-                    console.log('Subcategory added successfully:', result.payload);
-                    toast.success('Sub-category added successfully!');
-                } else {
-                    console.error('Failed to add subcategory:', result.error);
-                    toast.error('Failed to add sub-category');
-                }
-            });
-        } else {
-            // Add locally for editing
-            console.log('Adding subcategory locally for editing');
-            dispatch(addSubCategoryLocal({
-                categoryId,
-                subCategory: {
-                    name: '',
-                    editing: true
-                }
-            }));
-        }
-    };
-
-    const handleEditSubCategory = (categoryId, subCategoryId, field, value) => {
-        console.log('handleEditSubCategory called with:', { categoryId, subCategoryId, field, value });
-        dispatch(updateSubCategoryLocal({
-            categoryId,
-            subCategoryId,
-            field,
-            value
-        }));
-    };
-
-    const handleSaveSubCategory = (categoryId, subCategoryId) => {
-        console.log('handleSaveSubCategory called with:', { categoryId, subCategoryId });
-        
-        const category = editedCategories.find(cat => cat.categoryId === categoryId || cat.id === categoryId);
-        const subCategory = category?.subCategories?.find(sub => sub.id === subCategoryId || sub.subCategoryId === subCategoryId);
-        
-        console.log('Found category and subcategory:', { category, subCategory });
-        console.log('All categories:', editedCategories.map(cat => ({
-            id: cat.id,
-            categoryId: cat.categoryId,
-            name: cat.name,
-            subCategories: cat.subCategories
-        })));
-        
-        if (subCategory && subCategory.name && subCategory.name.trim()) {
-            // Get the actual values from the form fields
-            const name = subCategory.name.trim();
-            const prefix = subCategory.prefix || '';
-            const suffix = subCategory.suffix || '';
-
-            if (subCategory.subCategoryId) {
-                // Update existing
-                console.log('Updating existing subcategory with actual field values:', { categoryId, subCategoryId, name, prefix, suffix });
-                dispatch(updateSubCategory({
-                    categoryId,
-                    subCategoryId: subCategory.subCategoryId,
-                    subCategoryData: {
-                        name,
-                        prefix,
-                        suffix
-                    }
-                })).then((result) => {
-                    if (result.meta.requestStatus === 'fulfilled') {
-                        console.log('Subcategory updated successfully:', result.payload);
-                        toast.success("Sub-category updated successfully!");
-                    } else {
-                        console.error('Failed to update subcategory:', result.error);
-                        toast.error("Failed to update sub-category");
-                    }
-                });
-            } else {
-                // Create new
-                console.log('Creating new subcategory with actual field values:', { categoryId, name, prefix, suffix });
-                dispatch(addSubCategory({
-                    categoryId,
-                    subCategoryData: {
-                        name,
-                        prefix,
-                        suffix
-                    }
-                })).then((result) => {
-                    if (result.meta.requestStatus === 'fulfilled') {
-                        console.log('Subcategory created successfully:', result.payload);
-                        toast.success("Sub-category created successfully!");
-                    } else {
-                        console.error('Failed to create subcategory:', result.error);
-                        toast.error("Failed to create sub-category");
-                    }
-                });
-            }
-        } else {
-            console.warn('Subcategory name is empty or not found');
-            toast.error("Sub-category name is required");
-        }
-    };
-
-    const handleCancelSubCategory = (categoryId, subCategoryId) => {
-        console.log('handleCancelSubCategory called with:', { categoryId, subCategoryId });
-        
-        const category = editedCategories.find(cat => cat.categoryId === categoryId || cat.id === categoryId);
-        const subCategory = category?.subCategories?.find(sub => sub.id === subCategoryId || sub.subCategoryId === subCategoryId);
-        
-        console.log('Found category and subcategory for cancel:', { category, subCategory });
-        
-        if (subCategory && !subCategory.subCategoryId) {
-            // Remove newly added sub-category that hasn't been saved
-            console.log('Removing unsaved subcategory');
-            dispatch(removeSubCategoryLocal({ categoryId, subCategoryId }));
-        } else {
-            // Revert changes to existing sub-category
-            const originalSubCategory = category?.subCategories?.find(sub => sub.subCategoryId === subCategoryId);
-            if (originalSubCategory) {
-                console.log('Reverting changes to existing subcategory');
-                dispatch(updateSubCategoryLocal({
-                    categoryId,
-                    subCategoryId,
-                    field: 'name',
-                    value: originalSubCategory.name
-                }));
-                dispatch(updateSubCategoryLocal({
-                    categoryId,
-                    subCategoryId,
-                    field: 'editing',
-                    value: false
-                }));
-            }
-        }
-    };
-
-    const handleDeleteSubCategory = async (categoryId, subCategoryId) => {
-        console.log('handleDeleteSubCategory called with:', { categoryId, subCategoryId });
-        
-        const category = editedCategories.find(cat => cat.categoryId === categoryId || cat.id === categoryId);
-        const subCategory = category?.subCategories?.find(sub => sub.id === subCategoryId || sub.subCategoryId === subCategoryId);
-        
-        console.log('Found category and subcategory for deletion:', { category, subCategory });
-        
-        if (subCategory?.subCategoryId) {
-            // Delete from server
-            try {
-                const result = await dispatch(deleteSubCategory({ categoryId, subCategoryId: subCategory.subCategoryId })).unwrap();
-                console.log('Subcategory deleted successfully:', result);
-                toast.success("Sub-category deleted successfully!");
-            } catch (error) {
-                console.error('Error deleting subcategory:', error);
-                toast.error("Failed to delete sub-category");
-            }
-        } else {
-            // Remove locally (for unsaved sub-categories)
-            console.log('Removing unsaved subcategory locally');
-            dispatch(removeSubCategoryLocal({ categoryId, subCategoryId }));
-        }
-    };
-
-    // New API endpoint functions for sub-categories
-    const handleFetchSubCategoriesByCategory = async (categoryId) => {
-        console.log('handleFetchSubCategoriesByCategory called with categoryId:', categoryId);
-        
-        try {
-            const result = await dispatch(fetchSubCategoriesByCategory(categoryId)).unwrap();
-            console.log('Fetched subcategories for category:', result);
-            toast.success("Sub-categories loaded successfully!");
-            return result.subCategories;
-        } catch (error) {
-            console.error('Error fetching subcategories by category:', error);
-            toast.error("Failed to load sub-categories");
-            return [];
-        }
-    };
-
-    const handleFetchSubCategoryById = async (subCategoryId) => {
-        console.log('handleFetchSubCategoryById called with subCategoryId:', subCategoryId);
-        
-        try {
-            const result = await dispatch(fetchSubCategoryById(subCategoryId)).unwrap();
-            console.log('Fetched subcategory by ID:', result);
-            toast.success("Sub-category loaded successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error fetching subcategory by ID:', error);
-            toast.error("Failed to load sub-category");
-            return null;
-        }
-    };
-
-    // ===========================================
-    // COMPREHENSIVE ASSET MANAGEMENT FUNCTIONS
-    // ===========================================
-    
-    // Asset Management Functions (Based on AssetController.java)
-    const handleFetchAllAssets = async () => {
-        console.log('Fetching all assets...');
-        try {
-            const result = await dispatch(fetchAllAssets()).unwrap();
-            console.log('Fetched all assets:', result);
-            toast.success(`Loaded ${result.length || 0} assets successfully!`);
-            return result;
-        } catch (error) {
-            console.error('Error fetching all assets:', error);
-            toast.error("Failed to load assets");
-            return [];
-        }
-    };
-
-    const handleFetchAllAssetsDetailed = async () => {
-        console.log('Fetching all assets with detailed information...');
-        try {
-            const result = await dispatch(fetchAllAssetsDetailed()).unwrap();
-            console.log('Fetched detailed assets:', result);
-            toast.success(`Loaded ${result.length || 0} detailed assets successfully!`);
-            return result;
-        } catch (error) {
-            console.error('Error fetching detailed assets:', error);
-            toast.error("Failed to load detailed assets");
-            return [];
-        }
-    };
-
-    const handleFetchAssetsByCategory = async (categoryId) => {
-        console.log('Fetching assets by category:', categoryId);
-        try {
-            const result = await dispatch(fetchAssetsByCategory(categoryId)).unwrap();
-            console.log('Fetched assets by category:', result);
-            toast.success(`Loaded ${result.length || 0} assets for category successfully!`);
-            return result;
-        } catch (error) {
-            console.error('Error fetching assets by category:', error);
-            toast.error("Failed to load assets for category");
-            return [];
-        }
-    };
-
-    const handleFetchAssetById = async (assetId) => {
-        console.log('Fetching asset by ID:', assetId);
-        try {
-            const result = await dispatch(fetchAssetById(assetId)).unwrap();
-            console.log('Fetched asset by ID:', result);
-            toast.success("Asset loaded successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error fetching asset by ID:', error);
-            toast.error("Failed to load asset");
-            return null;
-        }
-    };
-
-    const handleFetchAssetByAssetId = async (assetId) => {
-        console.log('Fetching asset by Asset ID:', assetId);
-        try {
-            const result = await dispatch(fetchAssetByAssetId(assetId)).unwrap();
-            console.log('Fetched asset by Asset ID:', result);
-            toast.success("Asset loaded successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error fetching asset by Asset ID:', error);
-            toast.error("Failed to load asset");
-            return null;
-        }
-    };
-
-    const handleCreateAsset = async (assetDTO, invoiceScan = null) => {
-        console.log('Creating new asset:', assetDTO);
-        try {
-            const result = await dispatch(createAssetWithDTO({ assetDTO, invoiceScan })).unwrap();
-            console.log('Created asset:', result);
-            toast.success("Asset created successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error creating asset:', error);
-            toast.error("Failed to create asset");
-            return null;
-        }
-    };
-
-    const handleUpdateAsset = async (assetId, assetData) => {
-        console.log('Updating asset:', assetId, assetData);
-        try {
-            const result = await dispatch(patchAssetByAssetId({ assetId, assetData })).unwrap();
-            console.log('Updated asset:', result);
-            toast.success("Asset updated successfully!");
-            return result;
+            // Refresh the asset data to show changes instantly
+            dispatch(fetchAssetByAssetId(id));
         } catch (error) {
             console.error('Error updating asset:', error);
-            toast.error("Failed to update asset");
-            return null;
+            toast.error(`Failed to update asset: ${error}`);
         }
     };
 
-    const handleDeleteAsset = async (assetId) => {
-        console.log('Deleting asset:', assetId);
-        try {
-            const result = await dispatch(deleteAsset(assetId)).unwrap();
-            console.log('Deleted asset:', result);
-            toast.success("Asset deleted successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error deleting asset:', error);
-            toast.error("Failed to delete asset");
-            return null;
-        }
-    };
-
-    const handleValidateAsset = async (assetId) => {
-        console.log('Validating asset:', assetId);
-        try {
-            const result = await dispatch(validateAsset(assetId)).unwrap();
-            console.log('Asset validation result:', result);
-            toast.success("Asset validation completed!");
-            return result;
-        } catch (error) {
-            console.error('Error validating asset:', error);
-            toast.error("Failed to validate asset");
-            return null;
-        }
-    };
-
-    const handleFetchAssetWithCustomForms = async (assetId) => {
-        console.log('Fetching asset with custom forms:', assetId);
-        try {
-            const result = await dispatch(fetchAssetWithCustomForms(assetId)).unwrap();
-            console.log('Fetched asset with custom forms:', result);
-            toast.success("Asset with custom forms loaded successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error fetching asset with custom forms:', error);
-            toast.error("Failed to load asset with custom forms");
-            return null;
-        }
-    };
-
-    const handleUpdateAssetCustomFields = async (assetId, customFields) => {
-        console.log('Updating asset custom fields:', assetId, customFields);
-        try {
-            const result = await dispatch(updateAssetCustomFields({ assetId, customFields })).unwrap();
-            console.log('Updated asset custom fields:', result);
-            toast.success("Asset custom fields updated successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error updating asset custom fields:', error);
-            toast.error("Failed to update asset custom fields");
-            return null;
-        }
-    };
-
-    // ===========================================
-    // COMPREHENSIVE CUSTOM FORM FUNCTIONS
-    // ===========================================
-    
-    // Custom Form Management Functions (Based on CustomFormController.java)
-    const handleFetchCustomForms = async (companyId, categoryId = null) => {
-        console.log('Fetching custom forms:', { companyId, categoryId });
-        try {
-            const result = await dispatch(fetchCustomFormsNew({ companyId, categoryId })).unwrap();
-            console.log('Fetched custom forms:', result);
-            toast.success(`Loaded ${result.length || 0} custom forms successfully!`);
-            return result;
-        } catch (error) {
-            console.error('Error fetching custom forms:', error);
-            toast.error("Failed to load custom forms");
-            return [];
-        }
-    };
-
-    const handleFetchCustomFormById = async (formId) => {
-        console.log('Fetching custom form by ID:', formId);
-        try {
-            const result = await dispatch(fetchCustomFormById(formId)).unwrap();
-            console.log('Fetched custom form:', result);
-            toast.success("Custom form loaded successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error fetching custom form:', error);
-            toast.error("Failed to load custom form");
-            return null;
-        }
-    };
-
-    const handleCreateCustomForm = async (formDTO) => {
-        console.log('Creating custom form:', formDTO);
-        try {
-            const result = await dispatch(createCustomFormNew(formDTO)).unwrap();
-            console.log('Created custom form:', result);
-            toast.success("Custom form created successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error creating custom form:', error);
-            toast.error("Failed to create custom form");
-            return null;
-        }
-    };
-
-    const handleUpdateCustomForm = async (formId, formDTO) => {
-        console.log('Updating custom form:', formId, formDTO);
-        try {
-            const result = await dispatch(updateCustomFormNew({ formId, formDTO })).unwrap();
-            console.log('Updated custom form:', result);
-            toast.success("Custom form updated successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error updating custom form:', error);
-            toast.error("Failed to update custom form");
-            return null;
-        }
-    };
-
-    const handleDeleteCustomForm = async (formId) => {
-        console.log('Deleting custom form:', formId);
-        try {
-            const result = await dispatch(deleteCustomFormNew(formId)).unwrap();
-            console.log('Deleted custom form:', result);
-            toast.success("Custom form deleted successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error deleting custom form:', error);
-            toast.error("Failed to delete custom form");
-            return null;
-        }
-    };
-
-    const handleFetchFormFields = async (formId) => {
-        console.log('Fetching form fields:', formId);
-        try {
-            const result = await dispatch(fetchFormFields(formId)).unwrap();
-            console.log('Fetched form fields:', result);
-            toast.success(`Loaded ${result.length || 0} form fields successfully!`);
-            return result;
-        } catch (error) {
-            console.error('Error fetching form fields:', error);
-            toast.error("Failed to load form fields");
-            return [];
-        }
-    };
-
-    const handleAddFieldToForm = async (formId, fieldDTO) => {
-        console.log('Adding field to form:', formId, fieldDTO);
-        try {
-            const result = await dispatch(addFieldToForm({ formId, fieldDTO })).unwrap();
-            console.log('Added field to form:', result);
-            toast.success("Field added to form successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error adding field to form:', error);
-            toast.error("Failed to add field to form");
-            return null;
-        }
-    };
-
-    const handleUpdateFormField = async (formId, fieldId, fieldDTO) => {
-        console.log('Updating form field:', formId, fieldId, fieldDTO);
-        try {
-            const result = await dispatch(updateField({ formId, fieldId, fieldDTO })).unwrap();
-            console.log('Updated form field:', result);
-            toast.success("Form field updated successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error updating form field:', error);
-            toast.error("Failed to update form field");
-            return null;
-        }
-    };
-
-    const handleDeleteFormField = async (formId, fieldId) => {
-        console.log('Deleting form field:', formId, fieldId);
-        try {
-            const result = await dispatch(deleteField({ formId, fieldId })).unwrap();
-            console.log('Deleted form field:', result);
-            toast.success("Form field deleted successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error deleting form field:', error);
-            toast.error("Failed to delete form field");
-            return null;
-        }
-    };
-
-    const handleAssignFormToCategory = async (formId, categoryId) => {
-        console.log('Assigning form to category:', formId, categoryId);
-        try {
-            const result = await dispatch(assignFormToCategory({ formId, categoryId })).unwrap();
-            console.log('Assigned form to category:', result);
-            toast.success("Form assigned to category successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error assigning form to category:', error);
-            toast.error("Failed to assign form to category");
-            return null;
-        }
-    };
-
-    const handleUnassignFormFromCategory = async (formId) => {
-        console.log('Unassigning form from category:', formId);
-        try {
-            const result = await dispatch(unassignFormFromCategory(formId)).unwrap();
-            console.log('Unassigned form from category:', result);
-            toast.success("Form unassigned from category successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error unassigning form from category:', error);
-            toast.error("Failed to unassign form from category");
-            return null;
-        }
-    };
-
-    const handleFetchFormsByCategory = async (categoryId) => {
-        console.log('Fetching forms by category:', categoryId);
-        try {
-            const result = await dispatch(fetchFormsByCategory(categoryId)).unwrap();
-            console.log('Fetched forms by category:', result);
-            toast.success(`Loaded ${result.length || 0} forms for category successfully!`);
-            return result;
-        } catch (error) {
-            console.error('Error fetching forms by category:', error);
-            toast.error("Failed to load forms for category");
-            return [];
-        }
-    };
-
-    const handlePreviewForm = async (formId) => {
-        console.log('Previewing form:', formId);
-        try {
-            const result = await dispatch(previewForm(formId)).unwrap();
-            console.log('Form preview:', result);
-            toast.success("Form preview loaded successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error previewing form:', error);
-            toast.error("Failed to preview form");
-            return null;
-        }
-    };
-
-    const handleDuplicateForm = async (formId) => {
-        console.log('Duplicating form:', formId);
-        try {
-            const result = await dispatch(duplicateForm(formId)).unwrap();
-            console.log('Duplicated form:', result);
-            toast.success("Form duplicated successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error duplicating form:', error);
-            toast.error("Failed to duplicate form");
-            return null;
-        }
-    };
-
-    const handleToggleFormStatus = async (formId) => {
-        console.log('Toggling form status:', formId);
-        try {
-            const result = await dispatch(toggleFormStatusNew(formId)).unwrap();
-            console.log('Toggled form status:', result);
-            toast.success("Form status updated successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error toggling form status:', error);
-            toast.error("Failed to update form status");
-            return null;
-        }
-    };
-
-    const handleSubmitFormData = async (formId, assetId, createdBy, fieldData, files = {}) => {
-        console.log('Submitting form data:', { formId, assetId, createdBy, fieldData, files });
-        try {
-            const result = await dispatch(submitFormData({ formId, assetId, createdBy, fieldData, files })).unwrap();
-            console.log('Submitted form data:', result);
-            toast.success("Form data submitted successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error submitting form data:', error);
-            toast.error("Failed to submit form data");
-            return null;
-        }
-    };
-
-    const handleFetchFormDataForAsset = async (formId, assetId) => {
-        console.log('Fetching form data for asset:', { formId, assetId });
-        try {
-            const result = await dispatch(fetchFormDataForAsset({ formId, assetId })).unwrap();
-            console.log('Fetched form data for asset:', result);
-            toast.success("Form data loaded successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error fetching form data for asset:', error);
-            toast.error("Failed to load form data");
-            return null;
-        }
-    };
-
-    const handleFetchAllFormDataForAsset = async (assetId) => {
-        console.log('Fetching all form data for asset:', assetId);
-        try {
-            const result = await dispatch(fetchAllFormDataForAsset(assetId)).unwrap();
-            console.log('Fetched all form data for asset:', result);
-            toast.success(`Loaded ${result.length || 0} form data records successfully!`);
-            return result;
-        } catch (error) {
-            console.error('Error fetching all form data for asset:', error);
-            toast.error("Failed to load form data");
-            return [];
-        }
-    };
-
-    const handleDeleteFormData = async (dataId) => {
-        console.log('Deleting form data:', dataId);
-        try {
-            const result = await dispatch(deleteFormData(dataId)).unwrap();
-            console.log('Deleted form data:', result);
-            toast.success("Form data deleted successfully!");
-            return result;
-        } catch (error) {
-            console.error('Error deleting form data:', error);
-            toast.error("Failed to delete form data");
-            return null;
-        }
-    };
-
-    // Location management functions
-    const handleAddLocation = async () => {
-        if (!newLocation.name) { 
-            toast.error("Location name is required."); 
-            return; 
-        }
-        
-        try {
-            await dispatch(addAssetLocation({ 
-                name: newLocation.name, 
-                address: newLocation.address 
-            })).unwrap();
-            setNewLocation({ name: '', address: '' });
-            toast.success("Location added successfully!");
-        } catch (error) {
-            toast.error("Failed to add location");
-        }
-    };
-
-    const handleLocationFieldChange = (locId, key, value) => {
-        dispatch(updateLocationLocal({ locationId: locId, field: key, value }));
-        
-        // Also update local state for immediate UI feedback
-        setEditedLocations(editedLocations.map(loc => 
-            loc.id === locId ? { ...loc, [key]: value } : loc
-        ));
-    };
-
-    const handleSaveLocations = async () => {
-        try {
-            const payload = editedLocations.map(loc => ({
-                locationId: loc.locationId || loc.id,
-                name: loc.name,
-                address: loc.address
-            }));
+    // Inline editing helpers
+    const startEditing = (field) => {
+        if (!asset) return;
+        const newDraft = { ...draftValues };
+        if (field === 'assignedTo') {
+            // Find the department ID from the assignedDepartment name
+            const deptId = asset.assignedDepartment ? 
+                (departments || []).find(d => d.name === asset.assignedDepartment)?.id || 
+                (departments || []).find(d => d.name === asset.assignedDepartment)?.departmentId : '';
             
-            if (payload.length > 0) {
-                await dispatch(batchUpdateAssetLocations(payload)).unwrap();
-                toast.success("Locations updated successfully!");
-            }
-            setEditingLocations(false);
-        } catch (error) {
-            toast.error("Failed to update locations");
-        }
-    };
-
-    const handleCancelLocations = () => {
-        setEditedLocations(locations || []);
-        setNewLocation({ name: '', address: '' });
-        setEditingLocations(false);
-        toast.info("Location changes cancelled.");
-    };
-
-    const handleDeleteLocation = (locationId, name) => {
-        // Check if any assets are using this location
-        const assetsUsingLocation = assets.filter(asset => 
-            asset.locationId === locationId
-        );
-        
-        if (assetsUsingLocation.length > 0) {
-            // Show warning modal with details about assets using this location
-            setDeleteLocationModal({ 
-                open: true, 
-                locationId, 
-                name,
-                warning: true,
-                assetsCount: assetsUsingLocation.length,
-                assetsList: assetsUsingLocation.slice(0, 5) // Show first 5 assets
-            });
-        } else {
-            // No assets using this location, proceed with deletion
-            setDeleteLocationModal({ open: true, locationId, name, warning: false });
-        }
-    };
-    
-    const confirmDeleteLocation = async () => {
-        try {
-            await dispatch(deleteAssetLocation(deleteLocationModal.locationId)).unwrap();
-            toast.success("Location deleted successfully!");
-        } catch (error) {
-            // Check if the error is about assets using this location
-            if (error && error.includes && error.includes('assets')) {
-                toast.error("Cannot delete location: Assets are currently using this location");
-            } else {
-                toast.error("Failed to delete location");
-            }
-        }
-        setDeleteLocationModal({ open: false, locationId: null, name: '', warning: false });
-    };
-    
-    const cancelDeleteLocation = () => {
-        setDeleteLocationModal({ 
-            open: false, 
-            locationId: null, 
-            name: '', 
-            warning: false,
-            assetsCount: 0,
-            assetsList: []
-        });
-    };
-
-    // Status management functions
-    const handleAddStatus = async () => {
-        if (!newStatus.name) { 
-            toast.error("Status name is required."); 
-            return; 
-        }
-        
-        try {
-            await dispatch(addAssetStatus({ name: newStatus.name })).unwrap();
-            setNewStatus({ name: '' });
-            toast.success("Status label added successfully!");
-        } catch (error) {
-            toast.error("Failed to add status label");
-        }
-    };
-
-    const handleStatusFieldChange = (statusId, field, value) => {
-        dispatch(updateStatusLocal({ statusId, field, value }));
-        
-        // Also update local state for immediate UI feedback
-        setEditedStatuses(editedStatuses.map(s => 
-            s.id === statusId ? { ...s, [field]: value } : s
-        ));
-    };
-
-    const handleSaveStatuses = async () => {
-        try {
-            const payload = editedStatuses
-                .filter(s => s.statusLabelId) // Only include those with a valid statusLabelId
-                .map(s => ({
-                    statusLabelId: s.statusLabelId,
-                    name: s.name,
-                    ...(s.color ? { color: s.color } : {})
-                }));
+            // Find the employee ID from the assignedTo name - try multiple approaches
+            let empId = '';
+            if (asset.assignedTo) {
+                // First try to find by exact name match
+                const emp = (employees || []).find(emp => {
+                    const empName = emp.name || emp.fullName || `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+                    return empName === asset.assignedTo;
+                });
                 
-            if (payload.length > 0) {
-                await dispatch(batchUpdateAssetStatuses(payload)).unwrap();
-                toast.success("Status labels updated successfully!");
+                if (emp) {
+                    empId = emp.employeeId || emp.id || emp._id;
+                } else {
+                    // If no exact match, try partial match
+                    const partialEmp = (employees || []).find(emp => {
+                        const empName = emp.name || emp.fullName || `${emp.firstName || ''} ${emp.lastName || ''}`.trim();
+                        return empName.toLowerCase().includes(asset.assignedTo.toLowerCase()) || 
+                               asset.assignedTo.toLowerCase().includes(empName.toLowerCase());
+                    });
+                    
+                    if (partialEmp) {
+                        empId = partialEmp.employeeId || partialEmp.id || partialEmp._id;
+                    }
+                }
             }
-            setEditingStatuses(false);
-        } catch (error) {
-            toast.error("Failed to update status labels");
-        }
-    };
-
-    const handleCancelStatuses = () => {
-        setEditedStatuses(statuses || []);
-        setNewStatus({ name: '' });
-        setEditingStatuses(false);
-        toast.info("Status changes cancelled.");
-    };
-
-    const handleDeleteStatus = (statusId, name) => {
-        // ✅ VALIDATION - Check if statusId is valid
-        if (!statusId || statusId === 'undefined' || statusId === undefined) {
-            console.error('Invalid status label ID:', statusId);
-            toast.error('Please select a valid status label to delete');
-            return;
-        }
-
-        console.log('Attempting to delete status label:', { statusId, name });
-        
-        // Check if any assets are using this status label
-        const assetsUsingStatus = assets.filter(asset => 
-            asset.statusLabelId === statusId || asset.statusId === statusId
-        );
-        
-        if (assetsUsingStatus.length > 0) {
-            // Show warning modal with details about assets using this status
-            setDeleteStatusModal({ 
-                open: true, 
-                statusId, 
-                name,
-                warning: true,
-                assetsCount: assetsUsingStatus.length,
-                assetsList: assetsUsingStatus.slice(0, 5) // Show first 5 assets
-            });
-        } else {
-            // No assets using this status, proceed with deletion
-            setDeleteStatusModal({ open: true, statusId, name, warning: false });
-        }
-    };
-    
-    const confirmDeleteStatus = async () => {
-        // ✅ VALIDATION - Check if statusId is valid before making the request
-        if (!deleteStatusModal.statusId || deleteStatusModal.statusId === 'undefined' || deleteStatusModal.statusId === undefined) {
-            console.error('Invalid status label ID in modal:', deleteStatusModal.statusId);
-            toast.error('Cannot delete: Invalid status label ID');
-            setDeleteStatusModal({ open: false, statusId: null, name: '', warning: false });
-            return;
-        }
-
-        console.log('Confirming deletion of status label:', deleteStatusModal.statusId);
-        
-        try {
-            await dispatch(deleteAssetStatus(deleteStatusModal.statusId)).unwrap();
-            toast.success("Status label deleted successfully!");
-        } catch (error) {
-            console.error('Error deleting status label:', error);
             
-            // Check if the error is about assets using this status
-            if (error && error.includes && error.includes('assets')) {
-                toast.error("Cannot delete status label: Assets are currently using this status");
-            } else if (error && error.includes && error.includes('Invalid status label ID')) {
-                toast.error("Invalid status label ID. Please refresh the page and try again.");
-            } else {
-                toast.error("Failed to delete status label");
+            // Also check if we have the employee ID directly from the asset
+            if (!empId && asset.assignedEmployeeId) {
+                empId = asset.assignedEmployeeId;
+            }
+            
+
+            
+            newDraft.departmentId = deptId;
+            newDraft.employeeId = empId;
+        }
+        if (field === 'locationId') {
+            newDraft.locationId = asset.locationId || '';
+            // Ensure locations are loaded for select
+            if (!locations || locations.length === 0) {
+                dispatch(fetchAssetLocations());
             }
         }
-        setDeleteStatusModal({ open: false, statusId: null, name: '', warning: false });
+        if (field === 'purchaseCost') newDraft.purchaseCost = asset.purchaseCost ?? '';
+        if (field === 'warrantyExpiry') {
+            newDraft.warrantyExpiry = asset.warrantyExpiry
+                ? new Date(asset.warrantyExpiry).toISOString().slice(0, 10)
+                : '';
+        }
+        setDraftValues(newDraft);
+        setEditingField(field);
+    };
+
+    const cancelEditing = () => {
+        setEditingField(null);
+    };
+
+    const saveEditing = async () => {
+        if (!editingField) return;
+        try {
+            let payload = {};
+            if (editingField === 'assignedTo') payload.assignedTo = draftValues.assignedTo;
+            if (editingField === 'locationId') payload.locationId = draftValues.locationId;
+            if (editingField === 'purchaseCost') payload.purchaseCost = draftValues.purchaseCost === '' ? null : Number(draftValues.purchaseCost);
+            if (editingField === 'warrantyExpiry') payload.warrantyExpiry = draftValues.warrantyExpiry || null;
+
+            await dispatch(patchAssetByAssetId({ assetId: id, assetData: payload })).unwrap();
+            toast.success('Asset updated successfully');
+            setEditingField(null);
+            dispatch(fetchAssetByAssetId(id));
+        } catch (error) {
+            toast.error(`Failed to update: ${error}`);
+        }
+    };
+
+    // Overview editing handlers
+    const startOverviewEditing = () => {
+        if (!asset) return;
+        setOverviewDraft({
+            serialNumber: asset.serialNumber || '',
+            statusLabelId: asset.statusLabelId || '',
+            purchaseDate: asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().slice(0, 10) : '',
+            purchaseCost: asset.purchaseCost ?? '',
+            gstRate: asset.gstRate ?? '',
+            invoiceNumber: asset.invoiceNumber || '',
+        });
+        setEditingOverview(true);
+    };
+
+    const cancelOverviewEditing = () => setEditingOverview(false);
+
+    const saveOverview = async () => {
+        if (!asset) return;
+        try {
+            setSavingOverview(true);
+            const payload = {};
+            if (overviewDraft.serialNumber !== (asset.serialNumber || '')) payload.serialNumber = overviewDraft.serialNumber || null;
+            if (overviewDraft.statusLabelId !== (asset.statusLabelId || '')) payload.statusLabelId = overviewDraft.statusLabelId || null;
+            if (overviewDraft.purchaseDate !== (asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().slice(0, 10) : '')) payload.purchaseDate = overviewDraft.purchaseDate || null;
+            if (String(overviewDraft.purchaseCost) !== String(asset.purchaseCost ?? '')) payload.purchaseCost = overviewDraft.purchaseCost === '' ? null : Number(overviewDraft.purchaseCost);
+            if (String(overviewDraft.gstRate) !== String(asset.gstRate ?? '')) payload.gstRate = overviewDraft.gstRate === '' ? null : Number(overviewDraft.gstRate);
+            if (overviewDraft.invoiceNumber !== (asset.invoiceNumber || '')) payload.invoiceNumber = overviewDraft.invoiceNumber || null;
+
+            if (Object.keys(payload).length === 0) {
+                setEditingOverview(false);
+                setSavingOverview(false);
+                return;
+            }
+            await dispatch(patchAssetByAssetId({ assetId: id, assetData: payload })).unwrap();
+            toast.success('Overview updated');
+            setEditingOverview(false);
+            dispatch(fetchAssetByAssetId(id));
+        } catch (error) {
+            toast.error(`Failed to update overview: ${error}`);
+        } finally {
+            setSavingOverview(false);
+        }
+    };
+
+    // Specifications editing handlers
+    const startSpecsEditing = () => {
+        if (!asset) return;
+        setSpecsDraft({
+            customFields: { ...(asset.customFields || {}) },
+            formData: { ...(asset.formData || {}) },
+        });
+        setEditingSpecs(true);
+    };
+
+    const cancelSpecsEditing = () => setEditingSpecs(false);
+
+    const saveSpecs = async () => {
+        if (!asset) return;
+        try {
+            setSavingSpecs(true);
+            // Mirror formData into customFormData for backend compatibility
+            const payload = {
+                customFields: { ...(specsDraft.customFields || {}) },
+                formData: { ...(specsDraft.formData || {}) },
+                customFormData: { ...(specsDraft.formData || {}) },
+            };
+            // Remove empty objects to avoid overriding with empty values
+            if (Object.keys(payload.customFields).length === 0) delete payload.customFields;
+            if (Object.keys(payload.formData).length === 0) delete payload.formData;
+            if (Object.keys(payload.customFormData).length === 0) delete payload.customFormData;
+
+            console.log('[Specs] Updating', { assetId: id, payload });
+            await dispatch(patchAssetByAssetId({ assetId: id, assetData: payload })).unwrap();
+            toast.success('Specifications updated');
+            setEditingSpecs(false);
+            dispatch(fetchAssetByAssetId(id));
+        } catch (error) {
+            console.error('[Specs] Update failed:', error);
+            const message = error?.message || (typeof error === 'string' ? error : 'Unknown error');
+            toast.error(`Failed to update specifications: ${message}`);
+        } finally {
+            setSavingSpecs(false);
+        }
+    };
+
+    const handleSubmitMaintenance = async (e) => {
+        e.preventDefault();
+        if (!asset) return;
+        try {
+            const newRecord = {
+                date: maintenanceForm.date || new Date().toISOString().slice(0, 10),
+                type: maintenanceForm.type || 'General',
+                description: maintenanceForm.description || '',
+                cost: maintenanceForm.cost ? Number(maintenanceForm.cost) : 0,
+                vendor: maintenanceForm.vendor || '',
+            };
+
+            const updatedData = {
+                maintenanceRecords: [ ...(asset.maintenanceRecords || []), newRecord ],
+            };
+            if (maintenanceForm.date) {
+                updatedData.lastMaintenanceDate = maintenanceForm.date;
+            }
+            if (maintenanceForm.nextMaintenanceDate) {
+                updatedData.nextMaintenanceDate = maintenanceForm.nextMaintenanceDate;
+            }
+
+            await dispatch(patchAssetByAssetId({ assetId: id, assetData: updatedData })).unwrap();
+            toast.success('Maintenance record added');
+            setIsMaintenanceModalOpen(false);
+            setMaintenanceForm({ date: '', type: '', description: '', cost: '', vendor: '', nextMaintenanceDate: '' });
+            dispatch(fetchAssetByAssetId(id));
+        } catch (error) {
+            toast.error(`Failed to add maintenance: ${error}`);
+        }
+    };
+
+    // Optional: support re-upload invoice from detail page in future
+    const handleUploadInvoice = async (file) => {
+        if (!asset) return;
+        try {
+            const tokenRaw = getItemFromSessionStorage('token', null);
+            const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+            const formData = new FormData();
+            formData.append('assetId', asset.assetId);
+            formData.append('file', file);
+
+            const uploadUrl = `${publicRuntimeConfig.apiURL}/api/assets/upload-doc`;
+            const resp = await fetch(uploadUrl, { method: 'POST', headers, body: formData });
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                throw new Error(err.message || `Attachment upload failed (${resp.status})`);
+            }
+            toast.success('Attachment uploaded');
+        } catch (e) {
+            const message = e?.message || 'Failed to upload attachment';
+            toast.error(message);
+        }
+    };
+
+    const handleSubmitDocument = async (e) => {
+        e.preventDefault();
+        if (!documentFile) {
+            toast.error('Please select a file to upload');
+            return;
+        }
+        try {
+            setUploadingDoc(true);
+            await handleUploadInvoice(documentFile);
+            
+            // Update the asset with the new document information
+            const newDocument = {
+                name: documentFile.name,
+                type: documentFile.type || 'File',
+                uploadDate: new Date().toISOString(),
+                fileUrl: null // Will be set by backend if available
+            };
+            
+            // Add to existing documents array
+            const updatedDocuments = [...(asset.documents || []), newDocument];
+            
+            // Update asset with new document
+            try {
+                await dispatch(patchAssetByAssetId({ 
+                    assetId: id, 
+                    assetData: { documents: updatedDocuments } 
+                })).unwrap();
+                toast.success('Document uploaded and asset updated successfully!');
+            } catch (updateError) {
+                console.warn('Failed to update asset with document info:', updateError);
+                toast.success('Document uploaded successfully!');
+            }
+            
+            setIsDocumentModalOpen(false);
+            setDocumentFile(null);
+            
+            // Refresh asset data to show the new document
+            dispatch(fetchAssetByAssetId(id));
+        } catch (error) {
+            // toast shown inside handleUploadInvoice
+        } finally {
+            setUploadingDoc(false);
+        }
     };
     
-    const cancelDeleteStatus = () => {
-        setDeleteStatusModal({ 
-            open: false, 
-            statusId: null, 
-            name: '', 
-            warning: false,
-            assetsCount: 0,
-            assetsList: []
-        });
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'Assigned': return 'bg-blue-100 text-blue-700 border-blue-200';
+            case 'In Stock': return 'bg-green-100 text-green-700 border-green-200';
+            case 'Under Maintenance': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+            case 'Scrapped': return 'bg-red-100 text-red-700 border-red-200';
+            case 'No Status': return 'bg-gray-100 text-gray-600 border-gray-200';
+            case 'Loading...': return 'bg-gray-100 text-gray-500 border-gray-200';
+            default: return 'bg-gray-100 text-gray-700 border-gray-200';
+        }
     };
+    
 
-    // ID Format Management placeholder functions (implement as needed)
-    const handleAddIdFormat = (categoryId) => {
-        console.log('Add ID format for category:', categoryId);
+    
+    if (!fetchingAsset && !asset && fetchAssetError) {
+        return (
+            <AssetManagementLayout>
+                <div className="p-6 text-center">
+                    <FaExclamationTriangle className="text-4xl text-yellow-500 mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Asset Not Found</h2>
+                    <p className="text-gray-600 mb-4">The asset you&apos;re looking for doesn&apos;t exist or couldn&apos;t be loaded.</p>
+                    <button
+                        onClick={() => router.push('/asset-management')}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                        Back to Assets
+                    </button>
+                </div>
+            </AssetManagementLayout>
+        );
+    }
+    
+    // Don't render content if still loading or no asset
+    if (!asset) {
+        return (
+            <AssetManagementLayout>
+                <div className="p-6 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                        <p className="mt-4 text-gray-600">Loading asset details...</p>
+                    </div>
+                </div>
+            </AssetManagementLayout>
+        );
+    }
+    
+    // Helper to get subcategory name from asset
+    const getSubcategoryName = (assetObj) => {
+        if (!assetObj) return 'No Asset Data';
+        
+        // Debug: Log the asset object to see what fields are available
+        console.log('Asset object in getSubcategoryName:', assetObj);
+        console.log('Available fields:', Object.keys(assetObj));
+        
+        // Check for different possible subcategory field names
+        const subcategoryId = assetObj.subCategoryId || assetObj.subcategoryId || assetObj.sub_category_id || assetObj.subcategory_id || assetObj.subCategory || assetObj.subcategory;
+        
+        console.log('Subcategory ID found:', subcategoryId);
+        
+        if (!subcategoryId) return 'No Subcategory';
+        
+        if (!Array.isArray(categories) || categories.length === 0) return 'Loading...';
+        
+        for (const cat of categories) {
+            if (Array.isArray(cat.subCategories)) {
+                const subcat = cat.subCategories.find(
+                    s => (s.subCategoryId || s.id) === subcategoryId
+                );
+                if (subcat) return subcat.name || 'Unknown Subcategory';
+            }
+        }
+        return 'Unknown Subcategory';
     };
-
-    const handleEditIdFormat = (categoryId, field, value) => {
-        console.log('Edit ID format for category:', categoryId, field, value);
-    };
-
-    const handleSaveIdFormat = (categoryId) => {
-        console.log('Save ID format for category:', categoryId);
-    };
-
-    const handleCancelIdFormat = (categoryId) => {
-        console.log('Cancel ID format for category:', categoryId);
-    };
-
-    const handleDeleteIdFormat = (categoryId) => {
-        console.log('Delete ID format for category:', categoryId);
-    };
-
-    const settingsTabs = [
-        { 
-            id: 'categories', 
-            label: 'Categories', 
-            icon: FaListAlt, 
-            editing: editingCategories,
-            setEditing: setEditingCategories,
-            onSave: null, // No global save button - inline editing
-            onCancel: null, // No global cancel button - inline editing
-            component: <CategorySettings 
-                editing={editingCategories} 
-                editedCategories={editedCategories} 
-                setEditedCategories={setEditedCategories} 
-                newCategory={newCategory} 
-                setNewCategory={setNewCategory} 
-                onAdd={handleAddCategory} 
-                onFieldChange={handleCategoryFieldChange} 
-                loading={loading} 
-                onDelete={handleDeleteCategory}
-                onSave={handleSaveCategories}
-                onCancel={handleCancelCategories}
-                onAddSubCategory={handleAddSubCategory}
-                onEditSubCategory={handleEditSubCategory}
-                onDeleteSubCategory={handleDeleteSubCategory}
-                onSaveSubCategory={handleSaveSubCategory}
-                onCancelSubCategory={handleCancelSubCategory}
-                onFetchSubCategoriesByCategory={handleFetchSubCategoriesByCategory}
-                onFetchSubCategoryById={handleFetchSubCategoryById}
-                onAddIdFormat={handleAddIdFormat}
-                onEditIdFormat={handleEditIdFormat}
-                onDeleteIdFormat={handleDeleteIdFormat}
-                onSaveIdFormat={handleSaveIdFormat}
-                onCancelIdFormat={handleCancelIdFormat}
-            /> 
-        },
-        { 
-            id: 'locations', 
-            label: 'Locations', 
-            icon: FaMapMarkedAlt, 
-            editing: editingLocations,
-            setEditing: setEditingLocations,
-            onSave: null, // No global save button - inline editing
-            onCancel: null, // No global cancel button - inline editing
-            component: <LocationSettings 
-                editing={editingLocations} 
-                editedLocations={editedLocations} 
-                setEditedLocations={setEditedLocations} 
-                newLocation={newLocation} 
-                setNewLocation={setNewLocation} 
-                onAdd={handleAddLocation} 
-                onFieldChange={handleLocationFieldChange} 
-                loading={locationsLoading} 
-                onDelete={handleDeleteLocation}
-                onSave={handleSaveLocations}
-                onCancel={handleCancelLocations}
-            /> 
-        },
-        { 
-            id: 'statuses', 
-            label: 'Status Labels', 
-            icon: FaCheckSquare, 
-            editing: editingStatuses,
-            setEditing: setEditingStatuses,
-            onSave: null, // No global save button - inline editing
-            onCancel: null, // No global cancel button - inline editing
-            component: <StatusSettings 
-                editing={editingStatuses} 
-                editedStatuses={editedStatuses} 
-                setEditedStatuses={setEditedStatuses} 
-                newStatus={newStatus} 
-                setNewStatus={setNewStatus} 
-                onAdd={handleAddStatus} 
-                onFieldChange={handleStatusFieldChange} 
-                loading={statusesLoading} 
-                onDelete={handleDeleteStatus}
-                onSave={handleSaveStatuses}
-                onCancel={handleCancelStatuses}
-            /> 
-        },
-        { 
-            id: 'customFields', 
-            label: 'Custom Form Builder', 
-            icon: FaCog, 
-            editing: editingCustomFields,
-            setEditing: setEditingCustomFields,
-            onSave: null, // No global save button - Custom Form Builder has its own Save button
-            onCancel: null, // No global cancel button - Custom Form Builder manages its own state
-            component: <CustomFormBuilder 
-                editing={editingCustomFields} 
-            /> 
-        },
-    ];
-
+    
     return (
         <AssetManagementLayout>
-            <DeleteCategoryModal
-                open={deleteModal.open}
-                onClose={cancelDeleteCategory}
-                onConfirm={confirmDeleteCategory}
-                categoryName={deleteModal.name}
-            />
-                        <DeleteLocationModal 
-                open={deleteLocationModal.open} 
-                onClose={cancelDeleteLocation} 
-                onConfirm={confirmDeleteLocation} 
-                locationName={deleteLocationModal.name}
-                warning={deleteLocationModal.warning}
-                assetsCount={deleteLocationModal.assetsCount}
-                assetsList={deleteLocationModal.assetsList}
-            />
-                        <DeleteStatusModal 
-                open={deleteStatusModal.open} 
-                onClose={cancelDeleteStatus} 
-                onConfirm={confirmDeleteStatus} 
-                statusName={deleteStatusModal.name}
-                warning={deleteStatusModal.warning}
-                assetsCount={deleteStatusModal.assetsCount}
-                assetsList={deleteStatusModal.assetsList}
-            />
             <div className="p-6">
-                <header className="mb-6">
-                    <div className="flex justify-between items-center">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => router.push('/asset-management')}
+                            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md"
+                        >
+                            <FaArrowLeft />
+                        </button>
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-800">Asset Management Settings</h1>
-                            <p className="text-gray-500 mt-1">Configure and standardize your company&apos;s asset tracking system.</p>
+                            <h1 className="text-3xl font-bold text-gray-800">{getAssetDisplayName(asset) || getAssetIdDisplay(asset) || 'Asset'}</h1>
+                            <p className="text-gray-600">{getAssetIdDisplay(asset)}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(getStatusName(asset.statusLabelId))}`}>
+                            {getStatusName(asset.statusLabelId)}
+                        </span>
+                    </div>
+                </div>
+                
+                {/* Asset Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <FaUser className="text-2xl text-blue-600" />
+                                    <div>
+                                        <p className="text-sm text-gray-500">Assigned To</p>
+                                        {editingField === 'assignedTo' ? (
+                                            <div className="w-full mt-2">
+                                                <div className="space-y-2">
+                                                    <div>
+                                                        <label className="block text-xs text-gray-500 mb-1">Department</label>
+                                                        <select
+                                                        className="p-2 border rounded-md w-full text-sm"
+                                                        value={draftValues.departmentId || ''}
+                                                        onChange={(e) => setDraftValues(v => ({ ...v, departmentId: e.target.value, employeeId: '' }))}
+                                                        >
+                                                        <option value="">Select Department...</option>
+                                                        {(departments || []).map(d => (
+                                                            <option key={d.id || d.departmentId} value={d.id || d.departmentId}>{d.name}</option>
+                                                        ))}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-xs text-gray-500 mb-1">Employee</label>
+                                                        <select
+                                                        className="p-2 border rounded-md w-full text-sm disabled:opacity-50"
+                                                        value={draftValues.employeeId || ''}
+                                                        onChange={(e) => setDraftValues(v => ({ ...v, employeeId: e.target.value }))}
+                                                        disabled={!draftValues.departmentId}
+                                                        >
+                                                        <option value="">Select Employee...</option>
+                                                        {(employees || [])
+                                                            .filter(emp => {
+                                                                const depId = emp.departmentId || emp.department?.id || emp.department;
+                                                                return !draftValues.departmentId || String(depId) === String(draftValues.departmentId);
+                                                            })
+                                                            .map(emp => (
+                                                                <option key={emp.id || emp.employeeId || emp._id} value={emp.id || emp.employeeId || emp._id}>
+                                                                    {emp.name || emp.fullName || `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'Employee'}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-3">
+                                                    <button onClick={async () => {
+                                                        const employeeName = getEmployeeName(draftValues.employeeId);
+                                                        const departmentName = getDepartmentName(draftValues.departmentId);
+                                                        
+                                                        const payload = {
+                                                            assignedDepartment: departmentName || undefined,
+                                                            assignedDepartmentId: draftValues.departmentId || null,
+                                                            assignedEmployeeId: draftValues.employeeId || null,
+                                                            assignedTo: employeeName || undefined,
+                                                        };
+                                                        
+
+                                                        
+                                                        // Validate that we have the required data
+                                                        if (!draftValues.employeeId) {
+                                                            toast.error('Please select an employee');
+                                                            return;
+                                                        }
+                                                        
+                                                        if (!employeeName) {
+                                                            toast.error('Could not resolve employee name. Please try again.');
+                                                            return;
+                                                        }
+                                                        
+                                                        await dispatch(patchAssetByAssetId({ assetId: id, assetData: payload })).unwrap();
+                                                        toast.success('Assignment updated');
+                                                        setEditingField(null);
+                                                        dispatch(fetchAssetById(id));
+                                                    }} className="text-green-600 hover:text-green-700"><FaCheck /></button>
+                                                    <button onClick={cancelEditing} className="text-gray-500 hover:text-gray-700"><FaTimes /></button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <p className="font-semibold">
+                                                    {asset.assignedTo || 
+                                                     (asset.assignedEmployeeId ? getEmployeeName(asset.assignedEmployeeId) : '') || 
+                                                     'Unassigned'}
+                                                </p>
+                                                {(asset.assignedDepartment || asset.assignedDepartmentId) && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        {asset.assignedDepartment || getDepartmentName(asset.assignedDepartmentId) || 'Unknown'}
+                                                    </p>
+                                                )}
+
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                {editingField !== 'assignedTo' && (
+                                    <button onClick={() => startEditing('assignedTo')} className="text-gray-500 hover:text-gray-700"><FaEdit /></button>
+                                )}
+                            </div>
+                        </div>
+                    
+                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <FaMapMarkerAlt className="text-2xl text-green-600" />
+                            <div>
+                                <p className="text-sm text-gray-500">Location</p>
+                                    {editingField === 'locationId' ? (
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <select
+                                                className="p-2 border rounded-md"
+                                                value={draftValues.locationId}
+                                                onChange={(e) => setDraftValues(v => ({ ...v, locationId: e.target.value }))}
+                                            >
+                                                <option value="">Select Location...</option>
+                                                {Array.isArray(locations) && locations.map(location => (
+                                                    <option key={location.locationId || location.id} value={location.locationId || location.id}>
+                                                        {location.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <button onClick={saveEditing} className="text-green-600 hover:text-green-700"><FaCheck /></button>
+                                            <button onClick={cancelEditing} className="text-gray-500 hover:text-gray-700"><FaTimes /></button>
+                                        </div>
+                                    ) : (
+                                <p className="font-semibold">{getLocationName(asset.locationId)}</p>
+                                    )}
+                            </div>
+                            </div>
+                            {editingField !== 'locationId' && (
+                                <button onClick={() => startEditing('locationId')} className="text-gray-500 hover:text-gray-700"><FaEdit /></button>
+                            )}
                         </div>
                     </div>
                     
-
-                </header>
-                
-                {/* Horizontal Navigation Tabs */}
-                <div className="mb-8">
-                    <nav className="flex overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
-                        {settingsTabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-3 px-6 py-4 whitespace-nowrap transition-colors border-b-2 ${
-                                    activeTab === tab.id
-                                        ? 'border-blue-500 text-blue-600 bg-blue-50'
-                                        : 'border-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-                                }`}
-                            >
-                                <tab.icon className="text-lg" />
-                                <span className="font-medium">{tab.label}</span>
-                            </button>
-                        ))}
-                    </nav>
-                </div>
-                
-                {/* Main Content Area */}
-                <div className="space-y-8">
-                    {(() => {
-                        const activeTabData = settingsTabs.find(tab => tab.id === activeTab);
-                        if (!activeTabData) return null;
-                        
-                        return (
+                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <FaRupeeSign className="text-2xl text-purple-600" />
                             <div>
-                                {activeTabData.component}
+                                <p className="text-sm text-gray-500">Purchase Cost</p>
+                                    {editingField === 'purchaseCost' ? (
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <input
+                                                type="number"
+                                                className="p-2 border rounded-md"
+                                                value={draftValues.purchaseCost}
+                                                onChange={(e) => setDraftValues(v => ({ ...v, purchaseCost: e.target.value }))}
+                                                placeholder="0"
+                                            />
+                                            <button onClick={saveEditing} className="text-green-600 hover:text-green-700"><FaCheck /></button>
+                                            <button onClick={cancelEditing} className="text-gray-500 hover:text-gray-700"><FaTimes /></button>
                             </div>
-                        );
-                    })()}
+                                    ) : (
+                                        <p className="font-semibold">₹{typeof asset.purchaseCost === 'number' ? asset.purchaseCost.toLocaleString() : '0'}</p>
+                                    )}
+                                </div>
+                            </div>
+                            {editingField !== 'purchaseCost' && (
+                                <button onClick={() => startEditing('purchaseCost')} className="text-gray-500 hover:text-gray-700"><FaEdit /></button>
+                            )}
+                        </div>
+                    </div>
+                    
+                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <FaCalendarAlt className="text-2xl text-orange-600" />
+                            <div>
+                                <p className="text-sm text-gray-500">Warranty Expires</p>
+                                    {editingField === 'warrantyExpiry' ? (
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <input
+                                                type="date"
+                                                className="p-2 border rounded-md"
+                                                value={draftValues.warrantyExpiry}
+                                                onChange={(e) => setDraftValues(v => ({ ...v, warrantyExpiry: e.target.value }))}
+                                            />
+                                            <button onClick={saveEditing} className="text-green-600 hover:text-green-700"><FaCheck /></button>
+                                            <button onClick={cancelEditing} className="text-gray-500 hover:text-gray-700"><FaTimes /></button>
+                                        </div>
+                                    ) : (
+                                <p className="font-semibold">{asset.warrantyExpiry ? new Date(asset.warrantyExpiry).toLocaleDateString() : 'N/A'}</p>
+                                    )}
+                            </div>
+                            </div>
+                            {editingField !== 'warrantyExpiry' && (
+                                <button onClick={() => startEditing('warrantyExpiry')} className="text-gray-500 hover:text-gray-700"><FaEdit /></button>
+                            )}
+                        </div>
+                    </div>
                 </div>
+                
+                {/* Tabs */}
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div className="border-b border-gray-200">
+                        <nav className="flex space-x-8 px-6">
+                            {[
+                                { id: 'overview', label: 'Overview', icon: FaFileAlt },
+                                { id: 'specifications', label: 'Specifications', icon: FaLaptop },
+                                { id: 'history', label: 'History', icon: FaHistory },
+                                { id: 'documents', label: 'Documents', icon: FaFileAlt }
+                            ].map(tab => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`flex items-center gap-2 py-4 px-2 border-b-2 font-medium text-sm ${
+                                        activeTab === tab.id
+                                            ? 'border-blue-500 text-blue-600'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    <tab.icon />
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </nav>
+                    </div>
+                    
+                    <div className="p-6">
+                        {/* Overview Tab */}
+                        {activeTab === 'overview' && (
+                            <div className="space-y-6">
+                                <div className="flex justify-end">
+                                    {editingOverview ? (
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={cancelOverviewEditing} className="px-3 py-1 text-sm border rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
+                                            <button onClick={saveOverview} disabled={savingOverview} className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">{savingOverview ? 'Saving...' : 'Save'}</button>
+                                        </div>
+                                    ) : (
+                                        <button onClick={startOverviewEditing} className="px-3 py-1 text-sm border rounded-md text-gray-700 hover:bg-gray-50 flex items-center gap-2"><FaEdit /> Edit Overview</button>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold text-gray-800">Basic Information</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-600">Asset ID:</span>
+                                                <span className="font-medium">{asset.assetId}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center gap-4">
+                                                <span className="text-gray-600">Category:</span>
+                                                <span className="font-medium">{getCategoryName(asset.categoryId)}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center gap-4">
+                                                <span className="text-gray-600">Subcategory:</span>
+                                                <span className="font-medium">{getSubcategoryName(asset)}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center gap-4">
+                                                <span className="text-gray-600">Status:</span>
+                                                {editingOverview ? (
+                                                    <select
+                                                        value={overviewDraft.statusLabelId}
+                                                        onChange={(e) => setOverviewDraft(v => ({ ...v, statusLabelId: e.target.value }))}
+                                                        className="p-2 border rounded-md min-w-[200px]"
+                                                    >
+                                                        <option value="">Select Status...</option>
+                                                        {Array.isArray(statuses) && statuses.map(s => (
+                                                            <option key={s.statusLabelId || s.id} value={s.statusLabelId || s.id}>{s.name}</option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                <span className="font-medium">{getStatusName(asset.statusLabelId)}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold text-gray-800">Financial Details</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center gap-4">
+                                                <span className="text-gray-600">Purchase Date:</span>
+                                                {editingOverview ? (
+                                                    <input
+                                                        type="date"
+                                                        className="p-2 border rounded-md min-w-[200px]"
+                                                        value={overviewDraft.purchaseDate}
+                                                        onChange={(e) => setOverviewDraft(v => ({ ...v, purchaseDate: e.target.value }))}
+                                                    />
+                                                ) : (
+                                                <span className="font-medium">{asset.purchaseDate ? new Date(asset.purchaseDate).toLocaleDateString() : 'N/A'}</span>
+                                                )}
+                                            </div>
+                                            <div className="flex justify-between items-center gap-4">
+                                                <span className="text-gray-600">Purchase Cost:</span>
+                                                {editingOverview ? (
+                                                    <input
+                                                        type="number"
+                                                        className="p-2 border rounded-md min-w-[200px]"
+                                                        value={overviewDraft.purchaseCost}
+                                                        onChange={(e) => setOverviewDraft(v => ({ ...v, purchaseCost: e.target.value }))}
+                                                        placeholder="0"
+                                                    />
+                                                ) : (
+                                                <span className="font-medium">₹{asset.purchaseCost?.toLocaleString()}</span>
+                                                )}
+                                            </div>
+                                            <div className="flex justify-between items-center gap-4">
+                                                <span className="text-gray-600">GST Rate:</span>
+                                                {editingOverview ? (
+                                                    <input
+                                                        type="number"
+                                                        className="p-2 border rounded-md min-w-[200px]"
+                                                        value={overviewDraft.gstRate}
+                                                        onChange={(e) => setOverviewDraft(v => ({ ...v, gstRate: e.target.value }))}
+                                                        placeholder="0"
+                                                    />
+                                                ) : (
+                                                <span className="font-medium">{asset.gstRate}%</span>
+                                                )}
+                                            </div>
+                                            <div className="flex justify-between items-center gap-4">
+                                                <span className="text-gray-600">Invoice Number:</span>
+                                                {editingOverview ? (
+                                                    <input
+                                                        className="p-2 border rounded-md min-w-[200px]"
+                                                        value={overviewDraft.invoiceNumber}
+                                                        onChange={(e) => setOverviewDraft(v => ({ ...v, invoiceNumber: e.target.value }))}
+                                                        placeholder="Invoice Number"
+                                                    />
+                                                ) : (
+                                                <span className="font-medium">{asset.invoiceNumber || 'N/A'}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Specifications Tab */}
+                        {activeTab === 'specifications' && (
+                            <div className="space-y-6">
+                                <div className="flex justify-end">
+                                    {editingSpecs ? (
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={cancelSpecsEditing} className="px-3 py-1 text-sm border rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
+                                            <button onClick={saveSpecs} disabled={savingSpecs} className="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">{savingSpecs ? 'Saving...' : 'Save'}</button>
+                                        </div>
+                                    ) : (
+                                        <button onClick={startSpecsEditing} className="px-3 py-1 text-sm border rounded-md text-gray-700 hover:bg-gray-50 flex items-center gap-2"><FaEdit /> Edit Specifications</button>
+                                    )}
+                                </div>
+                                {getCategoryName(asset.categoryId) === 'IT Equipment' && (
+                                  <>
+                                    <h3 className="text-lg font-semibold text-gray-800">Specifications</h3>
+                                    <div className="space-y-3 mt-2">
+                                      <div className="flex justify-between items-center gap-4">
+                                        <span className="text-gray-600">Brand:</span>
+                                        {editingSpecs ? (
+                                          <input className="p-2 border rounded-md min-w-[200px]" value={specsDraft.customFields?.laptopCompany || ''} onChange={(e) => setSpecsDraft(v => ({ ...v, customFields: { ...v.customFields, laptopCompany: e.target.value } }))} />
+                                        ) : (
+                                          <span className="font-medium">{asset.customFields?.laptopCompany || 'N/A'}</span>
+                                        )}
+                                      </div>
+                                      <div className="flex justify-between items-center gap-4">
+                                        <span className="text-gray-600">Processor:</span>
+                                        {editingSpecs ? (
+                                          <input className="p-2 border rounded-md min-w-[200px]" value={specsDraft.customFields?.processor || ''} onChange={(e) => setSpecsDraft(v => ({ ...v, customFields: { ...v.customFields, processor: e.target.value } }))} />
+                                        ) : (
+                                          <span className="font-medium">{asset.customFields?.processor || 'N/A'}</span>
+                                        )}
+                                      </div>
+                                      <div className="flex justify-between items-center gap-4">
+                                        <span className="text-gray-600">RAM:</span>
+                                        {editingSpecs ? (
+                                          <input className="p-2 border rounded-md min-w-[200px]" value={specsDraft.customFields?.ram || ''} onChange={(e) => setSpecsDraft(v => ({ ...v, customFields: { ...v.customFields, ram: e.target.value } }))} />
+                                        ) : (
+                                          <span className="font-medium">{asset.customFields?.ram || 'N/A'}</span>
+                                        )}
+                                      </div>
+                                      <div className="flex justify-between items-center gap-4">
+                                        <span className="text-gray-600">Storage:</span>
+                                        {editingSpecs ? (
+                                          <input className="p-2 border rounded-md min-w-[200px]" value={specsDraft.customFields?.memory || ''} onChange={(e) => setSpecsDraft(v => ({ ...v, customFields: { ...v.customFields, memory: e.target.value } }))} />
+                                        ) : (
+                                          <span className="font-medium">{asset.customFields?.memory || 'N/A'}</span>
+                                        )}
+                                      </div>
+                                      <div className="flex justify-between items-center gap-4">
+                                        <span className="text-gray-600">Graphics Card:</span>
+                                        {editingSpecs ? (
+                                          <input className="p-2 border rounded-md min-w-[200px]" value={specsDraft.customFields?.graphicsCard || ''} onChange={(e) => setSpecsDraft(v => ({ ...v, customFields: { ...v.customFields, graphicsCard: e.target.value } }))} />
+                                        ) : (
+                                          <span className="font-medium">{asset.customFields?.graphicsCard || 'N/A'}</span>
+                                        )}
+                                      </div>
+                                      <div className="flex justify-between items-center gap-4">
+                                        <span className="text-gray-600">Team:</span>
+                                        {editingSpecs ? (
+                                          <input className="p-2 border rounded-md min-w-[200px]" value={specsDraft.customFields?.team || ''} onChange={(e) => setSpecsDraft(v => ({ ...v, customFields: { ...v.customFields, team: e.target.value } }))} />
+                                        ) : (
+                                          <span className="font-medium">{asset.customFields?.team || 'N/A'}</span>
+                                        )}
+                                      </div>
+                                      <div className="flex justify-between items-start gap-4">
+                                        <span className="text-gray-600">Accessories:</span>
+                                        {editingSpecs ? (
+                                          <textarea className="p-2 border rounded-md min-w-[200px] w-full max-w-xl" rows="3" value={specsDraft.customFields?.accessories || ''} onChange={(e) => setSpecsDraft(v => ({ ...v, customFields: { ...v.customFields, accessories: e.target.value } }))} />
+                                        ) : (
+                                          <span className="font-medium text-gray-700">{asset.customFields?.accessories || 'N/A'}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
+
+                                {/* Generic specifications from formData */}
+                                {asset.formData && Object.keys(asset.formData).length > 0 && (
+                                  <div>
+                                    <h3 className="text-lg font-semibold text-gray-800">Additional Specifications</h3>
+                                    <div className="space-y-3 mt-2">
+                                      {editingSpecs ? (
+                                        Object.keys(specsDraft.formData).map((key) => (
+                                          <div key={key} className="flex justify-between items-center gap-4">
+                                            <span className="text-gray-600">{key}:</span>
+                                            <input className="p-2 border rounded-md min-w-[200px] w-full max-w-xl" value={String(specsDraft.formData[key] ?? '')} onChange={(e) => setSpecsDraft(v => ({ ...v, formData: { ...v.formData, [key]: e.target.value } }))} />
+                                          </div>
+                                        ))
+                                      ) : (
+                                        Object.entries(asset.formData).map(([key, value]) => (
+                                          <div key={key} className="flex justify-between items-center gap-4">
+                                            <span className="text-gray-600">{key}:</span>
+                                            <span className="font-medium break-all">{String(value)}</span>
+                                          </div>
+                                        ))
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                            </div>
+                        )}
+                        
+                        {/* Maintenance Tab removed */}
+                        
+                        {/* History Tab */}
+                        {activeTab === 'history' && (
+                            <div className="space-y-6">
+                                <h3 className="text-lg font-semibold text-gray-800">Asset History</h3>
+                                {loadingHistory && (
+                                    <div className="text-center py-8 text-gray-500">Loading history...</div>
+                                )}
+                                {historyError && (
+                                    <div className="text-center py-8 text-red-600">{historyError}</div>
+                                )}
+                                {!loadingHistory && !historyError && (
+                                    historyEvents && historyEvents.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {historyEvents.map((evt, idx) => {
+                                                const changes = evt.changes && evt.changes.length > 0 ? evt.changes : extractChangesFromEvent(evt.raw || evt);
+                                                
+                                        return (
+                                                    <div key={idx} className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                                                        <div className="flex flex-wrap items-start justify-between gap-3 p-4 border-b border-gray-200">
+                                                            <div className="space-y-0.5">
+                                                                <p className="text-xs text-gray-500">{formatDateTime(evt.date)}</p>
+                                                                <p className="text-base font-semibold text-gray-800">
+                                                                    {evt.label}
+                                                                </p>
+                                                            </div>
+                                                            {/* Suppress the top-right summary to avoid duplication with chips below */}
+                                                        </div>
+                                                        {changes && changes.length > 0 ? (
+                                                            <div className="p-4 space-y-2">
+                                                                {(() => {
+                                                                    // Combine Department + Assignee into one row if present
+                                                                    const deptChange = changes.find((c) => isDeptField(c.field));
+                                                                    const empChange = changes.find((c) => isEmpField(c.field));
+                                                                    const otherChanges = changes.filter((c) => !isDeptField(c.field) && !isEmpField(c.field));
+
+                                                                    const rendered = [];
+                                                                    if (deptChange || empChange) {
+                                                                        const deptFrom = deptChange ? (deptChange.displayFrom ?? formatValueForField('assignedDepartment', deptChange.from)) : '—';
+                                                                        const deptTo = deptChange ? (deptChange.displayTo ?? formatValueForField('assignedDepartment', deptChange.to)) : '—';
+                                                                        const empFrom = empChange ? (empChange.displayFrom ?? formatValueForField('assignedTo', empChange.from)) : '—';
+                                                                        const empTo = empChange ? (empChange.displayTo ?? formatValueForField('assignedTo', empChange.to)) : '—';
+
+                                                                        rendered.push(
+                                                                            <div key="dept-emp" className="rounded-md bg-gray-50 p-3">
+                                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">Department</span>
+                                                                                        <span className="text-xs text-gray-500">From</span>
+                                                                        <span className="text-xs px-2 py-0.5 rounded border bg-white text-gray-700">{deptFrom}</span>
+                                                                        <span className="text-gray-400">→</span>
+                                                                        <span className="text-xs text-gray-500">To</span>
+                                                                        <span className="text-xs px-2 py-0.5 rounded border bg-green-50 border-green-200 text-green-800">{deptTo}</span>
+                                                                    </div>
+                                                                    <div className="flex flex-wrap items-center gap-2">
+                                                                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">Assignee</span>
+                                                                        <span className="text-xs text-gray-500">From</span>
+                                                                        <span className="text-xs px-2 py-0.5 rounded border bg-white text-gray-700">{empFrom}</span>
+                                                                        <span className="text-gray-400">→</span>
+                                                                        <span className="text-xs text-gray-500">To</span>
+                                                                        <span className="text-xs px-2 py-0.5 rounded border bg-green-50 border-green-200 text-green-800">{empTo}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    // Render other changes individually
+                                                    rendered.push(
+                                                        ...otherChanges.map((c, i) => {
+                                                            const fieldLabel = displayFieldName(c.field);
+                                                            const fromVal = c.displayFrom ?? formatValueForField(c.field, c.from);
+                                                            const toVal = c.displayTo ?? formatValueForField(c.field, c.to);
+                                                            return (
+                                                                <div key={`other-${i}`} className="flex flex-wrap items-center gap-2 rounded-md bg-gray-50 p-3">
+                                                                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200">{fieldLabel}</span>
+                                                                    <span className="text-xs text-gray-500">From</span>
+                                                                    <span className="text-xs px-2 py-0.5 rounded border bg-white text-gray-700">{fromVal || '—'}</span>
+                                                                    <span className="text-xs text-gray-400">→</span>
+                                                                    <span className="text-xs text-gray-500">To</span>
+                                                                    <span className="text-xs px-2 py-0.5 rounded border bg-green-50 border-green-200 text-green-800">{toVal || '—'}</span>
+                                                                </div>
+                                                            );
+                                                        })
+                                                    );
+
+                                                    return rendered;
+                                                })()}
+                                            </div>
+                                        ) : null}
+                                        </div>
+                                    );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-12">
+                                            <FaHistory className="text-4xl text-gray-400 mx-auto mb-4" />
+                                            <h4 className="text-lg font-semibold text-gray-600 mb-2">No History Records</h4>
+                                            <p className="text-gray-500">Asset history will appear here when actions are performed.</p>
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        )}
+                        
+                        {/* Documents Tab */}
+                        {activeTab === 'documents' && (
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-lg font-semibold text-gray-800">Documents & Files</h3>
+                                    <button onClick={() => setIsDocumentModalOpen(true)} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2">
+                                        <FaPlus /> Upload Document
+                                    </button>
+                                </div>
+                                
+                                {/* Show uploaded attachment from asset creation if available */}
+                                {asset.documents && Array.isArray(asset.documents) && asset.documents.length > 0 ? (
+                                    <div className="space-y-4">
+                                        <h4 className="text-md font-medium text-gray-700">Uploaded Documents</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {asset.documents.map((doc, idx) => (
+                                                <div key={idx} className="p-4 border rounded-md bg-white flex items-center justify-between hover:bg-gray-50 transition-colors">
+                                                    <div className="flex items-center gap-3">
+                                                        <FaFileAlt className="text-blue-600 text-lg" />
+                                                        <div>
+                                                            <p className="font-medium text-gray-800">{doc.name || `Document ${idx + 1}`}</p>
+                                                            <p className="text-xs text-gray-500">
+                                                                {doc.type || 'File'} • {doc.uploadDate ? new Date(doc.uploadDate).toLocaleDateString() : 'Recently uploaded'}
+                                                            </p>
+                                                            {doc.fileUrl && (
+                                                                <p className="text-xs text-blue-600 mt-1">File uploaded successfully</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {doc.fileUrl && (
+                                                            <a 
+                                                                href={doc.fileUrl} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer"
+                                                                className="text-blue-600 hover:text-blue-800 text-sm"
+                                                                title="View file"
+                                                            >
+                                                                View
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12">
+                                        <FaFileAlt className="text-4xl text-gray-400 mx-auto mb-4" />
+                                        <h4 className="text-lg font-semibold text-gray-600 mb-2">No Documents</h4>
+                                        <p className="text-gray-500">Upload documents and files related to this asset.</p>
+                                        <p className="text-sm text-gray-400 mt-2">Files uploaded during asset creation will appear here automatically.</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+                
+                {/* Edit Modal removed in favor of inline editing */}
+
+                {/* Maintenance modal removed as requested */}
+
+                {/* Upload Document Modal (only in Documents tab) */}
+                {activeTab === 'documents' && isDocumentModalOpen && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+                        <form onSubmit={handleSubmitDocument} className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
+                            <div className="flex justify-between items-center p-6 border-b">
+                                <h2 className="text-xl font-bold text-gray-800">Upload Document</h2>
+                                <button type="button" onClick={() => setIsDocumentModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                                    <FaTimes />
+                                </button>
+                            </div>
+                            <div className="p-6 space-y-4 overflow-y-auto">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Select File</label>
+                                    <input
+                                        type="file"
+                                        accept="image/*,application/pdf"
+                                        onChange={(e) => setDocumentFile(e.target.files?.[0] || null)}
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
+                            <div className="bg-gray-50 px-6 py-3 flex justify-end items-center gap-2 rounded-b-lg">
+                                <button type="button" onClick={() => setIsDocumentModalOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800" disabled={uploadingDoc}>Cancel</button>
+                                <button type="submit" className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50" disabled={uploadingDoc}>
+                                    {uploadingDoc ? 'Uploading...' : 'Upload'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                )}
             </div>
         </AssetManagementLayout>
     );
 };
 
-export default AssetSettingsPage; 
+export default AssetDetailPage; 
