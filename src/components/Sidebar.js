@@ -776,4 +776,4 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
   );
 };
 
-export default Sidebar; 
+export default Sidebar;
