@@ -11,7 +11,7 @@ import { fetchLeads } from '@/redux/slices/leadsSlice';
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
 
-const FreezeLeadModal = ({ isOpen, onClose, lead, onSuccess, position = { x: 0, y: 0 } }) => {
+const FreezeLeadModal = ({ isOpen, onClose, lead, onSuccess, position = { x: 0, y: 0 }, activeRoleTab }) => {
   const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     freezingAmount: '',
@@ -96,7 +96,11 @@ const FreezeLeadModal = ({ isOpen, onClose, lead, onSuccess, position = { x: 0, 
       }
 
       // Refresh the page to update the UI
-      dispatch(fetchLeads({ employeeId }));
+      if (activeRoleTab === "sales") {
+        dispatch(fetchLeads({ employeeId }));
+      } else {
+        dispatch(fetchLeads());
+      }
       
       onClose();
       

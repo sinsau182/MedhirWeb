@@ -26,6 +26,7 @@ const KanbanBoard = ({
   setStageColor,
   stageColor,
   isForm,
+  activeRoleTab,
   ...rest
 }) => {
   const inputRef = useRef(null);
@@ -116,6 +117,7 @@ const KanbanBoard = ({
                 onTeamAssign={onTeamAssign}
                 managerEmployees={managerEmployees}
                 allowAssignment={allowAssignment}
+                activeRoleTab={activeRoleTab}
               />
             );
           })}
@@ -254,6 +256,7 @@ const KanbanBoard = ({
                 onScheduleActivity={onScheduleActivity}
                 onTeamAssign={onTeamAssign}
                 managerEmployees={managerEmployees}
+                activeRoleTab={activeRoleTab}
               />
             </div>
           ) : null}

@@ -43,6 +43,7 @@ import customFormReducer from './slices/customFormSlice'; // Custom Form slice b
 import customerReducer from './slices/customerSlice';
 import accountSettingsReducer from './slices/accountSettingsSlice'; // Import account settings slice
 import employeeAdvanceReducer from './slices/employeeAdvanceSlice';
+import arrearsReducer from './slices/arrearsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -91,6 +92,7 @@ export const store = configureStore({
     customers: customerReducer,
     accountSettings: accountSettingsReducer,
     employeeAdvance: employeeAdvanceReducer,
+    arrears: arrearsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

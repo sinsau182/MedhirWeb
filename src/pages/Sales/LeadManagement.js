@@ -863,6 +863,7 @@ const LeadManagementContent = ({ role }) => {
           allowAssignment={false}
           // Debug props
           debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
+          activeRoleTab={"sales"}
         />
         )}
       </div>

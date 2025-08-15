@@ -933,6 +933,7 @@ const ManagerContent = ({ role }) => {
                   managerEmployees={managerEmployees || []}
                   allowAssignment={true}
                   debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
+                  activeRoleTab={"manager"}
                 />
               </div>
             )}
