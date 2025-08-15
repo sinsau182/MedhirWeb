@@ -615,20 +615,20 @@ const LocationSettings = ({ editing, editedLocations, setEditedLocations, newLoc
                                 </>
                             ) : (
                                 <>
-                                    <button
+                                <button
                                         onClick={() => onFieldChange(loc.id || loc.locationId, 'editing', true)}
                                         className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded"
-                                        title="Edit Location"
-                                    >
-                                        <FaEdit />
-                                    </button>
-                                    <button
+                                    title="Edit Location"
+                                >
+                                    <FaEdit />
+                                </button>
+                            <button
                                         className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded"
-                                        title="Delete Location"
-                                        onClick={() => onDelete(loc.locationId || loc.id, loc.name)}
-                                    >
-                                        <FaTrash />
-                                    </button>
+                                title="Delete Location"
+                                onClick={() => onDelete(loc.locationId || loc.id, loc.name)}
+                            >
+                                <FaTrash />
+                            </button>
                                 </>
                             )}
                         </div>
@@ -714,7 +714,7 @@ const StatusSettings = ({ editing, editedStatuses, setEditedStatuses, newStatus,
                                     </>
                                 ) : (
                                     <>
-                                        <button
+                                    <button
                                             onClick={() => {
                                                 console.log('=== EDIT BUTTON CLICKED ===');
                                                 console.log('Status being edited:', s);
@@ -725,21 +725,21 @@ const StatusSettings = ({ editing, editedStatuses, setEditedStatuses, newStatus,
                                                 onFieldChange(statusIdToUse, 'editing', true);
                                             }}
                                             className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded"
-                                            title="Edit Status"
-                                        >
-                                            <FaEdit />
-                                        </button>
-                                        <button
+                                        title="Edit Status"
+                                    >
+                                        <FaEdit />
+                                    </button>
+                                <button
                                             className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded"
-                                            title="Delete Status Label"
+                                    title="Delete Status Label"
                                             onClick={() => {
                                                 // Use the correct ID field - prioritize statusLabelId, then statusId, then id
                                                 const statusIdToUse = s.statusLabelId || s.statusId || s.id;
                                                 onDelete(statusIdToUse, s.name);
                                             }}
-                                        >
-                                            <FaTrash />
-                                        </button>
+                                >
+                                    <FaTrash />
+                                </button>
                                     </>
                                 )}
                             </div>
@@ -3065,7 +3065,7 @@ const AssetSettingsPage = () => {
             
             // Prepare request payload according to API specification
             const locationData = {
-                name: newLocation.name,
+                name: newLocation.name, 
                 companyId: companyId,
                 isActive: true
             };
@@ -3116,7 +3116,7 @@ const AssetSettingsPage = () => {
     const handleLocationFieldChange = (locId, key, value) => {
         if (key === 'editing' && value === true) {
             // Start editing mode
-            dispatch(updateLocationLocal({ locationId: locId, field: key, value }));
+        dispatch(updateLocationLocal({ locationId: locId, field: key, value }));
         } else {
             // Update field
             dispatch(updateLocationLocal({ locationId: locId, field: key, value }));
@@ -3174,7 +3174,7 @@ const AssetSettingsPage = () => {
             const result = await response.json();
             console.log('Batch location update response:', result);
             
-            toast.success("Locations updated successfully!");
+                toast.success("Locations updated successfully!");
             return true;
             
         } catch (error) {
@@ -3246,7 +3246,7 @@ const AssetSettingsPage = () => {
                     // Refresh locations from backend to get updated data
                     dispatch(fetchAssetLocations());
                     
-                } catch (error) {
+        } catch (error) {
                     console.error('Error updating location:', error);
                     const errorMessage = error?.message || "Failed to update location";
                     toast.error(errorMessage);
@@ -3266,7 +3266,7 @@ const AssetSettingsPage = () => {
                         ? { ...originalLocation, editing: false }
                         : loc
                 ));
-                toast.info("Location changes cancelled.");
+        toast.info("Location changes cancelled.");
             }
         }
     };
@@ -3403,7 +3403,7 @@ const AssetSettingsPage = () => {
         if (field === 'editing' && value === true) {
             console.log('Starting editing mode for status:', statusId);
             // Start editing mode
-            dispatch(updateStatusLocal({ statusId, field, value }));
+        dispatch(updateStatusLocal({ statusId, field, value }));
         } else {
             console.log('Updating field for status:', { statusId, field, value });
             // Update field
@@ -3512,14 +3512,14 @@ const AssetSettingsPage = () => {
             console.log('Available statuses in editedStatuses:', editedStatuses.map(s => ({
                 id: s.id,
                 statusId: s.statusId,
-                statusLabelId: s.statusLabelId,
+                    statusLabelId: s.statusLabelId,
                 name: s.name
             })));
             
             const status = editedStatuses.find(s => {
                 const sId = s.statusLabelId || s.statusId || s.id;
                 console.log('Checking status:', { 
-                    name: s.name, 
+                    name: s.name,
                     sId, 
                     matches: sId === statusId 
                 });
@@ -3659,7 +3659,7 @@ const AssetSettingsPage = () => {
                         }
                     }
                     
-                } catch (error) {
+        } catch (error) {
                     console.error('Error updating status label:', error);
                     const errorMessage = error?.message || "Failed to update status label";
                     toast.error(errorMessage);
@@ -3686,7 +3686,7 @@ const AssetSettingsPage = () => {
                     const sId = s.statusLabelId || s.statusId || s.id;
                     return sId === statusId ? { ...originalStatus, editing: false } : s;
                 }));
-                toast.info("Status changes cancelled.");
+        toast.info("Status changes cancelled.");
             }
         }
     };
@@ -3905,7 +3905,7 @@ const AssetSettingsPage = () => {
             onSave: null, // No global save button - Custom Form Builder has its own Save button
             onCancel: null, // No global cancel button - Custom Form Builder manages its own state
             component: <CustomFormBuilder 
-                editing={editingCustomFields}
+                editing={editingCustomFields} 
                 onDeleteForm={handleDeleteForm}
             /> 
         },

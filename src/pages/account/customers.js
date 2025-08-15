@@ -1,6 +1,6 @@
 // Updated customers page with PRD implementation
 import { useState, useEffect } from 'react';
-import { FaFileInvoiceDollar, FaReceipt, FaUsers, FaPlus, FaSearch, FaArrowLeft, FaEye, FaTimes, FaFileAlt } from 'react-icons/fa';
+import { FaFileInvoiceDollar, FaReceipt, FaUsers, FaPlus, FaSearch, FaArrowLeft, FaEye, FaTimes, FaFileAlt, FaEdit, FaSave } from 'react-icons/fa';
 import { AddInvoiceForm, AddReceiptForm, AddClientForm } from '../../components/Forms';
 import { toast } from 'sonner';
 import MainLayout from '@/components/MainLayout'; // Import MainLayout
@@ -471,6 +471,12 @@ const Customers = () => {
   const [selectedInvoiceForPreview, setSelectedInvoiceForPreview] = useState(null);
   const [selectedReceiptForPreview, setSelectedReceiptForPreview] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [previewCustomerData, setPreviewCustomerData] = useState(null);
+  const [showCustomerPreview, setShowCustomerPreview] = useState(false);
+  const [customerActiveTab, setCustomerActiveTab] = useState('statement'); // Default to statement tab
+  const [isEditingCustomer, setIsEditingCustomer] = useState(false);
+  const [editedCustomerData, setEditedCustomerData] = useState(null);
 
   useEffect(() => {
     dispatch(fetchReceipts());
@@ -483,6 +489,19 @@ const Customers = () => {
   useEffect(() => {
     dispatch(fetchCustomers());
   }, [dispatch]);
+
+  // Debug logging when customer is selected
+  useEffect(() => {
+    if (selectedCustomer) {
+      console.log('Selected Customer:', selectedCustomer);
+      const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === selectedCustomer.customerId);
+      const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === selectedCustomer.customerId);
+      console.log('Customer Invoices:', customerInvoices);
+      console.log('Customer Receipts:', customerReceipts);
+      console.log('Total Invoices:', customerInvoices.length);
+      console.log('Total Receipts:', customerReceipts.length);
+    }
+  }, [selectedCustomer, invoices, receipts]);
 
   // const [invoices, setInvoices] = useState([
   //   { id: 'INV-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', totalAmount: 1200.00, amountReceived: 1200.00, status: 'Received', receiptGenerated: 'Yes' },
@@ -557,6 +576,31 @@ const handleInvoiceSubmit = (data) => {
     dispatch(fetchCustomers()); // Refresh the customers list
   };
 
+  // Customer preview edit handlers
+  const handleEditCustomer = () => {
+    setEditedCustomerData({ ...previewCustomerData });
+    setIsEditingCustomer(true);
+  };
+
+  const handleSaveCustomer = () => {
+    // Update the customer in the Redux store
+    const updatedCustomers = customers.map(customer => 
+      customer.customerId === editedCustomerData.customerId ? editedCustomerData : customer
+    );
+    // You might want to dispatch an action to update the customer in Redux
+    // dispatch(updateCustomer(editedCustomerData));
+    setPreviewCustomerData(editedCustomerData);
+    setIsEditingCustomer(false);
+    toast.success('Customer updated successfully!');
+  };
+
+  const handleCustomerFieldChange = (fieldName, value) => {
+    setEditedCustomerData(prev => ({
+      ...prev,
+      [fieldName]: value
+    }));
+  };
+
   const tabs = [
     { id: 'invoice', label: 'Invoice', icon: FaFileInvoiceDollar },
     { id: 'receipts', label: 'Receipts', icon: FaReceipt },
@@ -574,12 +618,29 @@ const handleInvoiceSubmit = (data) => {
 
   const renderAddForm = () => {
     const commonProps = { onCancel: handleBackFromForm };
-    const formTitle = `Add New ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1, -1)}`;
+    
+    // Determine form title based on what's being added
+    let formTitle;
+    if (showAddForm === 'invoice') {
+      formTitle = selectedCustomer ? `Add New Invoice for ${selectedCustomer.customerName}` : 'Add New Invoice';
+    } else if (showAddForm === 'receipt') {
+      formTitle = selectedCustomer ? `Add New Receipt for ${selectedCustomer.customerName}` : 'Add New Receipt';
+    } else {
+      formTitle = `Add New ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1, -1)}`;
+    }
 
     let formComponent;
     switch (showAddForm) {
-      case 'invoice': formComponent = <AddInvoiceForm {...commonProps} onSubmit={handleInvoiceSubmit} />; break;
-      case 'receipt': formComponent = <AddReceiptForm {...commonProps} onSubmit={handleReceiptSubmit} initialData={invoiceForReceipt} />; break;
+      case 'invoice': 
+        // Pre-populate customer data if opened from customer tabs
+        const invoiceInitialData = selectedCustomer ? { customerId: selectedCustomer.customerId, customerName: selectedCustomer.customerName } : {};
+        formComponent = <AddInvoiceForm {...commonProps} onSubmit={handleInvoiceSubmit} initialData={invoiceInitialData} />; 
+        break;
+      case 'receipt': 
+        // Pre-populate customer data if opened from customer tabs
+        const receiptInitialData = selectedCustomer ? { customerId: selectedCustomer.customerId, customerName: selectedCustomer.customerName } : invoiceForReceipt || {};
+        formComponent = <AddReceiptForm {...commonProps} onSubmit={handleReceiptSubmit} initialData={receiptInitialData} />; 
+        break;
       case 'client': formComponent = <AddClientForm {...commonProps} onSubmit={handleClientSubmit} />; break;
       default: return null;
     }
@@ -592,6 +653,14 @@ const handleInvoiceSubmit = (data) => {
           </button>
           <h2 className="text-xl font-bold text-gray-900">{formTitle}</h2>
         </div>
+        {selectedCustomer && (showAddForm === 'invoice' || showAddForm === 'receipt') && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <p className="text-sm text-blue-700">
+              <strong>Customer:</strong> {selectedCustomer.customerName} 
+              {selectedCustomer.companyName && ` (${selectedCustomer.companyName})`}
+            </p>
+          </div>
+        )}
         {formComponent}
       </div>
     );
@@ -765,39 +834,485 @@ const handleInvoiceSubmit = (data) => {
             (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
             (customer.contactNumber && customer.contactNumber.toLowerCase().includes(searchTerm.toLowerCase()))
           );
+          
+          // Calculate net receivables for each customer
+          const customersWithReceivables = filteredCustomers.map(customer => {
+            const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === customer.customerId);
+            const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === customer.customerId);
+            
+            const totalInvoiced = customerInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
+            const totalReceived = customerReceipts.reduce((sum, receipt) => sum + (receipt.amountReceived || 0), 0);
+            const netReceivables = totalInvoiced - totalReceived;
+            
+            return { ...customer, netReceivables };
+          });
+          
           table = (
-                <table className="min-w-full bg-white">
-                  <thead className="bg-gray-100">
-                    <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Company</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact Number</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Address</th>
+            <div className="flex gap-6">
+              {/* Customer List - Left Side (40%) */}
+              <div className="w-2/5 bg-white rounded-lg shadow">
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Customer List</h3>
+                  </div>
+                  
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Customer Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Net Receivables</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                {filteredCustomers.length > 0 ? (
-                  filteredCustomers.map(customer => (
-                    <tr key={customer.customerId}>
-                      <td className="px-6 py-4 text-sm font-medium text-blue-600">{customer.customerId}</td>
-                      <td className="px-6 py-4 text-sm font-semibold">{customer.customerName}</td>
-                      <td className="px-6 py-4 text-sm">{customer.companyName || '-'}</td>
-                      <td className="px-6 py-4 text-sm">{customer.email || '-'}</td>
-                      <td className="px-6 py-4 text-sm">{customer.contactNumber}</td>
-                      <td className="px-6 py-4 text-sm">{customer.address || '-'}</td>
+                        {customersWithReceivables.map((customer) => (
+                          <tr 
+                            key={customer.customerId} 
+                            className="hover:bg-gray-50 transition-colors cursor-pointer"
+                            onClick={() => setSelectedCustomer(customer)}
+                          >
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <span className="text-sm font-medium text-gray-900">{customer.customerName}</span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <span className="text-sm text-gray-700">{customer.companyName || 'N/A'}</span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <span className={`text-sm font-semibold ${
+                                customer.netReceivables > 0 ? 'text-red-600' : customer.netReceivables < 0 ? 'text-green-600' : 'text-gray-600'
+                              }`}>
+                                ₹{customer.netReceivables.toLocaleString('en-IN')}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap text-center">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPreviewCustomerData(customer);
+                                  setShowCustomerPreview(true);
+                                }}
+                                className="text-gray-600 hover:text-blue-600"
+                              >
+                                <FaEye className="w-5 h-5" />
+                              </button>
+                            </td>
                       </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
-                      {searchTerm ? 'No customers found matching your search.' : 'No customers found.'}
-                    </td>
-                  </tr>
-                )}
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Right side - 60% width - Customer Details with Tabs */}
+              <div className="w-3/5 bg-white shadow-sm border border-gray-200">
+                {selectedCustomer ? (
+                  <div className="p-6">
+
+                    {/* Tab Navigation */}
+                    <div className="border-b border-gray-200 mb-6">
+                      <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                        <button
+                          onClick={() => setCustomerActiveTab('invoices')}
+                          className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none ${
+                            customerActiveTab === 'invoices'
+                              ? 'border-blue-500 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          Invoices
+                        </button>
+                        <button
+                          onClick={() => setCustomerActiveTab('receipts')}
+                          className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none ${
+                            customerActiveTab === 'receipts'
+                              ? 'border-blue-500 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          Receipts
+                        </button>
+                        <button
+                          onClick={() => setCustomerActiveTab('statement')}
+                          className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none ${
+                            customerActiveTab === 'statement'
+                              ? 'border-blue-500 text-blue-600'
+                              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                        >
+                          Statement
+                        </button>
+                      </nav>
+                    </div>
+
+                    {/* Tab Content */}
+                    {customerActiveTab === 'invoices' && (
+                      <div>
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Customer Invoices
+                            {(() => {
+                              const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === selectedCustomer.customerId);
+                              return customerInvoices.length > 0 && (
+                                <span className="text-sm font-normal text-gray-500 ml-2">
+                                  ({customerInvoices.length} invoice{customerInvoices.length !== 1 ? 's' : ''} found)
+                                </span>
+                              );
+                            })()}
+                          </h3>
+                          <button
+                            onClick={() => {
+                              setInvoiceForReceipt(null);
+                              setShowAddForm('invoice');
+                            }}
+                            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
+                          >
+                            <FaPlus className="w-4 h-4" />
+                            New Invoice
+                          </button>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full">
+                            <thead className="bg-gray-50 border-b border-gray-200">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Invoice No.</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Project Name</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Customer</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Invoice Date</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                              {(() => {
+                                const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === selectedCustomer.customerId);
+                                return customerInvoices.length > 0 ? customerInvoices.map((invoice) => (
+                                                                                                      <tr key={invoice.id} className="hover:bg-gray-50">
+                                    <td className="px-4 py-4 whitespace-nowrap">
+                                      <span className="text-sm font-medium text-blue-600">{invoice.invoiceNumber}</span>
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{invoice.project?.projectName || 'N/A'}</td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{invoice.customer?.customerName || 'N/A'}</td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{invoice.invoiceDate}</td>
+                                    <td className="px-4 py-4 whitespace-nowrap">
+                                      <span className="text-sm font-semibold text-gray-900">₹{(invoice.totalAmount || 0).toFixed(2)}</span>
+                                    </td>
+                                  </tr>
+                                )) : (
+                                  <tr>
+                                    <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
+                                      No invoices found for this customer
+                                    </td>
+                                  </tr>
+                                );
+                              })()}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {customerActiveTab === 'receipts' && (
+                      <div>
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Customer Receipts
+                            {(() => {
+                              const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === selectedCustomer.customerId);
+                              return customerReceipts.length > 0 && (
+                                <span className="text-sm font-normal text-gray-500 ml-2">
+                                  ({customerReceipts.length} receipt{customerReceipts.length !== 1 ? 's' : ''} found)
+                                </span>
+                              );
+                            })()}
+                          </h3>
+                          <button
+                            onClick={() => {
+                              setInvoiceForReceipt(null);
+                              setShowAddForm('receipt');
+                            }}
+                            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors font-semibold shadow-sm text-sm"
+                          >
+                            <FaPlus className="w-4 h-4" />
+                            New Receipt
+                          </button>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="min-w-full">
+                            <thead className="bg-gray-50 border-b border-gray-200">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Receipt No.</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Project Name</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Receipt Date</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount Received</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Method</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Transaction ID</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                              {(() => {
+                                const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === selectedCustomer.customerId);
+                                return customerReceipts.length > 0 ? customerReceipts.map((receipt) => (
+                                  <tr key={receipt.id} className="hover:bg-gray-50">
+                                    <td className="px-4 py-4 whitespace-nowrap">
+                                      <span className="text-sm font-medium text-blue-600">{receipt.receiptNumber}</span>
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{receipt.project?.projectName || 'N/A'}</td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{receipt.receiptDate}</td>
+                                    <td className="px-4 py-4 whitespace-nowrap">
+                                      <span className="text-sm font-semibold text-green-600">₹{(receipt.amountReceived || 0).toFixed(2)}</span>
+                                    </td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{receipt.paymentMethod}</td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm font-mono text-gray-600">{receipt.paymentTransactionId}</td>
+                                  </tr>
+                                )) : (
+                                  <tr>
+                                    <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                                      No receipts found for this customer
+                                    </td>
+                                  </tr>
+                                );
+                              })()}
                   </tbody>
                 </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {customerActiveTab === 'statement' && (
+                      <div>
+                        {/* Statement Title */}
+                        <div className="text-center mb-6">
+                          <h2 className="text-xl font-bold text-gray-900 uppercase tracking-wide">Statement of Accounts</h2>
+                          <p className="text-sm text-gray-600 mt-1">Select date range from left panel</p>
+                          {(() => {
+                            const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === selectedCustomer.customerId);
+                            const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === selectedCustomer.customerId);
+                            return (
+                              <div className="mt-2 text-sm text-gray-500">
+                                {customerInvoices.length} invoice{customerInvoices.length !== 1 ? 's' : ''} • {customerReceipts.length} receipt{customerReceipts.length !== 1 ? 's' : ''}
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {/* Recipient and Account Summary - Inline */}
+                        <div className="flex justify-between items-start mb-6">
+                          {/* Left Side - Recipient Section */}
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-700 mb-1">To:</p>
+                            <p className="text-sm font-semibold text-gray-900">{selectedCustomer.customerName}</p>
+                          </div>
+
+                          {/* Right Side - Account Summary */}
+                          <div className="w-64">
+                            <div className="bg-gray-50 border border-gray-200 rounded overflow-hidden">
+                              <table className="min-w-full">
+                                <thead className="bg-gray-100">
+                                  <tr>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 bg-gray-100">Account Summary</th>
+                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 bg-gray-100"></th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {(() => {
+                                    const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === selectedCustomer.customerId);
+                                    const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === selectedCustomer.customerId);
+                                    
+                                    const totalInvoiced = customerInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
+                                    const totalReceived = customerReceipts.reduce((sum, receipt) => sum + (receipt.amountReceived || 0), 0);
+                                    const balanceDue = totalInvoiced - totalReceived;
+                                    
+                                    return (
+                                      <>
+                                        <tr className="border-b border-gray-200">
+                                          <td className="px-4 py-2 text-sm text-gray-600">Opening Balance</td>
+                                          <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">₹ 0.00</td>
+                                        </tr>
+                                        <tr className="border-b border-gray-200">
+                                          <td className="px-4 py-2 text-sm text-gray-600">Invoice Amount</td>
+                                          <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">₹ {totalInvoiced.toFixed(2)}</td>
+                                        </tr>
+                                        <tr className="border-b border-gray-200">
+                                          <td className="px-4 py-2 text-sm text-gray-600">Amount Received</td>
+                                          <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">₹ {totalReceived.toFixed(2)}</td>
+                                        </tr>
+                                        <tr className="border-t-2 border-gray-300">
+                                          <td className="px-4 py-2 text-sm font-semibold text-gray-700">Balance Due</td>
+                                          <td className={`px-4 py-2 text-sm font-bold text-right ${balanceDue > 0 ? 'text-red-600' : balanceDue < 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                                            ₹ {balanceDue.toFixed(2)}
+                                          </td>
+                                        </tr>
+                                      </>
+                                    );
+                                  })()}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Transaction Table */}
+                        <div className="mb-6">
+                          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Transaction Details</h3>
+                          <div className="border border-gray-200 rounded overflow-hidden">
+                            <table className="min-w-full">
+                              <thead className="bg-gray-100">
+                                <tr>
+                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Date</th>
+                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Transaction</th>
+                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Details</th>
+                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Amount</th>
+                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Payments</th>
+                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Balance</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {(() => {
+                                  // Get customer's invoices and receipts
+                                  const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === selectedCustomer.customerId);
+                                  const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === selectedCustomer.customerId);
+                                  
+                                  // Create transaction history with proper chronological order
+                                  const transactions = [];
+                                  let runningBalance = 0;
+                                  
+                                  // Add opening balance
+                                  transactions.push({
+                                    date: '01/01/2025',
+                                    type: 'Opening Balance',
+                                    details: '***Opening Balance***',
+                                    amount: 0,
+                                    payment: 0,
+                                    balance: runningBalance,
+                                    timestamp: new Date('01/01/2025').getTime()
+                                  });
+                                  
+                                  // Add invoices with creation timestamp
+                                  customerInvoices.forEach(invoice => {
+                                    runningBalance += invoice.totalAmount || 0;
+                                    transactions.push({
+                                      date: invoice.invoiceDate || 'N/A',
+                                      type: 'Invoice',
+                                      details: `Invoice No: ${invoice.invoiceNumber || 'N/A'}`,
+                                      amount: invoice.totalAmount || 0,
+                                      payment: 0,
+                                      balance: runningBalance,
+                                      timestamp: new Date(invoice.invoiceDate || 'N/A').getTime()
+                                    });
+                                  });
+                                  
+                                  // Add receipts with creation timestamp
+                                  customerReceipts.forEach(receipt => {
+                                    runningBalance -= receipt.amountReceived || 0;
+                                    transactions.push({
+                                      date: receipt.receiptDate || 'N/A',
+                                      type: 'Payment Made',
+                                      details: `Receipt No: ${receipt.receiptNumber || 'N/A'}`,
+                                      amount: 0,
+                                      payment: receipt.amountReceived || 0,
+                                      balance: runningBalance,
+                                      timestamp: new Date(receipt.receiptDate || 'N/A').getTime()
+                                    });
+                                  });
+                                  
+                                  // Sort transactions by actual chronological order (when they were created)
+                                  transactions.sort((a, b) => {
+                                    // First sort by date
+                                    const dateA = new Date(a.date);
+                                    const dateB = new Date(b.date);
+                                    
+                                    if (dateA.getTime() !== dateB.getTime()) {
+                                      return dateA - dateB;
+                                    }
+                                    
+                                    // If same date, maintain the order they were added to the array
+                                    // This preserves the sequence: invoice → payment → invoice
+                                    return 0;
+                                  });
+                                  
+                                  return transactions.map((transaction, index) => (
+                                    <tr key={index} className={`border-b border-gray-200 ${index % 2 === 1 ? 'bg-gray-50' : ''}`}>
+                                      <td className="px-4 py-2 text-sm text-gray-900 border-r border-gray-200">
+                                        {transaction.date}
+                                      </td>
+                                      <td className="px-4 py-2 text-sm text-gray-700 border-r border-gray-200 font-medium">
+                                        {transaction.type}
+                                      </td>
+                                      <td className="px-4 py-2 text-sm text-gray-600 border-r border-gray-200">
+                                        {transaction.details}
+                                      </td>
+                                      <td className="px-4 py-2 text-sm text-gray-900 border-r border-gray-200">
+                                        {transaction.amount > 0 ? `₹${transaction.amount.toFixed(2)}` : '-'}
+                                      </td>
+                                      <td className="px-4 py-2 text-sm text-gray-900 border-r border-gray-200">
+                                        {transaction.payment > 0 ? `₹${transaction.payment.toFixed(2)}` : '-'}
+                                      </td>
+                                      <td className="px-4 py-2 text-sm font-medium text-gray-900">
+                                        ₹{transaction.balance.toFixed(2)}
+                                      </td>
+                                    </tr>
+                                  ));
+                                })()}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        {/* Final Balance */}
+                        <div className="text-right">
+                          {(() => {
+                            const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === selectedCustomer.customerId);
+                            const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === selectedCustomer.customerId);
+                            
+                            const totalInvoiced = customerInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
+                            const totalReceived = customerReceipts.reduce((sum, receipt) => sum + (receipt.amountReceived || 0), 0);
+                            const balanceDue = totalInvoiced - totalReceived;
+                            
+                            return (
+                              <div className={`inline-block rounded px-4 py-2 border ${
+                                balanceDue > 0 
+                                  ? 'bg-red-50 border-red-200' 
+                                  : balanceDue < 0 
+                                  ? 'bg-green-50 border-green-200' 
+                                  : 'bg-gray-50 border-gray-200'
+                              }`}>
+                                <span className={`text-sm font-medium ${
+                                  balanceDue > 0 
+                                    ? 'text-red-700' 
+                                    : balanceDue < 0 
+                                    ? 'text-green-700' 
+                                    : 'text-gray-700'
+                                }`}>
+                                  {balanceDue > 0 ? 'Balance Due: ' : balanceDue < 0 ? 'Credit Balance: ' : 'Balance: '}
+                                </span>
+                                <span className={`text-lg font-bold ${
+                                  balanceDue > 0 
+                                    ? 'text-red-600' 
+                                    : balanceDue < 0 
+                                    ? 'text-green-600' 
+                                    : 'text-gray-600'
+                                }`}>
+                                  ₹{Math.abs(balanceDue).toFixed(2)}
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center">
+                    <div className="text-gray-400">
+                      <FaUsers className="w-16 h-16 mx-auto mb-3" />
+                      <p className="text-sm">Click on any customer row in the left table to view their details</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           );
         }
         break;
@@ -863,6 +1378,166 @@ const handleInvoiceSubmit = (data) => {
             receipt={selectedReceiptForPreview}
             onClose={() => setSelectedReceiptForPreview(null)}
           />
+        )}
+        
+        {/* Customer Preview Modal */}
+        {showCustomerPreview && previewCustomerData && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+              <div className="p-4 border-b flex justify-between items-center">
+                <h2 className="text-xl font-bold text-gray-800">Customer Preview: {previewCustomerData.customerName}</h2>
+                <div className="flex items-center gap-2">
+                  {isEditingCustomer ? (
+                    <button 
+                      onClick={() => handleSaveCustomer()}
+                      className="text-green-600 hover:text-green-800 p-2 rounded-full hover:bg-green-50 transition-colors"
+                      title="Save Changes"
+                    >
+                      <FaSave className="w-5 h-5" />
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => handleEditCustomer()}
+                      className="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                      title="Edit Customer"
+                    >
+                      <FaEdit className="w-5 h-5" />
+                    </button>
+                  )}
+                  <button onClick={() => setShowCustomerPreview(false)} className="text-gray-500 hover:text-gray-800">
+                    <FaTimes />
+                  </button>
+                </div>
+              </div>
+              <div className="p-6 max-h-[70vh] overflow-y-auto">
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Basic Information</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs text-gray-500">Customer Name</label>
+                        {isEditingCustomer ? (
+                          <input
+                            type="text"
+                            value={editedCustomerData.customerName || ''}
+                            onChange={(e) => handleCustomerFieldChange('customerName', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        ) : (
+                          <p className="text-sm font-medium text-gray-900">{previewCustomerData.customerName}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Company Name</label>
+                        {isEditingCustomer ? (
+                          <input
+                            type="text"
+                            value={editedCustomerData.companyName || ''}
+                            onChange={(e) => handleCustomerFieldChange('companyName', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-700">{previewCustomerData.companyName || 'N/A'}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Customer ID</label>
+                        <p className="text-sm font-mono text-blue-600">{previewCustomerData.customerId}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Contact Information</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-xs text-gray-500">Email</label>
+                        {isEditingCustomer ? (
+                          <input
+                            type="email"
+                            value={editedCustomerData.email || ''}
+                            onChange={(e) => handleCustomerFieldChange('email', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-700">{previewCustomerData.email || 'N/A'}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Contact Number</label>
+                        {isEditingCustomer ? (
+                          <input
+                            type="tel"
+                            value={editedCustomerData.contactNumber || ''}
+                            onChange={(e) => handleCustomerFieldChange('contactNumber', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-700">{previewCustomerData.contactNumber}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500">Address</label>
+                        {isEditingCustomer ? (
+                          <textarea
+                            value={editedCustomerData.address || ''}
+                            onChange={(e) => handleCustomerFieldChange('address', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            rows="3"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-700">{previewCustomerData.address || 'N/A'}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Financial Summary</h3>
+                  <div className="bg-gray-50 border border-gray-200 rounded overflow-hidden">
+                    <table className="min-w-full">
+                      <thead className="bg-gray-100">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Summary</th>
+                          <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === previewCustomerData.customerId);
+                          const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === previewCustomerData.customerId);
+                          
+                          const totalInvoiced = customerInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
+                          const totalReceived = customerReceipts.reduce((sum, receipt) => sum + (receipt.amountReceived || 0), 0);
+                          const balanceDue = totalInvoiced - totalReceived;
+                          
+                          return (
+                            <>
+                              <tr className="border-b border-gray-200">
+                                <td className="px-4 py-2 text-sm text-gray-600">Total Invoiced</td>
+                                <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">₹ {totalInvoiced.toFixed(2)}</td>
+                              </tr>
+                              <tr className="border-b border-gray-200">
+                                <td className="px-4 py-2 text-sm text-gray-600">Total Received</td>
+                                <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">₹ {totalReceived.toFixed(2)}</td>
+                              </tr>
+                              <tr className="border-t-2 border-gray-300">
+                                <td className="px-4 py-2 text-sm font-semibold text-gray-700">Balance Due</td>
+                                <td className={`px-4 py-2 text-right ${balanceDue > 0 ? 'text-red-600' : balanceDue < 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                                  <span className="text-sm font-bold">₹ {balanceDue.toFixed(2)}</span>
+                                </td>
+                              </tr>
+                            </>
+                          );
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </MainLayout>
