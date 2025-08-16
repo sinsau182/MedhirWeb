@@ -1,6 +1,6 @@
 // Vendor page implementation based on PRD
 import { useState, useEffect } from 'react';
-import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft, FaClipboardList, FaEye, FaFileAlt } from 'react-icons/fa';
+import { FaFileInvoice, FaUndoAlt, FaCreditCard, FaBuilding, FaPlus, FaSearch, FaArrowLeft, FaClipboardList, FaEye, FaFileAlt, FaTimes } from 'react-icons/fa';
 import Modal from '../../components/Modal';
 import { AddBillForm, BulkPaymentForm, AddVendorForm, AddRefundForm, AddPurchaseOrderForm } from '../../components/Forms';
 import VendorPreview from '../../components/Previews/VendorPreview';
@@ -91,8 +91,17 @@ const handleDownloadFile = async (url, fileName = null) => {
    const [selectedPurchaseOrder, setSelectedPurchaseOrder] = useState(null);
    // State for vendor preview modal
    const [showVendorPreview, setShowVendorPreview] = useState(false);
-   const [formData, setFormData] = useState({ attachments: [] });
+   const [formData, setFormData] = useState({ 
+     attachments: [],
+     startDate: '',
+     endDate: ''
+   });
    const [previewVendorData, setPreviewVendorData] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDateRange, setSelectedDateRange] = useState('thisMonth');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [showCustomDateInputs, setShowCustomDateInputs] = useState(false);
     useEffect(() => {
       dispatch(fetchVendors());
       dispatch(fetchBills());
@@ -105,8 +114,66 @@ const handleDownloadFile = async (url, fileName = null) => {
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
-  const [activeTab, setActiveTab] = useState('bills'); // Default to bills tab
+
+  // Function to get date range based on selection
+  const getDateRange = (range) => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    switch (range) {
+      case 'thisMonth':
+        return {
+          startDate: new Date(currentYear, currentMonth, 1),
+          endDate: new Date(currentYear, currentMonth + 1, 0)
+        };
+      case 'lastMonth':
+        return {
+          startDate: new Date(currentYear, currentMonth - 1, 1),
+          endDate: new Date(currentYear, currentMonth, 0)
+        };
+      case 'last3Months':
+        return {
+          startDate: new Date(currentYear, currentMonth - 3, 1),
+          endDate: new Date(currentYear, currentMonth + 1, 0)
+        };
+      case 'last6Months':
+        return {
+          startDate: new Date(currentYear, currentMonth - 6, 1),
+          endDate: new Date(currentYear, currentMonth + 1, 0)
+        };
+      case 'thisYear':
+        return {
+          startDate: new Date(currentYear, 0, 1),
+          endDate: new Date(currentYear, 11, 31)
+        };
+      case 'lastYear':
+        return {
+          startDate: new Date(currentYear - 1, 0, 1),
+          endDate: new Date(currentYear - 1, 11, 31)
+        };
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return {
+            startDate: new Date(customStartDate),
+            endDate: new Date(customEndDate)
+          };
+        }
+        // Fallback to current month if custom dates are not set
+        return {
+          startDate: new Date(currentYear, currentMonth, 1),
+          endDate: new Date(currentYear, currentMonth + 1, 0)
+        };
+      default:
+        return {
+          startDate: new Date(currentYear, currentMonth, 1),
+          endDate: new Date(currentYear, currentMonth + 1, 0)
+        };
+    }
+  };
+  const [activeTab, setActiveTab] = useState('statement'); // Default to statement tab
   const [showAddForm, setShowAddForm] = useState(null); // 'bill' | 'refund' | 'payment' | 'vendor' | null
+  const [statementActiveTab, setStatementActiveTab] = useState('bills'); // Default to bills tab in statement view
 const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
   // Refetch vendors when form is closed and we're on vendors tab
   useEffect(() => {
@@ -121,20 +188,33 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
     }
   }, [showAddForm, activeTab, dispatch]);
 
+  // Update statement when custom dates change
+  useEffect(() => {
+    if (selectedDateRange === 'custom' && customStartDate && customEndDate) {
+      // This will trigger a re-render of the statement with new date range
+      // The getDateRange function will use the updated customStartDate and customEndDate
+    }
+  }, [customStartDate, customEndDate, selectedDateRange]);
 
-  // Context-aware Add button handler
+
+  // Add button handler
   const handleAddClick = () => {
-    if (activeTab === 'bills') {
-      setSelectedBill(null); // Clear selected bill for new bill
-      setShowAddForm('bill');
-    } else if (activeTab === 'purchaseOrders') {
-      setShowAddForm('po');
-    } else if (activeTab === 'payments') {
-      setSelectedPayment(null); // Clear selected payment for new payment
-      setShowAddForm('payment');
-    } else if (activeTab === 'vendors') {
       setSelectedVendor(null); // Clear selected vendor for new vendor
       setShowAddForm('vendor');
+  };
+
+  const handleDateRangeChange = (range) => {
+    setSelectedDateRange(range);
+    if (range === 'custom') {
+      setShowCustomDateInputs(true);
+      // Set default custom dates to current month
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      setCustomStartDate(new Date(currentYear, currentMonth, 1).toISOString().split('T')[0]);
+      setCustomEndDate(new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0]);
+    } else {
+      setShowCustomDateInputs(false);
     }
   };
 
@@ -143,10 +223,15 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
   // Back button handler for forms
   const handleBackFromForm = () => {
     setShowAddForm(null);
-    setSelectedVendor(null);
     setSelectedBill(null);
     setSelectedPayment(null);
      setEditingPO(null);
+    
+    // Don't clear selectedVendor if we're in statement tab
+    // This ensures the vendor remains selected when returning from forms
+    if (activeTab !== 'statement') {
+      setSelectedVendor(null);
+    }
   };
 
   // Handle attachment icon click
@@ -340,24 +425,15 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
       setShowAddForm(null);
       console.log('Purchase Order created successfully:', poData);
     }
+    
+
   };
 
-  const tabs = [
-    { id: 'bills', label: 'Bills', icon: FaFileInvoice },
-    { id: 'purchaseOrders', label: 'Purchase Orders', icon: FaClipboardList },
-    { id: 'payments', label: 'Payments', icon: FaCreditCard },
-    { id: 'vendors', label: 'Vendors List', icon: FaBuilding },
-  ];
 
-  // Context-aware Add button label
+
+  // Add button label
   const getAddButtonLabel = () => {
-    switch (activeTab) {
-      case 'bills': return 'New Bill';
-      case 'purchaseOrders': return 'New P.O';
-      case 'payments': return 'New Payment';
-      case 'vendors': return 'New Vendor';
-      default: return 'Add';
-    }
+    return 'New Vendor';
   };
 
   // Context-aware Add button icon
@@ -455,51 +531,161 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
     if (showAddForm) {
       return renderAddForm();
     }
-    switch (activeTab) {
-      case 'bills':
+    
         return (
-          <div>
-            {bills.length === 0 ? (
-              <div className="bg-white rounded-lg shadow border border-gray-200">
-                <div className="flex flex-col items-center justify-center py-16 px-8">
-                  <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
-                    <FaFileInvoice className="w-10 h-10 text-blue-500" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">No Bills Found</h3>
-                  <p className="text-gray-600 text-center max-w-md mb-6">
-                    You haven&apos;t created any bills yet. Start by adding your first bill to track vendor invoices and payments.
-                  </p>
+          <div className="flex gap-6">
+            {/* Statement Table - 40% width */}
+            <div className="w-2/5 bg-white rounded-lg shadow">
+              <div className="p-6">
+                {/* Header */}
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Vendor Statement</h3>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company Name</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Net Payables</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {vendors
+                        .filter(vendor =>
+                          (vendor.vendorName && vendor.vendorName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                          (vendor.companyName && vendor.companyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                          (vendor.email && vendor.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                          (vendor.contactNumber && vendor.contactNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+                        )
+                        .map((vendor) => {
+                          // Calculate net payables for this vendor
+                          const vendorBills = bills.filter(bill => bill.vendorId === vendor.vendorId);
+                          const vendorPayments = payments.filter(payment => payment.vendorId === vendor.vendorId);
+                          
+                          const totalBills = vendorBills.reduce((sum, bill) => sum + (bill.finalAmount || 0), 0);
+                          const totalPayments = vendorPayments.reduce((sum, payment) => sum + (payment.totalAmount || 0), 0);
+                          const netPayables = totalBills - totalPayments;
+                          
+                          return (
+                            <tr 
+                              key={vendor.id} 
+                              className="hover:bg-gray-50 transition-colors cursor-pointer"
+                              onClick={() => setSelectedVendor(vendor)}
+                            >
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                <span className="text-sm font-medium text-gray-900">{vendor.vendorName}</span>
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                <span className="text-sm text-gray-700">{vendor.companyName || 'N/A'}</span>
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap">
+                                <span className={`text-sm font-semibold ${
+                                  netPayables > 0 ? 'text-red-600' : netPayables < 0 ? 'text-green-600' : 'text-gray-600'
+                                }`}>
+                                  ₹{netPayables.toLocaleString('en-IN')}
+                                </span>
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-center">
                   <button
-                    onClick={() => setShowAddForm('bill')}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2"
-                  >
-                    <FaPlus className="w-4 h-4" />
-                    Add Your First Bill
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPreviewVendorData(vendor);
+                                    setShowVendorPreview(true);
+                                  }}
+                                  className="text-gray-600 hover:text-blue-600"
+                                >
+                                  <FaEye className="w-5 h-5" />
                   </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            ) : (
-              <div className="overflow-x-auto bg-white rounded-lg shadow">
+            </div>
+            
+            {/* Right side - 60% width - Vendor Details with Tabs */}
+            <div className="w-3/5 bg-white shadow-sm border border-gray-200">
+              {selectedVendor ? (
+                <div className="p-6">
+
+
+                  {/* Tab Navigation */}
+                  <div className="border-b border-gray-200 mb-6">
+                    <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                      <button
+                        onClick={() => setStatementActiveTab('bills')}
+                        className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none ${
+                          statementActiveTab === 'bills'
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                      >
+                        Bills
+                      </button>
+                      <button
+                        onClick={() => setStatementActiveTab('purchaseOrders')}
+                        className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none ${
+                          statementActiveTab === 'purchaseOrders'
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                      >
+                        Purchase Orders
+                      </button>
+                      <button
+                        onClick={() => setStatementActiveTab('payments')}
+                        className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none ${
+                          statementActiveTab === 'payments'
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                      >
+                        Payments
+                      </button>
+                      <button
+                        onClick={() => setStatementActiveTab('statement')}
+                        className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none ${
+                          statementActiveTab === 'statement'
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                      >
+                        Statement
+                      </button>
+                    </nav>
+                  </div>
+
+                  {/* Tab Content */}
+                  {statementActiveTab === 'bills' && (
+                    <div>
+                      <div className="mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">Vendor Bills</h3>
+                      </div>
+                      <div className="overflow-x-auto">
                 <table className="min-w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Bill No.</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Bill Date</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Due Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">GSTIN</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Remaining Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Status</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reference/PO No.</th>
-                      <th className="px-1 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {bills.map((bill) => (
+                            {(() => {
+                              const vendorBills = bills.filter(bill => bill.vendorId === selectedVendor.vendorId);
+                              return vendorBills.length > 0 ? vendorBills.map((bill) => (
                     <tr 
                       key={bill.id} 
-                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                                  className="hover:bg-gray-50 cursor-pointer transition-colors"
                       onClick={() => {
                         setSelectedBill(bill);
                         setShowAddForm('bill');
@@ -508,39 +694,10 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-medium text-blue-600">{bill.billNumber || 'N/A'}</span>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">{bill.vendorName}</span>
-                      </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.billDate}</td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.dueDate}</td>
                       <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
-                          {(() => {
-                            const vendor = vendors.find(v => v.vendorId === bill.vendorId);
-                            return vendor?.gstin || bill.gstin || '-';
-                          })()}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-semibold text-gray-900">₹{(bill.finalAmount || 0).toLocaleString('en-IN')}</span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-sm font-semibold text-gray-900">₹{(bill.dueAmount || 0).toLocaleString('en-IN')}</span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          bill.paymentStatus === 'PAID'
-                            ? 'bg-green-100 text-green-800' 
-                            : bill.paymentStatus === 'PARTIALLY_PAID'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
-                          {bill.paymentStatus === 'PAID' 
-                            ? 'Paid' 
-                            : bill.paymentStatus === 'PARTIALLY_PAID' 
-                            ? 'Partially Paid' 
-                            : 'Unpaid'}
-                        </span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className={`text-sm ${bill.billReference ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
@@ -557,7 +714,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                               : 'bg-gray-100 text-gray-500'
                           }`}
                           onClick={(e) => {
-                            e.stopPropagation()
+                                        e.stopPropagation();
                             if ((bill.attachmentUrls && bill.attachmentUrls.length > 0) || 
                                 bill.attachmentUrls === 'Yes' || 
                                 bill.attachmentUrls === true) {
@@ -571,43 +728,30 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                         </span>
                       </td>
                     </tr>
-                  ))}
+                              )) : (
+                                <tr>
+                                  <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                                    No bills found for this vendor
+                                  </td>
+                                </tr>
+                              );
+                            })()}
                 </tbody>
               </table>
             </div>
-            )}
           </div>
-        );
-        case 'purchaseOrders':
-          return (
+                  )}
+
+                  {statementActiveTab === 'purchaseOrders' && (
             <div>
-              {purchaseOrders.length === 0 ? (
-                <div className="bg-white rounded-lg shadow border border-gray-200">
-                  <div className="flex flex-col items-center justify-center py-16 px-8">
-                    <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mb-6">
-                      <FaClipboardList className="w-10 h-10 text-green-500" />
+                      <div className="mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">Purchase Orders</h3>
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">No Purchase Orders Found</h3>
-                    <p className="text-gray-600 text-center max-w-md mb-6">
-                      You haven&apos;t created any purchase orders yet. Start by adding your first PO to manage vendor orders and track deliveries.
-                    </p>
-                    <button
-                      onClick={() => setShowAddForm('po')}
-                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center gap-2"
-                    >
-                      <FaPlus className="w-4 h-4" />
-                      Create Your First PO
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="overflow-x-auto bg-white rounded-lg shadow">
+                      <div className="overflow-x-auto">
                   <table className="min-w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">PO Number</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor GSTIN</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Order Date</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Delivery Date</th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
@@ -616,47 +760,39 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {purchaseOrders.map((po) => (
+                            {(() => {
+                              const vendorPOs = purchaseOrders.filter(po => po.vendorId === selectedVendor.vendorId);
+                              return vendorPOs.length > 0 ? vendorPOs.map((po) => (
                       <tr 
                         key={po.id} 
-                        className="hover:bg-gray-50 transition-colors cursor-pointer"
-                        onClick={() => handlePORowClick(po)}
+                                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                                  onClick={() => {
+                                    setEditingPO(po);
+                                    setShowAddForm('po');
+                                  }}
                       >
                         <td className="px-4 py-4 whitespace-nowrap">
                           <span className="text-sm font-medium text-blue-600">{po.purchaseOrderNumber}</span>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <span className="text-sm font-medium text-gray-900">
-                            {(() => {
-                              const vendor = vendors.find(v => v.vendorId === po.vendorId);
-                              return vendor ? vendor.vendorName : po.vendorId || 'N/A';
-                            })()}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{po.gstin}</span>
-                        </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDate}</td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDeliveryDate}</td>
-                        
                         <td className="px-4 py-4 whitespace-nowrap">
                           <span className="text-sm font-semibold text-gray-900">₹{po.finalAmount}</span>
                         </td>
-
                  <td className="px-4 py-4 whitespace-nowrap text-center">
                           <span 
                            className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
                              (po.attachmentUrls && po.attachmentUrls.length > 0) || 
-                                po.attachmentUrls === 'Yes' || po.attachmentUrls === true  ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200'         : 'bg-gray-100 text-gray-500'
+                                        po.attachmentUrls === 'Yes' || po.attachmentUrls === true
+                                          ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' 
+                                          : 'bg-gray-100 text-gray-500'
                                   }`}
                             onClick={(e) => {
    e.stopPropagation();
    if (po.attachmentUrls && Array.isArray(po.attachmentUrls) && po.attachmentUrls.length > 0) {
-     // Open the first attachment directly in a new tab
      const firstAttachment = po.attachmentUrls[0];
      window.open(firstAttachment, '_blank');
    } else if (typeof po.attachmentUrls === 'string') {
-     // Open the string attachment directly in a new tab
      window.open(po.attachmentUrls, '_blank');
    }
  }}
@@ -678,66 +814,52 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                           <FaEye className="w-4 h-4" />
                         </button>
                       </td>
-
                       </tr>
-                    ))}
+                              )) : (
+                                <tr>
+                                  <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                                    No purchase orders found for this vendor
+                                  </td>
+                                </tr>
+                              );
+                            })()}
                   </tbody>
                 </table>
               </div>
-              )}
             </div>
-          );
-      case 'payments':
-        return (
+                  )}
+
+                  {statementActiveTab === 'payments' && (
           <div>
-            {payments.length === 0 ? (
-              <div className="bg-white rounded-lg shadow border border-gray-200">
-                <div className="flex flex-col items-center justify-center py-16 px-8">
-                  <div className="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center mb-6">
-                    <FaCreditCard className="w-10 h-10 text-purple-500" />
+                      <div className="mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">Vendor Payments</h3>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">No Payments Found</h3>
-                  <p className="text-gray-600 text-center max-w-md mb-6">
-                    You haven&apos;t recorded any payments yet. Start by adding your first payment to track vendor transactions and maintain payment history.
-                  </p>
-                  <button
-                    onClick={() => setShowAddForm('payment')}
-                    className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 flex items-center gap-2"
-                  >
-                    <FaPlus className="w-4 h-4" />
-                    Record Your First Payment
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="overflow-x-auto bg-white rounded-lg shadow">
+                      <div className="overflow-x-auto">
                 <table className="min-w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">Payment Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-48">Vendor Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-40">Bill Reference</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-36">GSTIN (Vendor)</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-32">Payment Method</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">Amount from Credits</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-20">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-40">Payment Reference</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider w-20">Attachments</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Date</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Bill Reference</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Method</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Reference</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {payments.map((payment) => (
+                            {(() => {
+                              const vendorPayments = payments.filter(payment => payment.vendorId === selectedVendor.vendorId);
+                              return vendorPayments.length > 0 ? vendorPayments.map((payment) => (
                     <tr 
                       key={payment.id} 
-                      className="hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => handlePaymentRowClick(payment)}
-                    >
-                                            <td className="px-4 py-4 text-sm text-gray-700 w-32">{payment.paymentDate}</td>
-                      <td className="px-4 py-4 w-48">
-                        <span className="text-sm font-medium text-gray-900 truncate block">{payment.vendorName}</span>
-                      </td>
-                       <td className="px-4 py-4 w-40">
+                                  className="hover:bg-gray-50 cursor-pointer transition-colors"
+                                  onClick={() => {
+                                    setSelectedPayment(payment);
+                                    setShowAddForm('payment');
+                                  }}
+                                >
+                                  <td className="px-4 py-4 text-sm text-gray-700">{payment.paymentDate}</td>
+                                  <td className="px-4 py-4">
                          <div className="flex flex-wrap gap-1">
                            {payment?.billPayments?.map((bill) => (
                              <span key={bill.billId} className="text-xs text-blue-600 font-medium">
@@ -746,10 +868,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                            ))}
                          </div>
                        </td>
-                      <td className="px-4 py-4 w-36">
-                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{payment.gstin}</span>
-                      </td>
-                      <td className="px-4 py-4 w-32">
+                                  <td className="px-4 py-4">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                           payment.paymentMethod === 'Bank Transfer' 
                             ? 'bg-blue-100 text-blue-800' 
@@ -760,25 +879,13 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                           {payment.paymentMethod}
                         </span>
                       </td>
-                      <td className="px-4 py-4 w-24">
+                                  <td className="px-4 py-4">
                         <span className="text-sm font-semibold text-gray-900">₹{payment.totalAmount}</span>
                       </td>
-                      <td className="px-4 py-4 w-24">
-                        <span className="text-sm font-semibold text-gray-900">₹{payment.adjustedAmountFromCredits}</span>
-                      </td>
-                      <td className="px-4 py-4 w-20">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                          payment.status === 'Posted' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {payment.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 w-40">
+                                  <td className="px-4 py-4">
                         <span className="text-sm text-gray-600 font-mono truncate block">{payment.paymentTransactionId}</span>
                       </td>
-                      <td className="px-4 py-4 w-20 text-center">
+                                  <td className="px-4 py-4 text-center">
                         <span 
                           className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
                             payment.paymentProofUrl 
@@ -796,157 +903,261 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                         </span>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            )}
-          </div>
-        );
-      case 'vendors':
-        return (
-          <div>
-            {vendors.length === 0 ? (
-              <div className="bg-white rounded-lg shadow border border-gray-200">
-                <div className="flex flex-col items-center justify-center py-16 px-8">
-                  <div className="w-20 h-20 bg-orange-50 rounded-full flex items-center justify-center mb-6">
-                    <FaBuilding className="w-10 h-10 text-orange-500" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">No Vendors Found</h3>
-                  <p className="text-gray-600 text-center max-w-md mb-6">
-                    You haven&apos;t added any vendors yet. Start by adding your first vendor to manage supplier relationships and track business transactions.
-                  </p>
-                  <button
-                    onClick={() => setShowAddForm('vendor')}
-                    className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors duration-200 flex items-center gap-2"
-                  >
-                    <FaPlus className="w-4 h-4" />
-                    Add Your First Vendor
-                  </button>
+                              )) : (
+                                <tr>
+                                  <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                                    No payments found for this vendor
+                      </td>
+                    </tr>
+                              );
+                            })()}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            ) : (
-              <div className="overflow-x-auto bg-white rounded-lg shadow">
-                <table className="min-w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">GSTIN</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">PAN</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Phone</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Email</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">City</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">State</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Tags</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Documents</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {vendors.map((vendor) => (
-                    <tr
-                      key={vendor.id}
-                      className="hover:bg-gray-50 transition-colors cursor-pointer"
-                      onClick={() => {
-                        setSelectedVendor(vendor);
-                        setShowAddForm('vendor');
-                      }}
-                    >
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">{vendor.vendorName}</span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{vendor.gstin}</span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">{vendor.pan}</span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{vendor.mobile}</td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className="text-sm text-blue-600 hover:text-blue-800">{vendor.email}</span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{vendor.city}</td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{vendor.state}</td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <div className="flex flex-wrap gap-1">
-                          {vendor.vendorTags?.slice(0, 2).map((tag, index) => (
-                            <span key={index} className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700">
-                              {tag}
-                            </span>
-                          ))}
-                          {vendor.vendorTags?.length > 2 && (
-                            <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-200 text-gray-600">
-                              +{vendor.vendorTags?.length - 2}
-                            </span>
-                          )}
+                  )}
+
+                  {statementActiveTab === 'statement' && (
+                    <div>
+                      {/* Statement Title */}
+                      <div className="text-center mb-6">
+                        <h2 className="text-xl font-bold text-gray-900 uppercase tracking-wide">Statement of Accounts</h2>
+                        <div className="mt-2 text-sm text-gray-600">
+                          {(() => {
+                            const dateRange = getDateRange(selectedDateRange);
+                            const startDate = dateRange.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            const endDate = dateRange.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            return `${startDate} - ${endDate}`;
+                          })()}
                         </div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-center">
-                        <div className="flex items-center justify-center gap-2">
-                                                     {/* Bank Passbook Icon */}
-                           <button
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               if (vendor.bankPassbookUrl) {
-                                 handleViewFile(vendor.bankPassbookUrl, 'Bank Passbook');
-                               } else {
-                                 toast.error('Bank Passbook not uploaded');
-                               }
-                             }}
-                             className={`p-2 rounded-full transition-colors ${
-                               vendor.bankPassbookUrl 
-                                 ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-50' 
-                                 : 'text-gray-400 cursor-not-allowed'
-                             }`}
-                             title={vendor.bankPassbookUrl ? 'View Bank Passbook' : 'Bank Passbook not uploaded'}
-                           >
-                             <FaFileAlt className="w-4 h-4" />
-                           </button>
-                          
-                          {/* GST Document Icon */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (vendor.gstDocumentUrl) {
-                                handleViewFile(vendor.gstDocumentUrl, 'GST Document');
-                              } else {
-                                toast.error('GST Document not uploaded');
+                      </div>
+
+                      {/* Recipient and Account Summary - Inline */}
+                      <div className="flex justify-between items-start mb-6">
+                        {/* Left Side - Recipient Section */}
+                        <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-700 mb-1">To:</p>
+                        <p className="text-sm font-semibold text-gray-900">{selectedVendor.contactName || selectedVendor.vendorName}</p>
+                    </div>
+
+                    {/* Right Side - Account Summary */}
+                        <div className="w-64">
+                      <div className="bg-gray-50 border border-gray-200 rounded overflow-hidden">
+                        <table className="min-w-full">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 bg-gray-100">Account Summary</th>
+                              <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700 bg-gray-100"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(() => {
+                              const vendorBills = bills.filter(bill => bill.vendorId === selectedVendor.vendorId);
+                              const vendorPayments = payments.filter(payment => payment.vendorId === selectedVendor.vendorId);
+                              
+                              const totalBilled = vendorBills.reduce((sum, bill) => sum + (bill.finalAmount || 0), 0);
+                              const totalPaid = vendorPayments.reduce((sum, payment) => sum + (payment.totalAmount || 0), 0);
+                              const balanceDue = totalBilled - totalPaid;
+                              
+                              return (
+                                <>
+                                  <tr className="border-b border-gray-200">
+                                    <td className="px-4 py-2 text-sm text-gray-600">Opening Balance</td>
+                                    <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">₹ 0.00</td>
+                                  </tr>
+                                  <tr className="border-b border-gray-200">
+                                    <td className="px-4 py-2 text-sm text-gray-600">Billed Amount</td>
+                                    <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">₹ {totalBilled.toFixed(2)}</td>
+                                  </tr>
+                                  <tr className="border-b border-gray-200">
+                                    <td className="px-4 py-2 text-sm text-gray-600">Amount Paid</td>
+                                    <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">₹ {totalPaid.toFixed(2)}</td>
+                                  </tr>
+                                  <tr className="border-t-2 border-gray-300">
+                                    <td className="px-4 py-2 text-sm font-semibold text-gray-700">Balance Due</td>
+                                    <td className={`px-4 py-2 text-sm font-bold text-right ${balanceDue > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                      ₹ {balanceDue.toFixed(2)}
+                                    </td>
+                                  </tr>
+                                </>
+                              );
+                            })()}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Transaction Table */}
+                  <div className="mb-6">
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Transaction Details</h3>
+                    <div className="border border-gray-200 rounded overflow-hidden">
+                      <table className="min-w-full">
+                        <thead className="bg-gray-100">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Date</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Transaction</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Details</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Amount</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider border-r border-gray-200">Payments</th>
+                            <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Balance</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(() => {
+                            // Get vendor's bills and payments
+                            const vendorBills = bills.filter(bill => bill.vendorId === selectedVendor.vendorId);
+                            const vendorPayments = payments.filter(payment => payment.vendorId === selectedVendor.vendorId);
+                            
+                            // Get selected date range
+                            const dateRange = getDateRange(selectedDateRange);
+                            
+                            // Create transaction history with proper chronological order
+                            const transactions = [];
+                            let runningBalance = 0;
+                            
+                            // Add opening balance
+                            transactions.push({
+                              date: dateRange.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                              type: 'Opening Balance',
+                              details: '***Opening Balance***',
+                              amount: 0,
+                              payment: 0,
+                              balance: runningBalance,
+                              timestamp: dateRange.startDate.getTime()
+                            });
+                            
+                            // Add bills within date range
+                            vendorBills.forEach(bill => {
+                              const billDate = new Date(bill.billDate || 'N/A');
+                              if (billDate >= dateRange.startDate && billDate <= dateRange.endDate) {
+                              runningBalance += bill.finalAmount || 0;
+                              transactions.push({
+                                date: bill.billDate || 'N/A',
+                                type: 'Bill',
+                                  details: `Bill No: ${bill.billNumber || 'N/A'}`,
+                                amount: bill.finalAmount || 0,
+                                payment: 0,
+                                  balance: runningBalance,
+                                  timestamp: billDate.getTime()
+                              });
                               }
-                            }}
-                            className={`p-2 rounded-full transition-colors ${
-                              vendor.gstDocumentUrl 
-                                ? 'text-green-600 hover:text-green-800 hover:bg-green-50' 
-                                : 'text-gray-400 cursor-not-allowed'
-                            }`}
-                            title={vendor.gstDocumentUrl ? 'View GST Document' : 'GST Document not uploaded'}
-                          >
-                            <FaFileAlt className="w-4 h-4" />
-                          </button>
+                            });
+                            
+                            // Add payments within date range
+                            vendorPayments.forEach(payment => {
+                              const paymentDate = new Date(payment.paymentDate || 'N/A');
+                              if (paymentDate >= dateRange.startDate && paymentDate <= dateRange.endDate) {
+                              runningBalance -= payment.totalAmount || 0;
+                              transactions.push({
+                                date: payment.paymentDate || 'N/A',
+                                type: 'Payment Made',
+                                  details: `Payment ID: ${payment.paymentTransactionId || 'N/A'}`,
+                                amount: 0,
+                                payment: payment.totalAmount || 0,
+                                  balance: runningBalance,
+                                  timestamp: paymentDate.getTime()
+                                });
+                              }
+                            });
+                            
+                                // Sort transactions by actual chronological order (when they were created)
+                                transactions.sort((a, b) => {
+                                  // First sort by date
+                                  const dateA = new Date(a.date);
+                                  const dateB = new Date(b.date);
+                                  
+                                  if (dateA.getTime() !== dateB.getTime()) {
+                                    return dateA - dateB;
+                                  }
+                                  
+                                  // If same date, maintain the order they were added to the array
+                                  // This preserves the sequence: bill → payment → bill
+                                  return 0;
+                                });
+                            
+                            return transactions.map((transaction, index) => (
+                              <tr key={index} className={`border-b border-gray-200 ${index % 2 === 1 ? 'bg-gray-50' : ''}`}>
+                                <td className="px-4 py-2 text-sm text-gray-900 border-r border-gray-200">
+                                  {transaction.date}
+                                </td>
+                                <td className="px-4 py-2 text-sm text-gray-700 border-r border-gray-200 font-medium">
+                                  {transaction.type}
+                                </td>
+                                <td className="px-4 py-2 text-sm text-gray-600 border-r border-gray-200">
+                                  {transaction.details}
+                                </td>
+                                <td className="px-4 py-2 text-sm text-gray-900 border-r border-gray-200">
+                                  {transaction.amount > 0 ? `₹${transaction.amount.toFixed(2)}` : '-'}
+                                </td>
+                                <td className="px-4 py-2 text-sm text-gray-900 border-r border-gray-200">
+                                  {transaction.payment > 0 ? `₹${transaction.payment.toFixed(2)}` : '-'}
+                                </td>
+                                <td className="px-4 py-2 text-sm font-medium text-gray-900">
+                                  ₹{transaction.balance.toFixed(2)}
+                                </td>
+                              </tr>
+                            ));
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Final Balance */}
+                  <div className="text-right">
+                    {(() => {
+                      const vendorBills = bills.filter(bill => bill.vendorId === selectedVendor.vendorId);
+                      const vendorPayments = payments.filter(payment => payment.vendorId === selectedVendor.vendorId);
+                      
+                      const totalBilled = vendorBills.reduce((sum, bill) => sum + (bill.finalAmount || 0), 0);
+                      const totalPaid = vendorPayments.reduce((sum, payment) => sum + (payment.totalAmount || 0), 0);
+                      const balanceDue = totalBilled - totalPaid;
+                      
+                      return (
+                        <div className={`inline-block rounded px-4 py-2 border ${
+                          balanceDue > 0 
+                            ? 'bg-red-50 border-red-200' 
+                            : balanceDue < 0 
+                            ? 'bg-green-50 border-green-200' 
+                            : 'bg-gray-50 border-gray-200'
+                        }`}>
+                          <span className={`text-sm font-medium ${
+                            balanceDue > 0 
+                              ? 'text-red-700' 
+                              : balanceDue < 0 
+                              ? 'text-green-700' 
+                              : 'text-gray-700'
+                          }`}>
+                            {balanceDue > 0 ? 'Balance Due: ' : balanceDue < 0 ? 'Credit Balance: ' : 'Balance: '}
+                          </span>
+                          <span className={`text-lg font-bold ${
+                            balanceDue > 0 
+                              ? 'text-red-600' 
+                              : balanceDue < 0 
+                              ? 'text-green-600' 
+                              : 'text-gray-600'
+                          }`}>
+                            ₹{Math.abs(balanceDue).toFixed(2)}
+                          </span>
                         </div>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-center">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPreviewVendorData(vendor);
-                            setShowVendorPreview(true);
-                          }}
-                          className="text-gray-600 hover:text-blue-600"
-                        >
-                          <FaEye className="w-5 h-5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      );
+                    })()}
+                  </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-6 text-center">
+                  <div className="text-gray-400">
+                    <FaFileAlt className="w-16 h-16 mx-auto mb-3" />
+                    <p className="text-sm">Click on any vendor row in the left table to view their details</p>
+                  </div>
+                </div>
+              )}
             </div>
-            )}
           </div>
         );
-      default:
-        return null;
-    }
   };
 
   return (
@@ -970,46 +1181,95 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
         {/* Main Content Area */}
         <div className="mt-20 p-6">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Vendors</h1>
+            <div className="flex justify-between items-center">
+              <h1 className="text-3xl font-bold text-gray-900">Vendors</h1>
+              
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center bg-white rounded-full shadow-sm px-4 py-3 w-80 transition-all duration-200 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+                  <FaSearch className="w-5 h-5 text-gray-600 mr-3" />
+                  <input
+                    type="text"
+                    placeholder="Search vendors..."
+                    className="flex-1 outline-none text-gray-900 placeholder-gray-600 bg-transparent focus:outline-none"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
           </div>
 
-          <div className="flex justify-between items-center mb-6">
-            <nav className="flex space-x-6">
-              {tabs.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                    setShowAddForm(null); // Always reset form on tab switch
-                  }}
-                  className={`flex items-center space-x-2 whitespace-nowrap pb-1 px-1 border-b-2 font-medium text-sm transition-colors focus:outline-none py-1 ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                  style={{ minWidth: 110 }}
+                <select
+                  value={selectedDateRange}
+                  onChange={(e) => handleDateRangeChange(e.target.value)}
+                  className="bg-white border border-gray-300 rounded-full px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer"
                 >
-                  <tab.icon className="w-5 h-5" />
-                  <span>{tab.label}</span>
+                  <option value="thisMonth">This Month</option>
+                  <option value="lastMonth">Previous Month</option>
+                  <option value="last3Months">Last 3 Months</option>
+                  <option value="last6Months">Last 6 Months</option>
+                  <option value="thisYear">This Year</option>
+                  <option value="lastYear">Last Year</option>
+                  <option value="custom">Custom Range</option>
+                </select>
+                
+                {/* Custom Date Inputs */}
+                {showCustomDateInputs && (
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      className="bg-white border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
+                      placeholder="Start Date"
+                    />
+                    <span className="text-gray-500 text-sm">to</span>
+                    <input
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      className="bg-white border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
+                      placeholder="End Date"
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => {
+                    setSelectedBill(null);
+                    setShowAddForm('bill');
+                  }}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
+                  style={{ minWidth: 120 }}
+                >
+                  <FaPlus className="w-4 h-4" /> <span>New Bill</span>
                 </button>
-              ))}
-            </nav>
-
-            <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => {
+                    setEditingPO(null);
+                    setShowAddForm('po');
+                  }}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
+                  style={{ minWidth: 120 }}
+                >
+                  <FaPlus className="w-4 h-4" /> <span>New PO</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedPayment(null);
+                    setShowAddForm('payment');
+                  }}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
+                  style={{ minWidth: 120 }}
+                >
+                  <FaPlus className="w-4 h-4" /> <span>New Payment</span>
+                </button>
               <button
                 onClick={handleAddClick}
                 className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
                 style={{ minWidth: 120 }}
               >
-                {getAddButtonIcon()} <span>{getAddButtonLabel()}</span>
+                  <FaPlus className="w-4 h-4" /> <span>New Vendor</span>
               </button>
-              <div className="relative">
-                <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder={`Search ${activeTab}...`}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                />
               </div>
             </div>
           </div>
@@ -1024,8 +1284,23 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
          <VendorPreview
            vendorData={previewVendorData}
            onClose={() => setShowVendorPreview(false)}
+           onEdit={(editedData) => {
+             setPreviewVendorData(editedData);
+           }}
+           onSave={(editedData) => {
+             // Update the vendor in the Redux store
+             const updatedVendors = vendors.map(vendor => 
+               vendor.vendorId === editedData.vendorId ? editedData : vendor
+             );
+             // You might want to dispatch an action to update the vendor in Redux
+             // dispatch(updateVendor(editedData));
+             setPreviewVendorData(editedData);
+             toast.success('Vendor updated successfully!');
+           }}
          />
        )}
+
+      
 
       {/* Purchase Order Preview Modal */}
       {showPurchaseOrderPreview && selectedPurchaseOrder && (

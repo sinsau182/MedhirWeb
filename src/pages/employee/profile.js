@@ -2107,12 +2107,11 @@ function EmployeeProfilePage() {
         <main className="p-6 pt-24">
           <div className="max-w-7xl mx-auto">
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="relative h-64 bg-gradient-to-r bg-[#3B6FA0]">
+              <div className="relative h-48 bg-gradient-to-r bg-[#3B6FA0]">
                 <div className="absolute inset-0 opacity-10 bg-[url('/pattern.svg')] bg-repeat"></div>
                 <div className="relative h-full px-8 py-6 flex flex-col justify-between">
-                  {/* Top Row */}
-                  <div className="flex justify-between items-start">
-                    {/* Status Badges */}
+                  {/* Top Row - Status badges moved to right */}
+                  <div className="flex justify-end items-start">
                     <div className="flex items-center space-x-3">
                       <div className="flex items-center space-x-2 bg-white/10 backdrop-blur px-3 py-1.5 rounded-full text-white text-sm">
                         <div
@@ -2148,30 +2147,16 @@ function EmployeeProfilePage() {
                         </span>
                       </div>
                     </div>
-                    {/* Settings Menu */}
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowProfileMenu(!showProfileMenu)}
-                        className="p-2 hover:bg-white/10 rounded-lg text-white transition-colors"
-                      >
-                        <FiSettings className="w-5 h-5" />
-                      </button>
-                      {showProfileMenu && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1">
-                          <button
-                            onClick={handleLogout}
-                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 flex items-center"
-                          >
-                            <FiLogOut className="w-4 h-4 mr-2" /> Log out
-                          </button>
-                        </div>
-                      )}
-                    </div>
                   </div>
-                  {/* Bottom Row */}
-                  <div className="flex items-end space-x-6">
-                    {/* Profile Picture */}
+                                    {/* Bottom Row - Reorganized layout */}
+                  <div className="flex items-center space-x-6 -mt-2 mb-10">
+                    {/* Profile Picture with email above */}
                     <div className="relative">
+                      <div className="text-center mb-2">
+                        <div className="text-white/80 text-sm">
+                          {employeeById?.emailOfficial || "No official email"}
+                        </div>
+                      </div>
                       <div className="w-28 h-28 rounded-xl bg-white p-1 shadow-lg">
                         <div className="w-full h-full rounded-lg bg-gray-100 border border-white overflow-hidden flex items-center justify-center">
                           {formData.employee.profileImage instanceof File ? (
@@ -2235,7 +2220,7 @@ function EmployeeProfilePage() {
                       )}
                     </div>
                     {/* Employee Info */}
-                    <div className="flex-1 mb-2">
+                    <div className="flex-1 mt-10">
                       <h1 className="text-3xl font-bold text-white mb-1">
                         {employeeById?.name || "Employee Name"}
                       </h1>
@@ -2251,15 +2236,19 @@ function EmployeeProfilePage() {
                           <span>{employeeById?.departmentName || "-"}</span>
                         </div>
                       </div>
-                      <div className="mt-2 text-white/80 text-sm">
-                        <span>
-                          {employeeById?.emailOfficial || "No official email"}
+                    </div>
+                    {/* Quick Info - Reorganized with PF Status first */}
+                    <div className="flex space-x-3 mt-16">
+                      {/* PF Status moved to top */}
+                      <div className="flex flex-col items-center bg-white/10 backdrop-blur px-4 py-2 rounded-lg text-white">
+                        <span className="text-xs text-white/80">PF Status</span>
+                        <span className="font-medium">
+                          {employeeById?.pfEnrolled
+                            ? "Enrolled"
+                            : "Not Enrolled"}
                         </span>
                       </div>
-                    </div>
-                    {/* Quick Info */}
-                    <div className="flex space-x-3">
-                      {/* Add Edit Profile button here, to the left of Reports to */}
+                      {/* Edit Profile button */}
                       {!isPageInEditMode ? (
                         <div className="relative group">
                           <button
@@ -2322,14 +2311,6 @@ function EmployeeProfilePage() {
                           Reports to
                         </span>
                         <span className="font-medium">{managerName}</span>
-                      </div>
-                      <div className="flex flex-col items-center bg-white/10 backdrop-blur px-4 py-2 rounded-lg text-white">
-                        <span className="text-xs text-white/80">PF Status</span>
-                        <span className="font-medium">
-                          {employeeById?.pfEnrolled
-                            ? "Enrolled"
-                            : "Not Enrolled"}
-                        </span>
                       </div>
                     </div>
                   </div>

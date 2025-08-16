@@ -18,6 +18,7 @@ import payslipReducer from "./slices/payslipSlice";
 import allEmployeesSlice from "./slices/allEmployeesSlice";
 import managerEmployeeSlice from "./slices/managerEmployeeSlice";
 import leadsReducer from "./slices/leadsSlice";
+import leadsDashboardReducer from "./slices/leadsDashboardSlice";
 import incomesReducer from "./slices/incomesSlice";
 import attendancesReducer from "./slices/attendancesSlice";
 import vendorReducer from "./slices/vendorSlice";
@@ -41,8 +42,8 @@ import assetReducer from './slices/assetSlice';
 import customFormReducer from './slices/customFormSlice'; // Custom Form slice based on CustomFormController.java
 import customerReducer from './slices/customerSlice';
 import accountSettingsReducer from './slices/accountSettingsSlice'; // Import account settings slice
-import employeeAdvanceReducer from './slices/employeeAdvanceSlice'; // Import employee advance slice
-import arrearsReducer from './slices/arrearsSlice'; // Import arrears slice
+import employeeAdvanceReducer from './slices/employeeAdvanceSlice';
+import arrearsReducer from './slices/arrearsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -66,6 +67,7 @@ export const store = configureStore({
     allEmployees: allEmployeesSlice,
     managerEmployee: managerEmployeeSlice,
     leads: leadsReducer,
+    leadsDashboard: leadsDashboardReducer,
     pipelines: pipelineReducer,
     incomes: incomesReducer,
     attendances: attendancesReducer,

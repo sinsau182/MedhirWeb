@@ -12,10 +12,12 @@ import { toast } from 'sonner';
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
 
-const JunkReasonModal = ({ lead, onClose, onSuccess, position = { x: 0, y: 0 }, isOpen = false }) => {
+const JunkReasonModal = ({ lead, onClose, onSuccess, position = { x: 0, y: 0 }, isOpen = false, activeRoleTab }) => {
   const dispatch = useDispatch();
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const employeeId = sessionStorage.getItem("employeeId");
 
   useEffect(() => {
     if (lead) {
@@ -94,7 +96,11 @@ const JunkReasonModal = ({ lead, onClose, onSuccess, position = { x: 0, y: 0 }, 
       if (onSuccess) {
         onSuccess({ ...lead, status: 'Junk', reasonForJunk: reason.trim() });
         toast.success('Lead marked as junk successfully');
-        dispatch(fetchLeads());
+        if (activeRoleTab === "sales") {
+          dispatch(fetchLeads({ employeeId }));
+        } else {
+          dispatch(fetchLeads());
+        }
       } else {
         onClose();
       }

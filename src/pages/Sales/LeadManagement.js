@@ -18,6 +18,7 @@ import { useSelector, useDispatch } from "react-redux";
 import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
 import LostLeadModal from "@/components/Sales/LostLeadModal";
 import JunkReasonModal from "@/components/Sales/JunkReasonModal";
+import LostJunkLeadsModal from "@/components/Sales/LostJunkLeadsModal";
 import AddLeadModal from "@/components/Sales/AddLeadModal";
 import AssignLeadModal from "@/components/Sales/AssignLeadModal";
 import SemiContactedModal from "@/components/Sales/SemiContactedModal";
@@ -375,14 +376,25 @@ const LeadManagementContent = ({ role }) => {
         );
         
         if (pipeline) {
-          grouped[pipeline.name] = stageLeads;
+          // Add stage information to each lead
+          const leadsWithStageInfo = stageLeads.map(lead => ({
+            ...lead,
+            stageName: pipeline.name,
+            formType: pipeline.formType
+          }));
+          grouped[pipeline.name] = leadsWithStageInfo;
         } else {
           // Create a fallback name if pipeline not found
           const originalPipeline = pipelines.find(p => 
             p.stageId === stageId || p.pipelineId === stageId
           );
           if (originalPipeline) {
-            grouped[`Stage-${stageId.slice(-8)}`] = stageLeads;
+            const leadsWithStageInfo = stageLeads.map(lead => ({
+              ...lead,
+              stageName: originalPipeline.name,
+              formType: originalPipeline.formType
+            }));
+            grouped[`Stage-${stageId.slice(-8)}`] = leadsWithStageInfo;
           }
         }
       });
@@ -407,7 +419,14 @@ const LeadManagementContent = ({ role }) => {
           return isMatch;
         });
 
-        grouped[pipeline.name] = matchingLeads;
+        // Add stage information to each lead
+        const leadsWithStageInfo = matchingLeads.map(lead => ({
+          ...lead,
+          stageName: pipeline.name,
+          formType: pipeline.formType
+        }));
+
+        grouped[pipeline.name] = leadsWithStageInfo;
       });
 
       // Handle leads without pipelineId - assign to first stage
@@ -422,10 +441,17 @@ const LeadManagementContent = ({ role }) => {
       if (leadsWithoutPipeline.length > 0) {
         const firstStage = filteredPipelines[0];
         if (firstStage) {
+          // Add stage information to leads without pipeline
+          const leadsWithStageInfo = leadsWithoutPipeline.map(lead => ({
+            ...lead,
+            stageName: firstStage.name,
+            formType: firstStage.formType
+          }));
+          
           if (!grouped[firstStage.name]) {
             grouped[firstStage.name] = [];
           }
-          grouped[firstStage.name] = [...grouped[firstStage.name], ...leadsWithoutPipeline];
+          grouped[firstStage.name] = [...grouped[firstStage.name], ...leadsWithStageInfo];
         }
       }
     }
@@ -837,6 +863,7 @@ const LeadManagementContent = ({ role }) => {
           allowAssignment={false}
           // Debug props
           debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
+          activeRoleTab={"sales"}
         />
         )}
       </div>

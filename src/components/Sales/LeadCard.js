@@ -27,7 +27,7 @@ import LostLeadModal from './LostLeadModal';
 import LeadActionChoiceModal from './LeadActionChoiceModal';
 import { toast } from 'sonner';
 
-const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleActivity, onTeamAssign, managerEmployees = [], allowAssignment = false }) => {
+const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleActivity, onTeamAssign, managerEmployees = [], allowAssignment = false, activeRoleTab }) => {
   const router = useRouter();
   const [showTeamModal, setShowTeamModal] = useState(false);
   const [teamModalRole, setTeamModalRole] = useState('');
@@ -42,6 +42,8 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
   const [choiceModalPosition, setChoiceModalPosition] = useState({ x: 0, y: 0 });
   const dispatch = useDispatch();
   const { pipelines } = useSelector((state) => state.pipelines);
+
+  console.log(activeRoleTab);
 
   useEffect(() => {
     dispatch(fetchPipelines());
@@ -65,8 +67,9 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
     transform: CSS.Translate.toString(transform),
   };
 
-  const handleCardDoubleClick = (e) => {
+  const handleCardSingleClick = (e) => {
     if (e.target.closest('.lead-actions')) {
+      console.log("lead-actions");
       return;
     }
     router.push(`/Sales/leads/${lead.leadId}`);
@@ -236,7 +239,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
     <div
       ref={setNodeRef}
       style={style}
-      onDoubleClick={handleCardDoubleClick}
+      onClick={handleCardSingleClick}
       {...attributes}
       {...listeners}
       className={`
@@ -391,6 +394,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
         lead={lead}
         onSuccess={handleFreezeSuccess}
         position={freezeModalPosition}
+        activeRoleTab={activeRoleTab}
       />
 
       {/* Junk Reason Modal */}
@@ -400,6 +404,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
         lead={lead}
         onSuccess={handleJunkSuccess}
         position={junkModalPosition}
+        activeRoleTab={activeRoleTab}
       />
 
       {/* Lost Lead Modal */}
@@ -409,6 +414,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
         lead={lead}
         onSuccess={handleLostSuccess}
         position={lostModalPosition}
+        activeRoleTab={activeRoleTab}
       />
 
       {/* Lead Action Choice Modal */}

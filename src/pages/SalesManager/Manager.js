@@ -19,6 +19,7 @@ import { useSelector, useDispatch } from "react-redux";
 import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
 import LostLeadModal from "@/components/Sales/LostLeadModal";
 import JunkReasonModal from "@/components/Sales/JunkReasonModal";
+import LostJunkLeadsView from "@/components/Sales/LostJunkLeadsView";
 import AddLeadModal from "@/components/Sales/AddLeadModal";
 import AssignLeadModal from "@/components/Sales/AssignLeadModal";
 import SemiContactedModal from "@/components/Sales/SemiContactedModal";
@@ -194,8 +195,58 @@ const ManagerContent = ({ role }) => {
     }
   }, [dispatch, selectedEmployeeId, unassignedOnly]);
 
-  // Deduplicate leads by leadId (keep first occurrence) - Manager specific
-  const dedupedLeads = useFlattenedLeads(leads);
+  // Deduplicate leads by leadId and add stage information - Manager specific
+  const dedupedLeads = useMemo(() => {
+    const seen = new Set();
+    let flatLeads = [];
+    
+    if (Array.isArray(leads) && leads.length > 0 && leads[0].stageId && Array.isArray(leads[0].leads)) {
+      // New grouped format: leads grouped by stageId
+      leads.forEach((stageGroup) => {
+        if (Array.isArray(stageGroup.leads)) {
+          // Find the pipeline/stage for this stageId
+          const pipeline = pipelines.find(p => 
+            p.stageId === stageGroup.stageId || p.pipelineId === stageGroup.stageId
+          );
+          
+          const stageName = pipeline ? pipeline.name : `Stage-${stageGroup.stageId?.slice(-8)}`;
+          const stageId = stageGroup.stageId;
+          
+          // Add stage information to each lead
+          const leadsWithStage = stageGroup.leads.map(lead => ({
+            ...lead,
+            stageId: stageId,
+            stageName: stageName
+          }));
+          
+          flatLeads = flatLeads.concat(leadsWithStage);
+        }
+      });
+    } else if (Array.isArray(leads)) {
+      // Old flat format: individual leads with pipelineId/stageId
+      flatLeads = leads.map(lead => {
+        const pipeline = pipelines.find(p => 
+          p.stageId === (lead.pipelineId || lead.stageId) || 
+          p.pipelineId === (lead.pipelineId || lead.stageId)
+        );
+        
+        return {
+          ...lead,
+          stageId: lead.pipelineId || lead.stageId,
+          stageName: pipeline ? pipeline.name : 'Unknown Stage'
+        };
+      });
+    }
+    
+    // Deduplicate by leadId
+    return flatLeads.filter((lead) => {
+      if (lead && lead.leadId && !seen.has(lead.leadId)) {
+        seen.add(lead.leadId);
+        return true;
+      }
+      return false;
+    });
+  }, [leads, pipelines]);
 
   // Group leads by pipelineId for Kanban board
   const leadsByStatus = useMemo(() => {
@@ -837,7 +888,11 @@ const ManagerContent = ({ role }) => {
           </div>
 
           <SearchBar filterText={filterText} setFilterText={setFilterText} />
-          <ViewToggle viewMode={viewMode} setViewMode={setViewMode} />
+          <ViewToggle 
+            viewMode={viewMode} 
+            setViewMode={setViewMode}
+            onShowLostJunk={() => setViewMode('lost-junk')}
+          />
         </div>
       </div>
 
@@ -878,12 +933,13 @@ const ManagerContent = ({ role }) => {
                   managerEmployees={managerEmployees || []}
                   allowAssignment={true}
                   debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
+                  activeRoleTab={"manager"}
                 />
               </div>
             )}
 
             {viewMode === "table" && (
-              <div className="h-full w-full overflow-auto">
+              <div className="h-full w-full overflow-auto p-4">
                 <LeadsTable
                   leads={dedupedLeads.filter((lead) =>
                     (unassignedOnly ? !lead.salesRep : true) && (
@@ -894,6 +950,10 @@ const ManagerContent = ({ role }) => {
                   )}
                 />
               </div>
+            )}
+            
+            {viewMode === "lost-junk" && (
+              <LostJunkLeadsView />
             )}
           </>
         )}
@@ -923,6 +983,7 @@ const ManagerContent = ({ role }) => {
           lead={pendingLost?.lead}
           onClose={handleLostModalClose}
           onSuccess={pendingLost ? handleLostSuccess : undefined}
+          activeRoleTab={"manager"}
         />
       )}
       {showJunkReasonModal && (
@@ -930,6 +991,7 @@ const ManagerContent = ({ role }) => {
           lead={pendingJunk?.lead}
           onClose={handleJunkModalClose}
           onSuccess={pendingJunk ? handleJunkSuccess : undefined}
+          activeRoleTab={"manager"}
         />
       )}
 

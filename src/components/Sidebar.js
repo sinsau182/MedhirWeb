@@ -126,12 +126,12 @@ const modularMenus = {
         link: "/Sales/dashboard"
       },
       {
-        label: "Lead Management",
+        label: "My Leads",
         icon: <FaTasks className="w-4 h-4" />,
         link: "/Sales/LeadManagement",
       },
       {
-        label: "Team Leads",
+        label: "All Leads",
         icon: <FaUsers className="w-4 h-4" />,
         link: "/SalesManager/Manager",
       },
@@ -150,17 +150,22 @@ const modularMenus = {
     icon: <FaFileInvoiceDollar className="w-5 h-5" />,
     items: [
       {
-        label: "Customers",
+        label: "Dashboard",
+        icon: <ChartColumnIncreasing className="w-4 h-4" />,
+        link: "/account/dashboard",
+      },
+      {
+        label: "Sales",
         icon: <FaUsers className="w-4 h-4" />,
         link: "/account/customers",
       },
       {
-        label: "Vendors",
+        label: "Purchases",
         icon: <FaBuilding className="w-4 h-4" />,
         link: "/account/vendor",
       },
       {
-        label: "Employees",
+        label: "Reimbursements",
         icon: <FaUserTie className="w-4 h-4" />,
         link: "/account/employee",
       },
@@ -306,11 +311,11 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
               if (item.label === "Sales Settings") {
                 return hasAdminRole();
               }
-              if (item.label === "Team Leads") {
-                return isManagerOrAdmin;
+              if (item.label === "My Leads") {
+                return !isManagerOrAdmin; // Hide My Leads for manager/admin
               }
-              if (item.label === "Lead Management") {
-                return true; // visible to everyone, including manager/admin
+              if (item.label === "All Leads") {
+                return isManagerOrAdmin; // Show All Leads only for manager/admin
               }
               // Keep Dashboard for everyone
               return true;
@@ -352,16 +357,16 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
             modules.push({ key: moduleId, ...filteredModule });
           } else if (moduleId === "MOD_SALES") {
             const isManagerOrAdmin = hasManagerRole() || hasAdminRole();
-            // Filter Sales items: Dashboard for all; Team Leads only for manager/admin; Lead Management for everyone
+            // Filter Sales items: Dashboard for all; My Leads only for non-manager/non-admin; All Leads for manager/admin
             const filteredItems = modularMenus[moduleId].items.filter(item => {
               if (item.label === "Sales Settings") {
                 return hasAdminRole();
               }
-              if (item.label === "Team Leads") {
-                return isManagerOrAdmin;
+              if (item.label === "My Leads") {
+                return !isManagerOrAdmin; // Hide My Leads for manager/admin
               }
-              if (item.label === "Lead Management") {
-                return true; // visible to everyone, including manager/admin
+              if (item.label === "All Leads") {
+                return isManagerOrAdmin; // Show All Leads only for manager/admin
               }
               return true; // Dashboard
             });

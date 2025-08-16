@@ -11,7 +11,7 @@ import { fetchLeads } from '@/redux/slices/leadsSlice';
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
 
-const FreezeLeadModal = ({ isOpen, onClose, lead, onSuccess, position = { x: 0, y: 0 } }) => {
+const FreezeLeadModal = ({ isOpen, onClose, lead, onSuccess, position = { x: 0, y: 0 }, activeRoleTab }) => {
   const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     freezingAmount: '',
@@ -20,6 +20,7 @@ const FreezeLeadModal = ({ isOpen, onClose, lead, onSuccess, position = { x: 0, 
   });
   const [proofFile, setProofFile] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const employeeId = sessionStorage.getItem("employeeId");
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -95,7 +96,11 @@ const FreezeLeadModal = ({ isOpen, onClose, lead, onSuccess, position = { x: 0, 
       }
 
       // Refresh the page to update the UI
-      dispatch(fetchLeads());
+      if (activeRoleTab === "sales") {
+        dispatch(fetchLeads({ employeeId }));
+      } else {
+        dispatch(fetchLeads());
+      }
       
       onClose();
       

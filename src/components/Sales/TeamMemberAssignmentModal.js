@@ -25,7 +25,7 @@ const TeamMemberAssignmentModal = ({
       }
       setIsSubmitting(false);
     }
-  }, [isOpen, lead, role, salesEmployees]);
+  }, [isOpen, lead, role]);
 
   const handleEmployeeChange = (e) => {
     const newEmployeeId = e.target.value;

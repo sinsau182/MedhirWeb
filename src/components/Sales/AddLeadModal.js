@@ -191,12 +191,12 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
     }
 
     // Address validation
-    if (formData.address.trim()) {
-      if (formData.address.trim().length < 10) {
-        newErrors.address = 'Address must be at least 10 characters';
-      } else if (formData.address.trim().length > 200) {
-        newErrors.address = 'Address must be less than 200 characters';
-      }
+    if (!formData.address.trim()) {
+      newErrors.address = 'Project address is required';
+    } else if (formData.address.trim().length < 10) {
+      newErrors.address = 'Address must be at least 10 characters';
+    } else if (formData.address.trim().length > 200) {
+      newErrors.address = 'Address must be less than 200 characters';
     }
 
     // Area validation
@@ -326,7 +326,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
             {/* Name Field */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
-                Name <span className="text-blue-500 font-bold">*</span>
+                Client Name <span className="text-blue-500 font-bold">*</span>
               </label>
               <Input
                 type="text"
@@ -430,6 +430,21 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
               </div>
             )}
 
+            {/* Project Address Field */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Project Address <span className="text-blue-500 font-bold">*</span>
+              </label>
+              <Input
+                type="text"
+                placeholder="Enter project address"
+                value={formData.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                className={`border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 ${errors.address ? 'border-red-500' : ''}`}
+              />
+              {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
+            </div>
+
             {/* Email Field (conditionally required) */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -445,59 +460,6 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
 
-            {/* Project Address Field */}
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Project Address
-              </label>
-              <Input
-                type="text"
-                placeholder="Enter project address"
-                value={formData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-                className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
-              />
-            </div>
-            
-
-            {/* Priority Row (replaces Status) */}
-            {/* <div className="grid grid-cols-2 gap-4 items-end">
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center gap-2">
-                  Priority
-                  <span className="flex items-center ml-1">
-                    {(() => {
-                      const selected = priorityOptions.find(p => p.value === formData.priority) || priorityOptions[0];
-                      return Array.from({ length: 3 }).map((_, i) => (
-                        <svg
-                          key={i}
-                          className={`w-4 h-4 ${i < selected.stars ? selected.color : 'text-gray-200'}`}
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                        </svg>
-                      ));
-                    })()}
-                  </span>
-                </label>
-                <Select
-                  value={formData.priority}
-                  onValueChange={value => handleInputChange('priority', value)}
-                >
-                  <SelectTrigger className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 hover:border-blue-400">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-lg shadow-lg">
-                    {priorityOptions.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value} className="text-xs hover:bg-blue-50 focus:bg-blue-100 rounded-md">
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div> */}
               {/* Area Field (optional) */}
               <div className='grid grid-cols-2 gap-4'>
                 <div>
@@ -526,11 +488,6 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
                 />
             </div>
             </div>
-            {/* </div> */}
-
-            
-
-            
 
             {/* Notes Field */}
             <div>

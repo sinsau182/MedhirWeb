@@ -24,10 +24,13 @@ const lostReasons = [
     "Other (Specify in notes if possible)" // Consider adding a notes field later if needed
   ];
 
-const LostLeadModal = ({ lead, onClose, onSuccess, position = { x: 0, y: 0 }, isOpen = false }) => {
+const LostLeadModal = ({ lead, onClose, onSuccess, position = { x: 0, y: 0 }, isOpen = false, activeRoleTab }) => {
+  console.log(activeRoleTab);
   const dispatch = useDispatch();
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const employeeId = sessionStorage.getItem("employeeId");
 
   useEffect(() => {
     if (lead) {
@@ -94,6 +97,7 @@ const LostLeadModal = ({ lead, onClose, onSuccess, position = { x: 0, y: 0 }, is
       const formData = new FormData();
       formData.append('formType', 'LOST');
       formData.append('reasonForLost', reason.trim());
+      formData.append('dateOfLost', new Date().toISOString().split('T')[0]);
 
       // Send to the correct API endpoint
       await axios.patch(`${API_BASE_URL}/leads/${lead.leadId}/stage`, formData, {
@@ -106,7 +110,11 @@ const LostLeadModal = ({ lead, onClose, onSuccess, position = { x: 0, y: 0 }, is
       if (onSuccess) {
         onSuccess({ ...lead, status: 'Lost', reasonForLost: reason.trim() });
         toast.success('Lead marked as lost successfully');
-        dispatch(fetchLeads());
+        if (activeRoleTab === "sales") {
+          dispatch(fetchLeads({ employeeId }));
+        } else {
+          dispatch(fetchLeads());
+        }
       } else {
         onClose();
       }
@@ -192,6 +200,7 @@ const LostLeadModal = ({ lead, onClose, onSuccess, position = { x: 0, y: 0 }, is
               disabled={isSubmitting}
               required
             >
+              <option value="" disabled>Select a reason</option>
               {lostReasons.map((reason, index) => (
                 <option key={index} value={reason}>{reason}</option>
               ))}

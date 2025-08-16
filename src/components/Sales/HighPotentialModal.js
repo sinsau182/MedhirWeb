@@ -186,11 +186,8 @@ const HighPotentialModal = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-purple-50 to-pink-50">
+        <div className="flex justify-between items-center p-4 border-b">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <FaFileInvoiceDollar className="w-5 h-5 text-purple-600" />
-            </div>
             <div>
               <h2 className="text-xl font-bold text-gray-800">
                 High Potential Lead Details
@@ -241,7 +238,6 @@ const HighPotentialModal = ({
             {/* Quotation Details */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaFileInvoiceDollar className="w-4 h-4 text-blue-600" />
                 Quotation Details *
               </label>
               <textarea
@@ -260,7 +256,6 @@ const HighPotentialModal = ({
             {/* Final Quoted Amount */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaDollarSign className="w-4 h-4 text-green-600" />
                 Final Quoted Amount *
               </label>
               <input
@@ -279,7 +274,6 @@ const HighPotentialModal = ({
             {/* Discount Percentage */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaPercent className="w-4 h-4 text-red-600" />
                 Discount Percentage *
               </label>
               <input
@@ -298,7 +292,6 @@ const HighPotentialModal = ({
             {/* Design Timeline */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaCalendarAlt className="w-4 h-4 text-purple-600" />
                 Design Timeline *
               </label>
               <input
@@ -317,7 +310,6 @@ const HighPotentialModal = ({
             {/* Completion Timeline */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <FaClock className="w-4 h-4 text-orange-600" />
                 Completion Timeline *
               </label>
               <input
@@ -332,24 +324,11 @@ const HighPotentialModal = ({
                 Specify the timeline for project completion
               </p>
             </div>
-
-            {/* Summary */}
-            {/* <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-              <h4 className="font-medium text-purple-800 mb-2">Update Summary</h4>
-              <div className="text-sm text-purple-700 space-y-1">
-                <p><strong>Lead:</strong> {lead?.name || "N/A"}</p>
-                <p><strong>Quotation Details:</strong> {formData.requirements ? "Provided" : "Not provided"}</p>
-                <p><strong>Final Amount:</strong> {formData.finalQuotation || "Not specified"}</p>
-                <p><strong>Discount:</strong> {formData.discount || "Not specified"}</p>
-                <p><strong>Design Timeline:</strong> {formData.designTimeline || "Not specified"}</p>
-                <p><strong>Completion Timeline:</strong> {formData.completionTimeline || "Not specified"}</p>
-              </div>
-            </div> */}
           </form>
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 px-6 py-4 flex justify-end items-center gap-3 border-t flex-shrink-0">
+        <div className="px-6 py-3 flex justify-end items-center gap-3 border-t flex-shrink-0">
           <button
             type="button"
             onClick={handleCancel}
