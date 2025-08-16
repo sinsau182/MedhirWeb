@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { FaSave, FaTimes, FaReceipt, FaChevronDown, FaChevronRight, FaInfoCircle, FaLink, FaUpload, FaFileAlt, FaTrash, FaFileImage, FaPaperclip } from 'react-icons/fa';
+import { FaSave, FaTimes, FaReceipt, FaChevronDown, FaChevronRight, FaInfoCircle, FaLink, FaUpload, FaFileAlt } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { addReceipt, getNextReceiptNumber, generateNextReceiptNumber } from "../../redux/slices/receiptSlice";
 import { fetchProjectCustomerList, fetchInvoicesByProject, fetchReceiptsByProject } from "@/redux/slices/receiptSlice";
-import FilePreviewer from "../ui/FilePreviewer";
-import { ToWords } from 'to-words';
+import FileUploadWithPreview from "../ui/FileUploadWithPreview";
 
 const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
   const [formData, setFormData] = useState({
@@ -29,23 +28,12 @@ const dispatch = useDispatch();
   const [uploadedFile, setUploadedFile] = useState(null);
   const [uploadedImage, setUploadedImage] = useState(null);
   const [error, setError] = useState(null);
-  const [scale, setScale] = useState(0); // 0 = fit to container, 1.0 = 100%, etc.
   
   // New state for project-specific data
   const [projectReceiptData, setProjectReceiptData] = useState({
     totalAmountReceived: 0,
     totalUnallocatedAmount: 0,
     previousReceipts: []
-  });
-
-  // Initialize ToWords for converting numbers to words
-  const toWords = new ToWords({
-    localeCode: 'en-IN',
-    converterOptions: {
-      currency: true,
-      ignoreDecimal: false,
-      ignoreZeroCurrency: false,
-    }
   });
 
   // Static data - in real app, these would come from APIs
@@ -153,22 +141,6 @@ useEffect(() => {
   const handleFileUpload = (file) => {
     if (!file) return;
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff', 'application/pdf'];
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const allowedExtensions = ['jpg', 'jpeg', 'png', 'bmp', 'tiff', 'pdf'];
-    
-    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
-      setError('Invalid file type. Please upload JPG, JPEG, PNG, BMP, TIFF, or PDF files only.');
-      return;
-    }
-
-    // Validate file size (10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size too large. Maximum allowed size is 10MB.');
-      return;
-    }
-
     setError(null);
     setUploadedFile(file);
     setUploadedImage(file);
@@ -178,15 +150,12 @@ useEffect(() => {
       file.name,
       `(${(file.size / 1024 / 1024).toFixed(2)}MB)`
     );
-    
-    toast.success(`File "${file.name}" uploaded successfully!`);
   };
 
   const handleRemoveFile = () => {
     setUploadedImage(null);
     setUploadedFile(null);
     setError(null);
-    setScale(0); // Reset zoom when removing file
     toast.success("File removed successfully");
   };
 
@@ -308,22 +277,28 @@ const handleSubmit = async (e) => {
   const receiptAmount = parseFloat(formData.amount) || 0;
 
   return (
-    <div className="flex flex-col h-full pt-[var(--app-header-h)]">
-      {/* Main Content */}
-      <main className="flex-1 overflow-hidden pl-0 pr-2 pb-2 min-w-0">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 h-full min-w-0">
-          {/* Form Panel (Left) */}
-          <div className="lg:col-span-1 overflow-hidden pb-8 min-w-0">
-            {/* Form Content */}
-            <div className="space-y-3 pb-4 overflow-y-auto h-full">
-              {/* Top Section - Receipt Details */}
-              <div className="flex flex-col lg:flex-row gap-3">
-                {/* Receipt Details */}
-                <div className="flex-1 space-y-2">
-                  <h2 className="text-lg font-semibold border-b pb-2 mb-2 text-gray-900">
-                    Receipt Details
-                  </h2>
-                  
+    <div className="w-full h-screen flex flex-col bg-white">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 flex-1 min-h-0 border border-gray-200 rounded-t-lg overflow-hidden shadow-sm relative min-w-0">
+        {/* Form Panel (Left) */}
+        <div className="lg:col-span-1 overflow-y-auto p-6 border-r border-gray-200 pb-24">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-900">
+              Add New Receipt
+            </h2>
+          </div>
+
+          {/* Form Content */}
+          <div className="space-y-6 pb-6">
+            {/* Receipt Details */}
+            <div>
+              <div className="flex items-center mb-6">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                <h2 className="text-lg font-semibold text-gray-900">Receipt Details</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left column */}
+                <div className="space-y-6">
                   <div className="relative inline-block w-full">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
                     <button
@@ -404,12 +379,8 @@ const handleSubmit = async (e) => {
                   </div>
                 </div>
 
-                {/* Payment Details */}
-                <div className="flex-1 space-y-2">
-                  <h2 className="text-lg font-semibold border-b pb-2 mb-2 text-gray-900">
-                    Payment Details
-                  </h2>
-                  
+                {/* Right column */}
+                <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Amount Received (INR) <span className="text-red-500">*</span></label>
                     <div className="relative">
@@ -483,164 +454,54 @@ const handleSubmit = async (e) => {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Upload Panel (Right) */}
-          <div className="lg:col-span-1 overflow-y-auto p-4 lg:p-6 pb-8 h-full min-w-0">
-            <div className="h-full flex flex-col">
-              <div className="flex-1">
-                {uploadedImage ? (
-                  <div className="h-full flex flex-col">
-                    <div className="flex-1 relative">
-                      <FilePreviewer
-                        file={uploadedImage}
-                        className="h-full w-full"
-                        scale={scale}
-                      />
-                      
-                      {/* Zoom Controls Overlay */}
-                      <div className="absolute top-2 left-2 z-10">
-                        <div className="bg-white bg-opacity-90 rounded-lg shadow-md p-2 text-xs text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">Zoom:</span>
-                            <span>{scale === 0 ? 'Fit' : `${Math.round(scale * 100)}%`}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* File Controls */}
-                    <div className="mt-4 flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <FaFileImage className="text-blue-500" />
-                        <span className="font-medium">
-                          {uploadedImage.name || 'Uploaded File'}
-                        </span>
-                        {uploadedImage.size && uploadedImage.size > 0 && (
-                          <span className="text-gray-500">
-                            ({(uploadedImage.size / 1024 / 1024).toFixed(2)} MB)
-                          </span>
-                        )}
-                        {uploadedImage.isExistingAttachment && (
-                          <span className="text-blue-600 text-xs bg-blue-100 px-2 py-1 rounded-full">
-                            Existing
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {scale !== 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setScale(0)}
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                            title="Reset zoom to fit"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={handleRemoveFile}
-                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
-                          title="Remove file"
-                        >
-                          <FaTrash className="text-sm" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="h-full flex flex-col">
-                    <div className="flex-1">
-                      <div className="h-full border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all duration-200">
-                        <div className="h-full flex flex-col items-center justify-center p-6">
-                          <div className="text-center">
-                            <FaUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                            <p className="text-lg font-medium text-gray-700 mb-2">
-                              Upload Payment Proof
-                            </p>
-                            <p className="text-sm text-gray-500 mb-4">
-                              Click to browse or drag and drop your file here
-                            </p>
-                            <p className="text-xs text-gray-400 mb-4">
-                              Supported formats: JPG, JPEG, PNG, BMP, TIFF, PDF
-                            </p>
-                            <p className="text-xs text-gray-400 mb-4">
-                              Maximum file size: 10MB
-                            </p>
-                            
-                            <label className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 cursor-pointer transition-all hover:scale-105 active:scale-95">
-                              <FaPaperclip className="mr-2" />
-                              Choose File
-                              <input
-                                type="file"
-                                className="hidden"
-                                accept=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
-                                onChange={(e) => {
-                                  if (e.target.files && e.target.files[0]) {
-                                    handleFileUpload(e.target.files[0]);
-                                  }
-                                }}
-                              />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+        {/* Upload Panel (Right) */}
+        <div className="lg:col-span-1 overflow-y-auto bg-gray-50 p-6 pb-24">
+          <div className="h-full flex flex-col">
+            <div className="flex-1">
+              <FileUploadWithPreview
+                onFileChange={handleFileUpload}
+                acceptedFileTypes=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
+                maxFileSize={10 * 1024 * 1024} // 10MB
+                placeholder="Click to upload payment proof or drag it here"
+                showPreview={true}
+                className="h-full"
+              />
+            </div>
+            
+            {error && (
+              <div className="mt-4 text-red-600 bg-red-100 border border-red-300 p-3 rounded-lg text-left">
+                <strong>❌ Error:</strong> {error}
               </div>
-              
-              {error && (
-                <div className="mt-4 text-red-600 bg-red-100 border border-red-300 p-3 rounded-lg text-left">
-                  <strong>❌ Error:</strong> {error}
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
-      </main>
 
-      {/* Sticky Footer */}
-      <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 shadow-sm">
-        <div className="flex justify-between items-center">
-          <div className="flex flex-col">
+        {/* Sticky Footer integrated within form container */}
+        <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white px-6 py-4 rounded-b-lg shadow-sm z-10">
+          <div className="flex justify-between items-center">
             <div className="text-lg font-bold">
-              Total Receipt Amount:{" "}
-              <span className="text-green-600">
-                ₹{receiptAmount.toLocaleString("en-IN")}
-              </span>
+              Total Receipt Amount: <span className="text-green-600">₹{receiptAmount.toLocaleString("en-IN")}</span>
             </div>
-            <div className="text-sm text-gray-600 mt-1">
-              Amount in Words: <span className="italic">{toWords.convert(receiptAmount)}</span>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="px-6 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+                onClick={onCancel}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors flex items-center space-x-2"
+                onClick={handleSubmit}
+              >
+                <FaSave className="w-4 h-4" />
+                <span>Save Receipt</span>
+              </button>
             </div>
           </div>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              className="px-6 py-2 border border-gray-300 rounded-lg transition-colors text-gray-700 bg-white hover:bg-gray-50"
-              onClick={onCancel}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors flex items-center space-x-2"
-              onClick={handleSubmit}
-            >
-              <FaSave className="w-4 h-4" />
-              <span>Save Receipt</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="w-full bg-gray-50 border-t border-gray-200 p-2">
-        <div className="text-center text-sm text-gray-500">
-          {/* Footer content can be added here */}
         </div>
       </div>
     </div>
