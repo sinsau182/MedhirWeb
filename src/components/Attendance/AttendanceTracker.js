@@ -2439,7 +2439,7 @@ function AttendanceTracker({
                     </DropdownMenu>
                   </div>
 
-                  {/* Apply Button */}
+                  {/* Apply Changes Button */}
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-medium text-gray-600">
                       &nbsp;
@@ -2589,11 +2589,29 @@ function AttendanceTracker({
                         setMonthAttendanceData(newData);
                       }}
                     >
-                      Apply
+                      Apply Changes
                     </button>
                   </div>
 
-                  {/* Save Attendance Button */}
+                  {/* Cancel Changes Button - Only visible when filters are applied */}
+                  {hasSingleEmployeeChanges() && (
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-medium text-gray-600">
+                        &nbsp;
+                      </label>
+                      <button
+                        onClick={() => {
+                          // Undo changes by resetting to original data
+                          setMonthAttendanceData({...originalMonthAttendanceData});
+                        }}
+                        className="px-4 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-xs font-medium transition-colors shadow-sm h-[28px]"
+                      >
+                        Cancel Changes
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Finalize Changes Button */}
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-medium text-gray-600">
                       &nbsp;
@@ -2630,23 +2648,12 @@ function AttendanceTracker({
                           Saving...
                         </>
                       ) : (
-                        "Save Attendance"
+                        "Finalize Changes"
                       )}
                     </button>
                   </div>
 
-                  {/* Cancel Button */}
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-gray-600">
-                      &nbsp;
-                    </label>
-                    <button
-                      onClick={closeAllModals}
-                      className="px-4 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-xs font-medium transition-colors shadow-sm h-[28px]"
-                    >
-                      Cancel
-                    </button>
-                  </div>
+
                 </div>
               )}
             </div>
@@ -3403,7 +3410,7 @@ function AttendanceTracker({
                 </DropdownMenu>
               </div>
 
-              {/* Apply Button */}
+              {/* Apply Changes Button */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-gray-600">
                   &nbsp;
@@ -3438,11 +3445,29 @@ function AttendanceTracker({
                     );
                   }}
                 >
-                  Apply
+                  Apply Changes
                 </button>
               </div>
 
-              {/* Save Attendance Button */}
+              {/* Cancel Changes Button - Only visible when filters are applied */}
+              {hasAllEmployeesChanges() && (
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-600">
+                    &nbsp;
+                  </label>
+                  <button
+                    onClick={() => {
+                      // Undo changes by resetting to original data
+                      setAllEmployeesAttendanceData({...originalAllEmployeesAttendanceData});
+                    }}
+                    className="px-4 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-xs font-medium transition-colors shadow-sm h-[28px]"
+                  >
+                    Cancel Changes
+                  </button>
+                </div>
+              )}
+
+              {/* Finalize Changes Button */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-medium text-gray-600">
                   &nbsp;
@@ -3479,23 +3504,12 @@ function AttendanceTracker({
                       Saving...
                     </>
                   ) : (
-                    "Save Attendance"
+                    "Finalize Changes"
                   )}
                 </button>
               </div>
 
-              {/* Cancel Button */}
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-gray-600">
-                  &nbsp;
-                </label>
-                <button
-                  onClick={closeAllModals}
-                  className="px-4 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-md text-xs font-medium transition-colors shadow-sm h-[28px]"
-                >
-                  Cancel
-                </button>
-              </div>
+
             </div>
 
             {/* Employee List and Attendance Grid */}

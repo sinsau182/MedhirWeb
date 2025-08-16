@@ -484,131 +484,161 @@ const EmployeeAttendance = () => {
             <Card className="md:col-span-2">
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="text-xl">
-                      Attendance Calendar
-                    </CardTitle>
-                    <CardDescription>
-                      View and track your attendance history
-                    </CardDescription>
-                  </div>
-                  <div className="relative" ref={calendarRef}>
-                    <Badge
-                      variant="outline"
-                      className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
-                      onClick={toggleCalendar}
+                  {/* Left Side: Month Navigation with Calendar */}
+                  <div className="flex items-center gap-4">
+                    {/* Left Arrow - Previous Month */}
+                    <button
+                      onClick={() => {
+                        const currentDate = new Date(`${selectedMonth} 1, ${selectedYear}`);
+                        const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+                        const prevMonthName = prevMonth.toLocaleString("default", { month: "short" });
+                        const prevYear = prevMonth.getFullYear().toString();
+                        handleMonthSelection(prevMonthName, prevYear);
+                      }}
+                      className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors duration-200 text-blue-600 hover:text-blue-800"
+                      title="Previous Month"
                     >
-                      <Calendar className="h-4 w-4" />
-                      <span className="font-medium text-sm">
-                        {selectedYear}-{selectedMonth}
-                      </span>
-                    </Badge>
-                    {isCalendarOpen && (
-                      <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
-                        {/* Existing calendar content */}
-                        <div className="p-3 border-b flex justify-between items-center">
-                          <div className="text-sm font-medium text-gray-700">
-                            {selectedYear}
-                          </div>
-                          <select
-                            value={selectedYear}
-                            onChange={(e) => {
-                              const newYear = e.target.value;
-                              setSelectedYear(newYear);
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
 
-                              // Set default month based on year
-                              if (newYear === "2024") {
-                                setSelectedMonth("Aug");
-                                // Fetch data for August 2024
-                                const employeeId =
-                                  sessionStorage.getItem("employeeId");
-                                if (employeeId) {
-                                  dispatch(
-                                    fetchOneEmployeeAttendanceOneMonth({
-                                      employeeId,
-                                      month: "Aug",
-                                      year: newYear,
-                                    })
-                                  );
-                                }
-                              } else {
-                                setSelectedMonth("Jan");
-                                // Fetch data for January 2025
-                                const employeeId =
-                                  sessionStorage.getItem("employeeId");
-                                if (employeeId) {
-                                  dispatch(
-                                    fetchOneEmployeeAttendanceOneMonth({
-                                      employeeId,
-                                      month: "Jan",
-                                      year: newYear,
-                                    })
-                                  );
-                                }
-                              }
-                            }}
-                            className="ml-2 border rounded px-2 py-1 text-sm"
-                          >
-                            {[2024, 2025].map((year) => (
-                              <option key={year} value={year}>
-                                {year}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1.5 p-3">
-                          {(() => {
-                            const currentYear = new Date().getFullYear();
-                            const currentMonthIdx = new Date().getMonth(); // 0-based
-                            let months = [
-                              "Jan",
-                              "Feb",
-                              "Mar",
-                              "Apr",
-                              "May",
-                              "Jun",
-                              "Jul",
-                              "Aug",
-                              "Sep",
-                              "Oct",
-                              "Nov",
-                              "Dec",
-                            ];
+                                        {/* Calendar Button */}
+                    <div className="relative" ref={calendarRef}>
+                      <Badge
+                        variant="outline"
+                        className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
+                        onClick={toggleCalendar}
+                      >
+                        <Calendar className="h-4 w-4" />
+                        <span className="font-medium text-sm">
+                          {selectedYear}-{selectedMonth}
+                        </span>
+                      </Badge>
+                      {isCalendarOpen && (
+                        <div className="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+                          {/* Existing calendar content */}
+                          <div className="p-3 border-b flex justify-between items-center">
+                            <div className="text-sm font-medium text-gray-700">
+                              {selectedYear}
+                            </div>
+                            <select
+                              value={selectedYear}
+                              onChange={(e) => {
+                                const newYear = e.target.value;
+                                setSelectedYear(newYear);
 
-                            // Determine which months to show based on year
-                            let startIdx = 0;
-                            let endIdx = 11;
-
-                            if (parseInt(selectedYear) === 2024) {
-                              startIdx = 7; // August (0-based)
-                              endIdx = 11; // December
-                            } else if (parseInt(selectedYear) === 2025) {
-                              startIdx = 0; // January
-                              endIdx =
-                                currentYear === 2025 ? currentMonthIdx : 11;
-                            }
-
-                            return months
-                              .slice(startIdx, endIdx + 1)
-                              .map((month) => (
-                                <button
-                                  key={month}
-                                  className={`p-3 text-sm rounded-md transition-colors duration-200 ${
-                                    month === selectedMonth
-                                      ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
-                                      : "hover:bg-gray-50 text-gray-700"
-                                  }`}
-                                  onClick={() =>
-                                    handleMonthSelection(month, selectedYear)
+                                // Set default month based on year
+                                if (newYear === "2024") {
+                                  setSelectedMonth("Aug");
+                                  // Fetch data for August 2024
+                                  const employeeId =
+                                    sessionStorage.getItem("employeeId");
+                                  if (employeeId) {
+                                    dispatch(
+                                      fetchOneEmployeeAttendanceOneMonth({
+                                        employeeId,
+                                        month: "Aug",
+                                        year: newYear,
+                                      })
+                                    );
                                   }
-                                >
-                                  {month}
-                                </button>
-                              ));
-                          })()}
+                                } else {
+                                  setSelectedMonth("Jan");
+                                  // Fetch data for January 2025
+                                  const employeeId =
+                                    sessionStorage.getItem("employeeId");
+                                  if (employeeId) {
+                                    dispatch(
+                                      fetchOneEmployeeAttendanceOneMonth({
+                                        employeeId,
+                                        month: "Jan",
+                                        year: newYear,
+                                      })
+                                    );
+                                  }
+                                }
+                              }}
+                              className="ml-2 border rounded px-2 py-1 text-sm"
+                            >
+                              {[2024, 2025].map((year) => (
+                                <option key={year} value={year}>
+                                  {year}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="grid grid-cols-3 gap-1.5 p-3">
+                            {(() => {
+                              const currentYear = new Date().getFullYear();
+                              const currentMonthIdx = new Date().getMonth(); // 0-based
+                              let months = [
+                                "Jan",
+                                "Feb",
+                                "Mar",
+                                "Apr",
+                                "May",
+                                "Jun",
+                                "Jul",
+                                "Aug",
+                                "Sep",
+                                "Oct",
+                                "Nov",
+                                "Dec",
+                              ];
+
+                              // Determine which months to show based on year
+                              let startIdx = 0;
+                              let endIdx = 11;
+
+                              if (parseInt(selectedYear) === 2024) {
+                                startIdx = 7; // August (0-based)
+                                endIdx = 11; // December
+                              } else if (parseInt(selectedYear) === 2025) {
+                                startIdx = 0; // January
+                                endIdx =
+                                  currentYear === 2025 ? currentMonthIdx : 11;
+                              }
+
+                              return months
+                                .slice(startIdx, endIdx + 1)
+                                .map((month) => (
+                                  <button
+                                    key={month}
+                                    className={`p-3 text-sm rounded-md transition-colors duration-200 ${
+                                      month === selectedMonth
+                                        ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
+                                        : "hover:bg-gray-50 text-gray-700"
+                                    }`}
+                                    onClick={() =>
+                                      handleMonthSelection(month, selectedYear)
+                                    }
+                                  >
+                                    {month}
+                                  </button>
+                                ));
+                            })()}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+
+                    {/* Right Arrow - Next Month */}
+                    <button
+                      onClick={() => {
+                        const currentDate = new Date(`${selectedMonth} 1, ${selectedYear}`);
+                        const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+                        const nextMonthName = nextMonth.toLocaleString("default", { month: "short" });
+                        const nextYear = nextMonth.getFullYear().toString();
+                        handleMonthSelection(nextMonthName, nextYear);
+                      }}
+                      className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors duration-200 text-blue-600 hover:text-blue-800"
+                      title="Next Month"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </CardHeader>
