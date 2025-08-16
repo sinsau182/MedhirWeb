@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FaFileInvoice, FaUniversity } from 'react-icons/fa';
+import { FaFileInvoice, FaUniversity, FaTags } from 'react-icons/fa';
 import MainLayout from '@/components/MainLayout';
 import { toast } from 'sonner';
 import getConfig from 'next/config';
@@ -624,7 +624,136 @@ const CompanyBankDetails = ({ bankAccounts, onAddBankAccount, onEditBankAccount,
   );
 };
 
-// Removed CompanyBankDetails per request
+const VendorTagsSettings = ({ vendorTags, onAddTag, onRemoveTag }) => {
+  const [newTag, setNewTag] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+
+  const handleAddTag = async (e) => {
+    e.preventDefault();
+    if (!newTag.trim()) {
+      toast.error('Please enter a tag name');
+      return;
+    }
+
+    if (vendorTags.some(tag => tag.toLowerCase() === newTag.trim().toLowerCase())) {
+      toast.error('This tag already exists');
+      return;
+    }
+
+    setIsAdding(true);
+    try {
+      await onAddTag(newTag.trim());
+      setNewTag('');
+      toast.success('Vendor tag added successfully!');
+    } catch (error) {
+      toast.error('Failed to add vendor tag');
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleRemoveTag = async (tagToRemove) => {
+    try {
+      await onRemoveTag(tagToRemove);
+      toast.success('Vendor tag removed successfully!');
+    } catch (error) {
+      toast.error('Failed to remove vendor tag');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Vendor Tags Management</h3>
+        <p className="text-sm text-gray-600 mb-6">Add and manage vendor tags that can be used when creating vendor profiles.</p>
+        
+        {/* Add New Tag Form */}
+        <form onSubmit={handleAddTag} className="mb-6">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              placeholder="Enter vendor tag (e.g., Critical Supplier, Local Vendor)"
+              className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              maxLength={50}
+            />
+            <button
+              type="submit"
+              disabled={isAdding || !newTag.trim()}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isAdding ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <FaTags className="w-4 h-4" />
+                  Add Tag
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+
+        {/* Tags List */}
+        <div>
+          <h4 className="text-md font-medium text-gray-700 mb-3">Current Vendor Tags</h4>
+          {vendorTags.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <FaTags className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+              <p className="text-sm">No vendor tags added yet</p>
+              <p className="text-xs text-gray-400">Add your first vendor tag above</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {vendorTags.map((tag, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <span className="text-sm font-medium text-gray-700 truncate">{tag}</span>
+                  <button
+                    onClick={() => handleRemoveTag(tag)}
+                    className="ml-2 p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                    title="Remove tag"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Help Text */}
+        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start">
+            <svg className="w-5 h-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="text-sm text-blue-700">
+              <p className="font-medium mb-1">How to use Vendor Tags:</p>
+              <ul className="list-disc list-inside space-y-1 text-xs">
+                <li>Add descriptive tags like "Critical Supplier", "Local Vendor", "Service Provider"</li>
+                <li>Tags help categorize and organize your vendor database</li>
+                <li>You can assign multiple tags to each vendor when creating vendor profiles</li>
+                <li>Tags are searchable and help in vendor management</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const AccountSettingsPage = () => {
   const [activeTab, setActiveTab] = useState('documents');
@@ -652,6 +781,7 @@ const AccountSettingsPage = () => {
   });
 
   const [bankAccounts, setBankAccounts] = useState([]);
+  const [vendorTags, setVendorTags] = useState([]);
 
   const handleDocumentSettingsChange = (key, value) => {
     setDocumentSettings(prev => ({ ...prev, [key]: value }));
@@ -837,6 +967,76 @@ const AccountSettingsPage = () => {
     }
   };
 
+  const handleAddVendorTag = async (newTag) => {
+    try {
+      const companyId = resolveCompanyId();
+      if (!companyId) {
+        toast.error('Company ID not found.');
+        return;
+      }
+      const token = getItemFromSessionStorage('token', null);
+      if (!token) {
+        toast.error('You are not signed in. Please sign in again.');
+        return;
+      }
+
+      const res = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/vendor-tags/${companyId}?companyId=${companyId}`, {
+        method: 'POST',
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify({ tag: newTag }),
+      });
+
+      if (res.status === 401) {
+        toast.error('Authentication required. Please sign in again.');
+        return;
+      }
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || 'Failed to add vendor tag');
+      }
+
+      setVendorTags(prev => [...prev, newTag]);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleRemoveVendorTag = async (tagToRemove) => {
+    try {
+      const companyId = resolveCompanyId();
+      if (!companyId) {
+        toast.error('Company ID not found.');
+        return;
+      }
+      const token = getItemFromSessionStorage('token', null);
+      if (!token) {
+        toast.error('You are not signed in. Please sign in again.');
+        return;
+      }
+
+      const res = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/vendor-tags/${companyId}?companyId=${companyId}`, {
+        method: 'DELETE',
+        headers: buildAuthHeaders(token),
+        body: JSON.stringify({ tag: tagToRemove }),
+      });
+
+      if (res.status === 401) {
+        toast.error('Authentication required. Please sign in again.');
+        return;
+      }
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || 'Failed to remove vendor tag');
+      }
+
+      setVendorTags(prev => prev.filter(tag => tag !== tagToRemove));
+    } catch (error) {
+      throw error;
+    }
+  };
+
   // Robust companyId resolver (handles encrypted, plain, and nested data)
   const resolveCompanyId = () => {
     try {
@@ -916,6 +1116,23 @@ const AccountSettingsPage = () => {
             setBankAccounts(bankData.bankAccounts);
           }
         }
+
+        // Fetch vendor tags
+        try {
+          const tagsRes = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/vendor-tags/${companyId}?companyId=${companyId}`, {
+            headers: buildAuthHeaders(token),
+          });
+          if (tagsRes.ok) {
+            const tagsData = await tagsRes.json();
+            if (tagsData.tags && Array.isArray(tagsData.tags)) {
+              setVendorTags(tagsData.tags);
+            }
+          }
+        } catch (error) {
+          console.log('Vendor tags endpoint not available yet, using default tags');
+          // Set some default tags if the endpoint is not available
+          setVendorTags(['Critical Supplier', 'Local Vendor', 'Service Provider', 'Raw Material Supplier']);
+        }
         
         setIsLoading(false);
       } catch (e) {
@@ -986,6 +1203,7 @@ const AccountSettingsPage = () => {
 
   const settingsTabs = [
     { id: 'documents', label: 'Document Settings', icon: FaFileInvoice },
+    { id: 'vendor-tags', label: 'Vendor Tags', icon: FaTags },
     { id: 'bank', label: 'Bank Details', icon: FaUniversity },
   ];
 
@@ -1022,6 +1240,13 @@ const AccountSettingsPage = () => {
             <div className="p-4">
               {activeTab === 'documents' && (
                 <DocumentSettings settings={documentSettings} onSettingsChange={handleDocumentSettingsChange} />
+              )}
+              {activeTab === 'vendor-tags' && (
+                <VendorTagsSettings 
+                  vendorTags={vendorTags}
+                  onAddTag={handleAddVendorTag}
+                  onRemoveTag={handleRemoveVendorTag}
+                />
               )}
               {activeTab === 'bank' && (
                 <CompanyBankDetails 

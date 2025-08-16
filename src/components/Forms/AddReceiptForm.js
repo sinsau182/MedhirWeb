@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { addReceipt, getNextReceiptNumber, generateNextReceiptNumber } from "../../redux/slices/receiptSlice";
 import { fetchProjectCustomerList, fetchInvoicesByProject, fetchReceiptsByProject } from "@/redux/slices/receiptSlice";
-
+import FileUploadWithPreview from "../ui/FileUploadWithPreview";
 
 const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
   const [formData, setFormData] = useState({
@@ -24,10 +24,10 @@ const dispatch = useDispatch();
   const [errors, setErrors] = useState({});
   const [isAccountingCollapsed, setIsAccountingCollapsed] = useState(true);
 
-  // File upload state
-  const [paymentProof, setPaymentProof] = useState(null);
-  const [paymentProofPreview, setPaymentProofPreview] = useState(null);
-  const [isDragOver, setIsDragOver] = useState(false);
+  // File upload state - updated to match AddBillForm.js pattern
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [uploadedImage, setUploadedImage] = useState(null);
+  const [error, setError] = useState(null);
   
   // New state for project-specific data
   const [projectReceiptData, setProjectReceiptData] = useState({
@@ -60,8 +60,6 @@ const dispatch = useDispatch();
       }
     }
   };
-
-
 
   const paymentMethods = ['Bank Transfer', 'Cheque', 'UPI', 'Cash', 'Credit Card', 'Debit Card'];
   const bankAccounts = ['HDFC Bank - *****5678', 'SBI Bank - *****1234', 'ICICI Bank - *****4321'];
@@ -139,61 +137,27 @@ useEffect(() => {
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  // File upload handlers
-  const handleFileSelect = (file) => {
-    if (file) {
-      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      
-      if (!validTypes.includes(file.type)) {
-        toast.error('Please select a valid file type (PNG, JPG, PDF)');
-        return;
-      }
-      
-      if (file.size > maxSize) {
-        toast.error('File size must be less than 10MB');
-        return;
-      }
-      
-      setPaymentProof(file);
-      
-      // Create preview for images
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => setPaymentProofPreview(e.target.result);
-        reader.readAsDataURL(file);
-      } else {
-        setPaymentProofPreview(null);
-      }
-    }
+  // File upload handlers - updated to match AddBillForm.js pattern
+  const handleFileUpload = (file) => {
+    if (!file) return;
+
+    setError(null);
+    setUploadedFile(file);
+    setUploadedImage(file);
+
+    console.log(
+      "File uploaded successfully:",
+      file.name,
+      `(${(file.size / 1024 / 1024).toFixed(2)}MB)`
+    );
   };
 
-  const handleFileDrop = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      handleFileSelect(files[0]);
-    }
+  const handleRemoveFile = () => {
+    setUploadedImage(null);
+    setUploadedFile(null);
+    setError(null);
+    toast.success("File removed successfully");
   };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  };
-
-  const removeFile = () => {
-    setPaymentProof(null);
-    setPaymentProofPreview(null);
-  };
-
-
 
   const toggleAccountingSection = () => {
     setIsAccountingCollapsed(!isAccountingCollapsed);
@@ -231,7 +195,6 @@ useEffect(() => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
 
 const [selectedOption, setSelectedOption] = useState(null);
 const [isOpen, setIsOpen] = useState(false);
@@ -275,16 +238,16 @@ const handleSubmit = async (e) => {
       // Append receipt data as a JSON string (like bill endpoint)
       formDataToSend.append('receipt', JSON.stringify(receiptData));
       
-      // Add file if selected (optional)
-      if (paymentProof) {
-        formDataToSend.append('file', paymentProof);
+      // Add file if selected - updated to use uploadedFile
+      if (uploadedFile) {
+        formDataToSend.append('file', uploadedFile);
       }
       
       await dispatch(addReceipt(formDataToSend)).unwrap();
       
       // Debug: Log the data being sent
       console.log('Receipt Data being sent:', receiptData);
-      console.log('Payment Proof:', paymentProof);
+      console.log('Payment Proof:', uploadedFile);
       toast.success('Receipt added successfully!');
       // Add small delay to prevent duplicate messages
       setTimeout(() => {
@@ -314,242 +277,225 @@ const handleSubmit = async (e) => {
   const receiptAmount = parseFloat(formData.amount) || 0;
 
   return (
-    <>
-      <form onSubmit={handleSubmit} className="min-h-screen bg-gray-50">
-        <div className="space-y-6 mb-24">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-              Receipt Details <span className="ml-2 text-red-500">*</span>
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Left Panel */}
-              <div className="space-y-6">
-                <div className="relative inline-block w-full">
-  <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
-  <button
-    type="button"
-    onClick={() => setIsOpen(!isOpen)}
-    className="w-full px-4 py-3 text-left bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-  >
-    {selectedOption?.projectName || "Select Project"}
-    <span className="float-right">
-      <svg className={`w-4 h-4 inline transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-      </svg>
-    </span>
-  </button>
-
-  {isOpen && (
-    <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded max-h-60 overflow-y-auto">
-      {projectCustomerList.map((project) => (
-        <li
-          key={project.projectId}
-          onClick={async () => {
-            setSelectedOption(project);
-            setFormData(prev => ({
-              ...prev,
-              projectName: project.projectName,
-              customerName: project.customerName,
-              customerId: project.customerId,
-              leadId: project.projectId,
-            }));
-            setIsOpen(false);
-            // Fetch receipts for this project
-            dispatch(fetchReceiptsByProject(project.projectId));
-          }}
-          className="px-4 py-2 cursor-pointer hover:bg-gray-100"
-        >
-          {project.projectName}
-        </li>
-      ))}
-    </ul>
-  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Customer Name <span className="text-red-500">*</span></label>
-                  <input
-  type="text"
-  name="customerName"
-  value={formData.customerName}
-  readOnly
-  className={`w-full px-4 py-3 text-base border rounded-lg bg-gray-100 cursor-not-allowed ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`}
-  placeholder="Auto-filled from Project"
-/>
-
-                  {errors.customerName && <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Receipt Date <span className="text-red-500">*</span></label>
-                  <input type="date" name="receiptDate" value={formData.receiptDate} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.receiptDate ? 'border-red-500' : 'border-gray-300'}`} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Receipt Number <span className="text-red-500">*</span></label>
-                  <input 
-                    type="text" 
-                    name="receiptNumber" 
-                    value={formData.receiptNumber} 
-                    onChange={handleChange} 
-                    className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.receiptNumber ? 'border-red-500' : 'border-gray-300'}`} 
-                    placeholder="e.g., REC-2025-001" 
-                  />
-                  {errors.receiptNumber && <p className="text-red-500 text-sm mt-1">{errors.receiptNumber}</p>}
-                </div>
-              </div>
-
-              {/* Right Panel */}
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount Received (INR) <span className="text-red-500">*</span></label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
-                    <input type="number" name="amount" value={formData.amount} onChange={handleChange} step="0.01" min="0" className={`w-full pl-8 pr-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.amount ? 'border-red-500' : 'border-gray-300'}`} placeholder="0.00" />
-                  </div>
-                  {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method <span className="text-red-500">*</span></label>
-                  <select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.paymentMethod ? 'border-red-500' : 'border-gray-300'}`}>
-                    {paymentMethods.map(method => <option key={method} value={method}>{method}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Received Bank Account <span className="text-red-500">*</span></label>
-                  <select name="bankAccount" value={formData.bankAccount} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.bankAccount ? 'border-red-500' : 'border-gray-300'}`}>
-                    <option value="">Select bank account</option>
-                    {bankAccounts.map(account => <option key={account} value={account}>{account}</option>)}
-                  </select>
-                </div>
-                {formData.paymentMethod === 'Cheque' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Cheque Number <span className="text-red-500">*</span></label>
-                    <input type="text" name="chequeNumber" value={formData.chequeNumber} onChange={handleChange} className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.chequeNumber ? 'border-red-500' : 'border-gray-300'}`} placeholder="Enter 6-digit cheque number" />
-                    {errors.chequeNumber && <p className="text-red-500 text-sm mt-1">{errors.chequeNumber}</p>}
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Payment trans. ID</label>
-                  <input type="text" name="reference" value={formData.reference} onChange={handleChange} className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" placeholder="e.g., Bank transaction ID" />
-                </div>
-              </div>
-            </div>
+    <div className="w-full h-screen flex flex-col bg-white">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 flex-1 min-h-0 border border-gray-200 rounded-t-lg overflow-hidden shadow-sm relative min-w-0">
+        {/* Form Panel (Left) */}
+        <div className="lg:col-span-1 overflow-y-auto p-6 border-r border-gray-200 pb-24">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-900">
+              Add New Receipt
+            </h2>
           </div>
 
-          {/* Attachment Section */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-6 px-6" aria-label="Tabs">
-                <button type="button" className="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600">
-                  Attachment
-                </button>
-              </nav>
-            </div>
-            <div className="p-6">
-              <div>
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-4">Payment Proof Upload</h3>
-                  <p className="text-sm text-gray-600 mb-4">Upload a photo or PDF of the payment proof for this receipt.</p>
-                </div>
-                
-                <div className="space-y-4">
-                  {/* File Upload Area */}
-                  <div
-                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                      isDragOver 
-                        ? 'border-green-400 bg-green-50' 
-                        : paymentProof 
-                          ? 'border-green-300 bg-green-50' 
-                          : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                    onDrop={handleFileDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                  >
-                    {!paymentProof ? (
-                      <div>
-                        <FaUpload className="mx-auto text-4xl text-gray-400 mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-700 mb-2">Upload Payment Proof</h3>
-                        <p className="text-gray-500 mb-4">Click to upload or drag and drop</p>
-                        <p className="text-sm text-gray-400">PNG, JPG, PDF up to 10MB</p>
-                        <input
-                          type="file"
-                          accept=".png,.jpg,.jpeg,.pdf"
-                          onChange={(e) => handleFileSelect(e.target.files[0])}
-                          className="hidden"
-                          id="payment-proof-upload"
-                        />
-                        <label
-                          htmlFor="payment-proof-upload"
-                          className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"
-                        >
-                          <FaUpload className="w-4 h-4 mr-2" />
-                          Choose File
-                        </label>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="flex items-center justify-center mb-4">
-                          {paymentProofPreview ? (
-                            <img 
-                              src={paymentProofPreview} 
-                              alt="Payment proof preview" 
-                              className="max-h-32 max-w-full rounded-lg"
-                            />
-                          ) : (
-                            <FaFileAlt className="text-4xl text-gray-400" />
-                          )}
-                        </div>
-                        <div className="mb-4">
-                          <p className="font-semibold text-gray-700">{paymentProof.name}</p>
-                          <p className="text-sm text-gray-500">
-                            {(paymentProof.size / 1024 / 1024).toFixed(2)} MB
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={removeFile}
-                          className="inline-flex items-center px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
-                        >
-                          <FaTimes className="w-3 h-3 mr-1" />
-                          Remove File
-                        </button>
-                      </div>
+          {/* Form Content */}
+          <div className="space-y-6 pb-6">
+            {/* Receipt Details */}
+            <div>
+              <div className="flex items-center mb-6">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                <h2 className="text-lg font-semibold text-gray-900">Receipt Details</h2>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left column */}
+                <div className="space-y-6">
+                  <div className="relative inline-block w-full">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
+                    <button
+                      type="button"
+                      onClick={() => setIsOpen(!isOpen)}
+                      className="w-full px-4 py-3 text-left bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                    >
+                      {selectedOption?.projectName || "Select Project"}
+                      <span className="float-right">
+                        <svg className={`w-4 h-4 inline transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </span>
+                    </button>
+
+                    {isOpen && (
+                      <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded max-h-60 overflow-y-auto">
+                        {projectCustomerList.map((project) => (
+                          <li
+                            key={project.projectId}
+                            onClick={async () => {
+                              setSelectedOption(project);
+                              setFormData(prev => ({
+                                ...prev,
+                                projectName: project.projectName,
+                                customerName: project.customerName,
+                                customerId: project.customerId,
+                                leadId: project.projectId,
+                              }));
+                              setIsOpen(false);
+                              // Fetch receipts for this project
+                              dispatch(fetchReceiptsByProject(project.projectId));
+                            }}
+                            className="px-4 py-2 cursor-pointer hover:bg-gray-100"
+                          >
+                            {project.projectName}
+                          </li>
+                        ))}
+                      </ul>
                     )}
                   </div>
-                  
-                  {/* File Info */}
-                  {paymentProof && (
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <div className="flex items-start">
-                        <FaInfoCircle className="text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
-                        <div className="text-sm text-blue-700">
-                          <p className="font-semibold mb-1">File uploaded successfully!</p>
-                          <p>This file will be attached to the receipt when you save.</p>
-                        </div>
-                      </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Customer Name <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      name="customerName"
+                      value={formData.customerName}
+                      readOnly
+                      className={`w-full px-4 py-3 text-base border rounded-lg bg-gray-100 cursor-not-allowed ${errors.customerName ? 'border-red-500' : 'border-gray-300'}`}
+                      placeholder="Auto-filled from Project"
+                    />
+                    {errors.customerName && <p className="text-red-500 text-sm mt-1">{errors.customerName}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Receipt Date <span className="text-red-500">*</span></label>
+                    <input 
+                      type="date" 
+                      name="receiptDate" 
+                      value={formData.receiptDate} 
+                      onChange={handleChange} 
+                      className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.receiptDate ? 'border-red-500' : 'border-gray-300'}`} 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Receipt Number <span className="text-red-500">*</span></label>
+                    <input 
+                      type="text" 
+                      name="receiptNumber" 
+                      value={formData.receiptNumber} 
+                      onChange={handleChange} 
+                      className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.receiptNumber ? 'border-red-500' : 'border-gray-300'}`} 
+                      placeholder="e.g., REC-2025-001" 
+                    />
+                    {errors.receiptNumber && <p className="text-red-500 text-sm mt-1">{errors.receiptNumber}</p>}
+                  </div>
+                </div>
+
+                {/* Right column */}
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Amount Received (INR) <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                      <input 
+                        type="number" 
+                        name="amount" 
+                        value={formData.amount} 
+                        onChange={handleChange} 
+                        step="0.01" 
+                        min="0" 
+                        className={`w-full pl-8 pr-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.amount ? 'border-red-500' : 'border-gray-300'}`} 
+                        placeholder="0.00" 
+                      />
+                    </div>
+                    {errors.amount && <p className="text-red-500 text-sm mt-1">{errors.amount}</p>}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method <span className="text-red-500">*</span></label>
+                    <select 
+                      name="paymentMethod" 
+                      value={formData.paymentMethod} 
+                      onChange={handleChange} 
+                      className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.paymentMethod ? 'border-red-500' : 'border-gray-300'}`}
+                    >
+                      {paymentMethods.map(method => <option key={method} value={method}>{method}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Received Bank Account <span className="text-red-500">*</span></label>
+                    <select 
+                      name="bankAccount" 
+                      value={formData.bankAccount} 
+                      onChange={handleChange} 
+                      className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.bankAccount ? 'border-red-500' : 'border-gray-300'}`}
+                    >
+                      <option value="">Select bank account</option>
+                      {bankAccounts.map(account => <option key={account} value={account}>{account}</option>)}
+                    </select>
+                  </div>
+
+                  {formData.paymentMethod === 'Cheque' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Cheque Number <span className="text-red-500">*</span></label>
+                      <input 
+                        type="text" 
+                        name="chequeNumber" 
+                        value={formData.chequeNumber} 
+                        onChange={handleChange} 
+                        className={`w-full px-4 py-3 text-base border rounded-lg focus:ring-2 focus:ring-green-500 ${errors.chequeNumber ? 'border-red-500' : 'border-gray-300'}`} 
+                        placeholder="Enter 6-digit cheque number" 
+                      />
+                      {errors.chequeNumber && <p className="text-red-500 text-sm mt-1">{errors.chequeNumber}</p>}
                     </div>
                   )}
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Payment trans. ID</label>
+                    <input 
+                      type="text" 
+                      name="reference" 
+                      value={formData.reference} 
+                      onChange={handleChange} 
+                      className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500" 
+                      placeholder="e.g., Bank transaction ID" 
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <div className="sticky bottom-0 -mx-6 -mb-6">
-          <div className="bg-white/90 backdrop-blur-sm border-t border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-end space-x-4">
+
+        {/* Upload Panel (Right) */}
+        <div className="lg:col-span-1 overflow-y-auto bg-gray-50 p-6 pb-24">
+          <div className="h-full flex flex-col">
+            <div className="flex-1">
+              <FileUploadWithPreview
+                onFileChange={handleFileUpload}
+                acceptedFileTypes=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
+                maxFileSize={10 * 1024 * 1024} // 10MB
+                placeholder="Click to upload payment proof or drag it here"
+                showPreview={true}
+                className="h-full"
+              />
+            </div>
+            
+            {error && (
+              <div className="mt-4 text-red-600 bg-red-100 border border-red-300 p-3 rounded-lg text-left">
+                <strong>❌ Error:</strong> {error}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sticky Footer integrated within form container */}
+        <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white px-6 py-4 rounded-b-lg shadow-sm z-10">
+          <div className="flex justify-between items-center">
+            <div className="text-lg font-bold">
+              Total Receipt Amount: <span className="text-green-600">₹{receiptAmount.toLocaleString("en-IN")}</span>
+            </div>
+            <div className="flex gap-3">
               <button
                 type="button"
+                className="px-6 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors"
                 onClick={onCancel}
-                className="px-6 py-2.5 border rounded-lg"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-6 py-2.5 bg-green-600 text-white rounded-lg flex items-center space-x-2"
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors flex items-center space-x-2"
+                onClick={handleSubmit}
               >
                 <FaSave className="w-4 h-4" />
                 <span>Save Receipt</span>
@@ -557,8 +503,8 @@ const handleSubmit = async (e) => {
             </div>
           </div>
         </div>
-      </form>
-    </>
+      </div>
+    </div>
   );
 };
 
