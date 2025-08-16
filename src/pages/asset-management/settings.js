@@ -207,7 +207,8 @@ const CategorySettings = ({
             {/* Step 2: Category Cards with Sub-Categories */}
             <div className="space-y-6">
                 {editedCategories.map(cat => {
-                    const categoryId = cat.id || cat.categoryId;
+                    // Ensure we're using the custom categoryId, not MongoDB _id
+        const categoryId = cat.categoryId;
                     const subCategories = cat.subCategories || [];
                     const categoryCode = getFirstThreeLetters(cat.name);
                     
@@ -407,13 +408,13 @@ const CategorySettings = ({
                                                     {subCategories.map((subCat, index) => {
                                                     console.log(`Rendering subcategory:`, subCat);
                                                     return (
-                                                    <tr key={subCat.id || subCat.subCategoryId} className="border-t border-gray-200 hover:bg-gray-50">
+                                                    <tr key={subCat.subCategoryId || subCat.id} className="border-t border-gray-200 hover:bg-gray-50">
                                                         <td className="p-3">
                                                             {subCat.editing ? (
                                                                 <input
                                                                     className="w-full p-2 border rounded-md text-sm"
                                                                     value={subCat.name}
-                                                                    onChange={e => onEditSubCategory(categoryId, subCat.id || subCat.subCategoryId, 'name', e.target.value)}
+                                                                    onChange={e => onEditSubCategory(categoryId, subCat.subCategoryId || subCat.id, 'name', e.target.value)}
                                                                     placeholder="Sub-category name"
                                                                     autoFocus
                                                                 />
@@ -439,7 +440,7 @@ const CategorySettings = ({
                                                                                     onChange={(e) => {
                                                                                         onEditSubCategory(
                                                                                             categoryId,
-                                                                                            subCat.id || subCat.subCategoryId,
+                                                                                            subCat.subCategoryId || subCat.id,
                                                                                             'prefix',
                                                                                             e.target.value
                                                                                         );
@@ -462,7 +463,7 @@ const CategorySettings = ({
                                                                                         const digits = raw.replace(/\D/g, '').slice(0, 4);
                                                                                         onEditSubCategory(
                                                                                             categoryId,
-                                                                                            subCat.id || subCat.subCategoryId,
+                                                                                            subCat.subCategoryId || subCat.id,
                                                                                             'suffix',
                                                                                             digits
                                                                                         );
@@ -489,14 +490,14 @@ const CategorySettings = ({
                                                                 {subCat.editing ? (
                                                                     <>
                                                                         <button
-                                                                            onClick={() => onSaveSubCategory(categoryId, subCat.id || subCat.subCategoryId)}
+                                                                            onClick={() => onSaveSubCategory(categoryId, subCat.subCategoryId || subCat.id)}
                                                                             className="text-green-600 hover:text-green-800 p-1"
                                                                             title="Save"
                                                                         >
                                                                             <FaSave />
                                                                         </button>
                                                                         <button
-                                                                            onClick={() => onCancelSubCategory(categoryId, subCat.id || subCat.subCategoryId)}
+                                                                            onClick={() => onCancelSubCategory(categoryId, subCat.subCategoryId || subCat.id)}
                                                                             className="text-gray-600 hover:text-gray-800 p-1"
                                                                             title="Cancel"
                                                                         >
@@ -506,14 +507,14 @@ const CategorySettings = ({
                                                                 ) : (
                                                                     <>
                                                                         <button
-                                                                            onClick={() => onEditSubCategory(categoryId, subCat.id || subCat.subCategoryId, 'editing', true)}
+                                                                            onClick={() => onEditSubCategory(categoryId, subCat.subCategoryId || subCat.id, 'editing', true)}
                                                                             className="text-blue-600 hover:text-blue-800 p-1"
                                                                             title="Edit"
                                                                         >
                                                                             <FaEdit />
                                                                         </button>
                                                                         <button
-                                                                            onClick={() => onDeleteSubCategory(categoryId, subCat.id || subCat.subCategoryId)}
+                                                                            onClick={() => onDeleteSubCategory(categoryId, subCat.subCategoryId || subCat.id)}
                                                                             className="text-red-500 hover:text-red-700 p-1"
                                                                             title="Delete"
                                                                         >
@@ -599,21 +600,21 @@ const LocationSettings = ({ editing, editedLocations, setEditedLocations, newLoc
             {loading && <div className="text-blue-600">Loading...</div>}
             <div className="space-y-2">
                 {editedLocations.map(loc => (
-                    <div key={loc.id || loc.locationId} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                                    <div key={loc.locationId || loc.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
                         <div className="flex-1 flex gap-2 items-center">
                             {loc.editing ? (
                                 <>
                                     <input
                                         className="flex-1 p-2 border rounded-md"
                                         value={loc.name}
-                                        onChange={e => onFieldChange(loc.id || loc.locationId, 'name', e.target.value)}
+                                        onChange={e => onFieldChange(loc.locationId || loc.id, 'name', e.target.value)}
                                         placeholder="Location name"
                                         autoFocus
                                     />
                                     <input
                                         className="flex-1 p-2 border rounded-md"
                                         value={loc.address}
-                                        onChange={e => onFieldChange(loc.id || loc.locationId, 'address', e.target.value)}
+                                        onChange={e => onFieldChange(loc.locationId || loc.id, 'address', e.target.value)}
                                         placeholder="Address (optional)"
                                     />
                                 </>
@@ -625,14 +626,14 @@ const LocationSettings = ({ editing, editedLocations, setEditedLocations, newLoc
                             {loc.editing ? (
                                 <>
                                     <button
-                                        onClick={() => onSave(loc.id || loc.locationId)}
+                                        onClick={() => onSave(loc.locationId || loc.id)}
                                         className="text-green-600 hover:text-green-800 p-2 hover:bg-green-50 rounded"
                                         title="Save Changes"
                                     >
                                         <FaSave />
                                     </button>
                                     <button
-                                        onClick={() => onCancel(loc.id || loc.locationId)}
+                                        onClick={() => onCancel(loc.locationId || loc.id)}
                                         className="text-gray-600 hover:text-gray-800 p-2 hover:bg-gray-50 rounded"
                                         title="Cancel"
                                     >
@@ -642,7 +643,7 @@ const LocationSettings = ({ editing, editedLocations, setEditedLocations, newLoc
                             ) : (
                                 <>
                                 <button
-                                        onClick={() => onFieldChange(loc.id || loc.locationId, 'editing', true)}
+                                        onClick={() => onFieldChange(loc.locationId || loc.id, 'editing', true)}
                                         className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded"
                                     title="Edit Location"
                                 >
@@ -1996,8 +1997,8 @@ const DeleteCategoryModal = ({ open, onClose, onConfirm, categoryName, warning, 
                                             <p className="text-sm font-medium text-gray-700 mb-2">Sub-categories in this category:</p>
                                             <div className="max-h-32 overflow-y-auto bg-gray-50 rounded p-2">
                                                 {subCategoriesList.map((sub, index) => (
-                                                    <div key={sub.id || sub.subCategoryId} className="text-sm text-gray-600 py-1">
-                                                        • {sub.name} ({sub.subCategoryId || sub.id})
+                                                    <div key={sub.subCategoryId || sub.id} className="text-sm text-gray-600 py-1">
+                                                        • {sub.name} ({sub.subCategoryId})
                                                     </div>
                                                 ))}
                                                 {subCategoriesCount > 5 && (
@@ -2024,7 +2025,7 @@ const DeleteCategoryModal = ({ open, onClose, onConfirm, categoryName, warning, 
                                             <p className="text-sm font-medium text-gray-700 mb-2">Assets using this category:</p>
                                             <div className="max-h-32 overflow-y-auto bg-gray-50 rounded p-2">
                                                 {assetsList.map((asset, index) => (
-                                                    <div key={asset.id || asset.assetId} className="text-sm text-gray-600 py-1">
+                                                    <div key={asset.assetId || asset.id} className="text-sm text-gray-600 py-1">
                                                         • {asset.name || asset.assetId} ({asset.assetId})
                                                     </div>
                                                 ))}
@@ -2099,7 +2100,7 @@ const DeleteLocationModal = ({ open, onClose, onConfirm, locationName, warning, 
                                 <p className="text-sm font-medium text-gray-700 mb-2">Assets using this location:</p>
                                 <div className="max-h-32 overflow-y-auto bg-gray-50 rounded p-2">
                                     {assetsList.map((asset, index) => (
-                                        <div key={asset.id || asset.assetId} className="text-sm text-gray-600 py-1">
+                                        <div key={asset.assetId || asset.id} className="text-sm text-gray-600 py-1">
                                             • {asset.name || asset.assetId} ({asset.assetId})
                                         </div>
                                     ))}
@@ -2164,7 +2165,7 @@ const DeleteStatusModal = ({ open, onClose, onConfirm, statusName, warning, asse
                                 <p className="text-sm font-medium text-gray-700 mb-2">Assets using this status:</p>
                                 <div className="max-h-32 overflow-y-auto bg-gray-50 rounded p-2">
                                     {assetsList.map((asset, index) => (
-                                        <div key={asset.id || asset.assetId} className="text-sm text-gray-600 py-1">
+                                        <div key={asset.assetId || asset.id} className="text-sm text-gray-600 py-1">
                                             • {asset.name || asset.assetId} ({asset.assetId})
                                         </div>
                                     ))}
@@ -2529,7 +2530,7 @@ const AssetSettingsPage = () => {
         
         // Also update local state for immediate UI feedback
         setEditedCategories(editedCategories.map(cat => {
-            if (cat.id === catId || cat.categoryId === catId) {
+            if (cat.categoryId === catId) {
                 console.log('Updating category in local state:', { catId, key, value });
                 return { ...cat, [key]: value };
             }
@@ -2542,20 +2543,29 @@ const AssetSettingsPage = () => {
         
         if (categoryId) {
             // Save individual category
-            const category = editedCategories.find(cat => cat.id === categoryId || cat.categoryId === categoryId);
+            // Ensure we're using the custom categoryId, not MongoDB _id
+            const category = editedCategories.find(cat => cat.categoryId === categoryId);
             console.log('Found category to save:', category);
             
             if (category) {
                 try {
+                    // Ensure we have a valid custom categoryId, never use MongoDB _id
+                    if (!category.categoryId || category.categoryId === 'undefined' || category.categoryId === undefined) {
+                        console.error('Invalid category ID:', category.categoryId);
+                        toast.error('Cannot update: Invalid category ID');
+                        return;
+                    }
+                    
                     await dispatch(updateAssetCategory({
-                        categoryId: category.categoryId || category.id,
+                        categoryId: category.categoryId,
                         assetData: { name: category.name }
                     })).unwrap();
                     
                     // Clear editing state
-                    handleCategoryFieldChange(categoryId, 'editing', false);
+                    handleCategoryFieldChange(category.categoryId, 'editing', false);
                     toast.success("Category updated successfully!");
                 } catch (error) {
+                    console.error('Failed to update category:', error);
                     toast.error("Failed to update category");
                 }
             }
@@ -2567,12 +2577,13 @@ const AssetSettingsPage = () => {
         
         if (categoryId) {
             // Cancel individual category editing
-            const originalCategory = categories.find(cat => cat.id === categoryId || cat.categoryId === categoryId);
+            // Ensure we're using the custom categoryId, not MongoDB _id
+            const originalCategory = categories.find(cat => cat.categoryId === categoryId);
             console.log('Found original category for cancel:', originalCategory);
             
             if (originalCategory) {
                 setEditedCategories(editedCategories.map(cat => 
-                    (cat.id === categoryId || cat.categoryId === categoryId) 
+                    cat.categoryId === categoryId
                         ? { ...originalCategory, editing: false }
                         : cat
                 ));
@@ -2585,7 +2596,8 @@ const AssetSettingsPage = () => {
         console.log('handleDeleteCategory called with:', { categoryId, name });
         
         // Check if category has sub-categories
-        const category = editedCategories.find(cat => cat.id === categoryId || cat.categoryId === categoryId);
+        // Ensure we're using the custom categoryId, not MongoDB _id
+        const category = editedCategories.find(cat => cat.categoryId === categoryId);
         console.log('Found category for deletion:', category);
         
         const hasSubCategories = category && category.subCategories && category.subCategories.length > 0;
@@ -2779,8 +2791,9 @@ const AssetSettingsPage = () => {
     const handleSaveSubCategory = (categoryId, subCategoryId) => {
         console.log('handleSaveSubCategory called with:', { categoryId, subCategoryId });
         
-        const category = editedCategories.find(cat => cat.categoryId === categoryId || cat.id === categoryId);
-        const subCategory = category?.subCategories?.find(sub => sub.id === subCategoryId || sub.subCategoryId === subCategoryId);
+        // Ensure we're using the custom categoryId, not MongoDB _id
+        const category = editedCategories.find(cat => cat.categoryId === categoryId);
+        const subCategory = category?.subCategories?.find(sub => sub.subCategoryId === subCategoryId);
         
         console.log('Found category and subcategory:', { category, subCategory });
         console.log('All categories:', editedCategories.map(cat => ({
@@ -2845,8 +2858,9 @@ const AssetSettingsPage = () => {
     const handleCancelSubCategory = (categoryId, subCategoryId) => {
         console.log('handleCancelSubCategory called with:', { categoryId, subCategoryId });
         
-        const category = editedCategories.find(cat => cat.categoryId === categoryId || cat.id === categoryId);
-        const subCategory = category?.subCategories?.find(sub => sub.id === subCategoryId || sub.subCategoryId === subCategoryId);
+        // Ensure we're using the custom categoryId, not MongoDB _id
+        const category = editedCategories.find(cat => cat.categoryId === categoryId);
+        const subCategory = category?.subCategories?.find(sub => sub.subCategoryId === subCategoryId);
         
         console.log('Found category and subcategory for cancel:', { category, subCategory });
         
@@ -2878,8 +2892,9 @@ const AssetSettingsPage = () => {
     const handleDeleteSubCategory = async (categoryId, subCategoryId) => {
         console.log('handleDeleteSubCategory called with:', { categoryId, subCategoryId });
         
-        const category = editedCategories.find(cat => cat.categoryId === categoryId || cat.id === categoryId);
-        const subCategory = category?.subCategories?.find(sub => sub.id === subCategoryId || sub.subCategoryId === subCategoryId);
+        // Ensure we're using the custom categoryId, not MongoDB _id
+        const category = editedCategories.find(cat => cat.categoryId === categoryId);
+        const subCategory = category?.subCategories?.find(sub => sub.subCategoryId === subCategoryId);
         
         console.log('Found category and subcategory for deletion:', { category, subCategory });
         
