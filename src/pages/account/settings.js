@@ -1265,4 +1265,4 @@ const AccountSettingsPage = () => {
   );
 };
 
-export default AccountSettingsPage;
+export default AccountSettingsPage; 
