@@ -5,138 +5,7 @@ import { fetchVendors } from '../../redux/slices/vendorSlice';
 import { fetchBillsOfVendor } from '../../redux/slices/BillSlice';
 import { addPayment, updatePayment } from '../../redux/slices/paymentSlice';
 import { toast } from 'sonner';
-
-// Payment Receipt Upload UI Component
-const PaymentReceiptUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
-  const fileInputRef = useRef(null);
-
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    if (!validateFile(file)) {
-      return;
-    }
-    
-    onFileUpload(file);
-  };
-
-  const validateFile = (file) => {
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff', 'application/pdf'];
-    if (!validTypes.includes(file.type)) {
-      toast.error('Please select a valid file (JPG, PNG, BMP, TIFF, PDF)');
-      return false;
-    }
-    
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File size should be less than 10MB');
-      return false;
-    }
-    
-    toast.success(`File "${file.name}" uploaded successfully (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
-    return true;
-  };
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleRemoveClick = (e) => {
-    e.stopPropagation();
-    onRemoveFile();
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.currentTarget.classList.add('border-blue-500', 'bg-blue-50');
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      const file = files[0];
-      if (validateFile(file)) {
-        onFileUpload(file);
-      }
-    }
-  };
-
-  return (
-    <div className="h-full flex flex-col items-center justify-center">
-      {/* Upload Preview Area - Centered without header */}
-      <div 
-        className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:bg-gray-100 transition-colors w-full relative"
-        onClick={handleUploadClick}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/jpg,image/png,image/bmp,image/tiff,application/pdf"
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-        
-        {uploadedImage && (
-          <button
-            onClick={handleRemoveClick}
-            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors z-10"
-            title="Remove file"
-          >
-            <FaTimes size={14} />
-          </button>
-        )}
-        
-        {uploadedImage ? (
-          <div className="flex flex-col items-center w-full h-full">
-            <div className="flex-1 flex items-center justify-center w-full">
-              {uploadedImage.type === 'application/pdf' ? (
-                <div className="text-center">
-                  <FaFilePdf className="text-red-500 text-6xl mb-4" />
-                  <span className="text-gray-700 font-medium">{uploadedImage.name}</span>
-                </div>
-              ) : (
-                <img 
-                  src={typeof uploadedImage === 'string' ? uploadedImage : URL.createObjectURL(uploadedImage)} 
-                  alt="Uploaded Payment Receipt" 
-                  className="max-w-full max-h-full object-contain rounded-md shadow-sm" 
-                />
-              )}
-            </div>
-            <div className="mt-4 text-center">
-            
-              <p className="text-sm text-gray-500 mt-1">Click to upload a different file</p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center text-center">
-            <FaUpload className="text-gray-400 text-4xl mb-4" />
-            <span className="font-semibold text-gray-700 text-lg">Click to upload a payment receipt</span>
-            <span className="text-sm text-gray-500 mt-2">or drag and drop files here</span>
-            <span className="text-xs text-gray-400 mt-2">JPG, PNG, BMP, TIFF, PDF supported</span>
-            <span className="text-xs text-gray-400">Maximum file size: 10MB</span>
-          </div>
-        )}
-      </div>
-      
-      {error && (
-        <div className="mt-4 text-red-600 bg-red-100 border border-red-300 p-3 rounded-lg text-left">
-          <strong>❌ Error:</strong> {error}
-        </div>
-      )}
-    </div>
-  );
-};
+import FileUploadWithPreview from '../ui/FileUploadWithPreview';
 
 const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel }) => {
   const dispatch = useDispatch();
@@ -151,8 +20,9 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
   const [activeTab, setActiveTab] = useState('bills'); // 'bills' | 'notes' | 'attachments'
   const [selectedVendor, setSelectedVendor] = useState(null);
 
-  // Payment receipt upload state
+  // Payment receipt upload state - updated to match AddBillForm.js pattern
   const [uploadedReceipt, setUploadedReceipt] = useState(null);
+  const [uploadedFile, setUploadedFile] = useState(null);
   const [uploadError, setUploadError] = useState('');
 
   const toggleSidebar = () => {
@@ -200,6 +70,7 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
         // Set payment receipt if available
         if (initialData.paymentProofUrl) {
           setUploadedReceipt(initialData.paymentProofUrl);
+          setUploadedFile(null);
         }
       }
     }
@@ -394,16 +265,26 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
     setAppliedCredit(amount);
   };
 
-  // Payment receipt upload handlers
+  // Payment receipt upload handlers - updated to match AddBillForm.js pattern
   const handleReceiptUpload = (file) => {
-    console.log('Receipt upload handler called with file:', file.name, file.size, file.type);
-    setUploadedReceipt(file);
+    if (!file) return;
+
     setUploadError('');
+    setUploadedFile(file);
+    setUploadedReceipt(file);
+
+    console.log(
+      "Payment receipt uploaded successfully:",
+      file.name,
+      `(${(file.size / 1024 / 1024).toFixed(2)}MB)`
+    );
   };
 
   const handleRemoveReceipt = () => {
     setUploadedReceipt(null);
+    setUploadedFile(null);
     setUploadError('');
+    toast.success("Payment receipt removed successfully");
   };
 
   const totalSelectedSubtotal = selectedBills.reduce((sum, bill) => {
@@ -477,10 +358,10 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
         formDataToSend.append(`attachments`, file);
       });
 
-      // Add payment receipt if uploaded
-      if (uploadedReceipt) {
-        formDataToSend.append('paymentProof', uploadedReceipt);
-        console.log('Payment proof added to form data:', uploadedReceipt.name, uploadedReceipt.size, uploadedReceipt.type);
+      // Add payment receipt if uploaded - updated to use uploadedFile
+      if (uploadedFile) {
+        formDataToSend.append('paymentProof', uploadedFile);
+        console.log('Payment proof added to form data:', uploadedFile.name, uploadedFile.size, uploadedFile.type);
       } else {
         console.log('No payment proof uploaded');
       }
@@ -729,14 +610,26 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
           </div>
         </div>
 
-        {/* Upload Panel (Right) */}
+        {/* Upload Panel (Right) - Updated to use FileUploadWithPreview */}
         <div className="lg:col-span-1 overflow-y-auto bg-gray-50 p-6 pb-24">
-          <PaymentReceiptUploadUI 
-            onFileUpload={handleReceiptUpload}
-            uploadedImage={uploadedReceipt}
-            error={uploadError}
-            onRemoveFile={handleRemoveReceipt}
-          />
+          <div className="h-full flex flex-col">
+            <div className="flex-1">
+              <FileUploadWithPreview
+                onFileChange={handleReceiptUpload}
+                acceptedFileTypes=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
+                maxFileSize={10 * 1024 * 1024} // 10MB
+                placeholder="Click to upload a payment receipt or drag it here"
+                showPreview={true}
+                className="h-full"
+              />
+            </div>
+            
+            {uploadError && (
+              <div className="mt-4 text-red-600 bg-red-100 border border-red-300 p-3 rounded-lg text-left">
+                <strong>❌ Error:</strong> {uploadError}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Sticky Footer integrated within form container */}
