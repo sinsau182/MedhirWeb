@@ -2107,9 +2107,9 @@ function EmployeeProfilePage() {
         <main className="p-6 pt-24">
           <div className="max-w-7xl mx-auto">
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              <div className="relative h-48 bg-gradient-to-r bg-[#3B6FA0]">
+              <div className="relative h-40 bg-gradient-to-r bg-[#3B6FA0]">
                 <div className="absolute inset-0 opacity-10 bg-[url('/pattern.svg')] bg-repeat"></div>
-                <div className="relative h-full px-8 py-6 flex flex-col justify-between">
+                                <div className="relative h-full px-8 py-4 flex flex-col justify-between">
                   {/* Top Row - Status badges moved to right */}
                   <div className="flex justify-end items-start">
                     <div className="flex items-center space-x-3">
@@ -2148,15 +2148,10 @@ function EmployeeProfilePage() {
                       </div>
                     </div>
                   </div>
-                                    {/* Bottom Row - Reorganized layout */}
-                  <div className="flex items-center space-x-6 -mt-2 mb-10">
-                    {/* Profile Picture with email above */}
+                  {/* Bottom Row - Reorganized layout */}
+                  <div className="flex items-center space-x-6 -mt-4">
+                    {/* Profile Picture */}
                     <div className="relative">
-                      <div className="text-center mb-2">
-                        <div className="text-white/80 text-sm">
-                          {employeeById?.emailOfficial || "No official email"}
-                        </div>
-                      </div>
                       <div className="w-28 h-28 rounded-xl bg-white p-1 shadow-lg">
                         <div className="w-full h-full rounded-lg bg-gray-100 border border-white overflow-hidden flex items-center justify-center">
                           {formData.employee.profileImage instanceof File ? (
@@ -2220,25 +2215,30 @@ function EmployeeProfilePage() {
                       )}
                     </div>
                     {/* Employee Info */}
-                    <div className="flex-1 mt-10">
-                      <h1 className="text-3xl font-bold text-white mb-1">
-                        {employeeById?.name || "Employee Name"}
-                      </h1>
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-2 bg-white/10 backdrop-blur px-3 py-1.5 rounded-lg text-white text-sm">
-                          <span className="font-medium">
-                            {employeeById?.employeeId || "-"}
-                          </span>
+                    <div className="flex-1">
+                      <div className="flex flex-col space-y-2">
+                        <div className="flex items-center space-x-4">
+                          <h1 className="text-3xl font-bold text-white">
+                            {employeeById?.name || "Employee Name"}
+                          </h1>
+                          <div className="flex items-center space-x-2 bg-white/10 backdrop-blur px-3 py-1.5 rounded-lg text-white text-sm">
+                            <span className="font-medium">
+                              {employeeById?.employeeId || "-"}
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2 text-white/80 text-sm">
+                            <span>{employeeById?.designationName || "-"}</span>
+                            <span className="text-white/40">•</span>
+                            <span>{employeeById?.departmentName || "-"}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center space-x-2 text-white/80 text-sm">
-                          <span>{employeeById?.designationName || "-"}</span>
-                          <span className="text-white/40">•</span>
-                          <span>{employeeById?.departmentName || "-"}</span>
+                        <div className="text-white/80 text-sm">
+                          {employeeById?.emailOfficial || "No official email"}
                         </div>
                       </div>
                     </div>
                     {/* Quick Info - Reorganized with PF Status first */}
-                    <div className="flex space-x-3 mt-16">
+                    <div className="flex space-x-3">
                       {/* PF Status moved to top */}
                       <div className="flex flex-col items-center bg-white/10 backdrop-blur px-4 py-2 rounded-lg text-white">
                         <span className="text-xs text-white/80">PF Status</span>

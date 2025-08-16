@@ -224,7 +224,19 @@ const CustomDatePicker = ({
     // Freeze weekly offs - but skip this for comp-off requests
     if (!isCompOff && weeklyOffs && weeklyOffs.length > 0) {
       const dayName = format(date, 'EEEE'); // 'Sunday', 'Monday', etc.
-      if (weeklyOffs.includes(dayName)) return true;
+      console.log('[CustomDatePicker] Checking weekly off:', { date: format(date, 'dd MMM yyyy'), dayName, weeklyOffs, isCompOff });
+      if (weeklyOffs.includes(dayName)) {
+        console.log('[CustomDatePicker] Date is weekly off, disabling:', format(date, 'dd MMM yyyy'));
+        return true;
+      }
+    }
+    
+    // Fallback: Also check for weekends if weeklyOffs is not provided or empty
+    if (!isCompOff && (!weeklyOffs || weeklyOffs.length === 0)) {
+      if (isWeekend(date)) {
+        console.log('[CustomDatePicker] Date is weekend (fallback), disabling:', format(date, 'dd MMM yyyy'));
+        return true;
+      }
     }
 
     // Weekly holidays
@@ -233,7 +245,11 @@ const CustomDatePicker = ({
         ? departmentInfo.weeklyHolidays
         : departmentInfo.weeklyHolidays.split(',').map(day => day.trim());
       const dayName = format(date, 'EEEE');
-      if (weekDays.includes(dayName)) return true;
+      console.log('[CustomDatePicker] Checking department holidays:', { date: format(date, 'dd MMM yyyy'), dayName, weekDays, departmentInfo: departmentInfo?.weeklyHolidays });
+      if (weekDays.includes(dayName)) {
+        console.log('[CustomDatePicker] Date is department holiday, disabling:', format(date, 'dd MMM yyyy'));
+        return true;
+      }
     }
 
     // Dynamic restricted days from leave policy
@@ -336,6 +352,15 @@ const CustomDatePicker = ({
       if (!isCompOff && weeklyOffs && weeklyOffs.length > 0) {
         const dayName = format(date, 'EEEE'); // 'Sunday', 'Monday', etc.
         if (weeklyOffs.includes(dayName)) {
+          console.log('[CustomDatePicker] Date is weekly off in getDateClassName:', format(date, 'dd MMM yyyy'), dayName);
+          return `${baseClasses} text-gray-300 cursor-not-allowed`;
+        }
+      }
+      
+      // Fallback: Also check for weekends if weeklyOffs is not provided or empty
+      if (!isCompOff && (!weeklyOffs || weeklyOffs.length === 0)) {
+        if (isWeekend(date)) {
+          console.log('[CustomDatePicker] Date is weekend (fallback) in getDateClassName:', format(date, 'dd MMM yyyy'));
           return `${baseClasses} text-gray-300 cursor-not-allowed`;
         }
       }
