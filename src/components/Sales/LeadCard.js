@@ -67,8 +67,9 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
     transform: CSS.Translate.toString(transform),
   };
 
-  const handleCardDoubleClick = (e) => {
+  const handleCardSingleClick = (e) => {
     if (e.target.closest('.lead-actions')) {
+      console.log("lead-actions");
       return;
     }
     router.push(`/Sales/leads/${lead.leadId}`);
@@ -238,7 +239,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
     <div
       ref={setNodeRef}
       style={style}
-      onDoubleClick={handleCardDoubleClick}
+      onClick={handleCardSingleClick}
       {...attributes}
       {...listeners}
       className={`
