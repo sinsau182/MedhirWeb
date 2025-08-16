@@ -95,7 +95,7 @@ const FileUploadWithPreview = ({
   const handleRemoveFile = () => {
     setSelectedFile(null);
     setError('');
-    setScale(0.7); // Reset scale to 70% when removing file
+    setScale(1.0); // Reset scale to 100% when removing file
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -105,21 +105,11 @@ const FileUploadWithPreview = ({
   };
 
   const handleZoomIn = () => {
-    setScale(prev => {
-      // Convert to percentage, round up to next 10% interval, then convert back to decimal
-      const currentPercent = Math.ceil(prev * 100);
-      const nextPercent = Math.min(currentPercent + 10, 300);
-      return nextPercent / 100;
-    });
+    setScale(prev => Math.min(prev + 0.2, 3.0));
   };
 
   const handleZoomOut = () => {
-    setScale(prev => {
-      // Convert to percentage, round down to previous 10% interval, then convert back to decimal
-      const currentPercent = Math.floor(prev * 100);
-      const nextPercent = Math.max(currentPercent - 10, 70);
-      return nextPercent / 100;
-    });
+    setScale(prev => Math.max(prev - 0.2, 0.2));
   };
 
   const getFileIcon = (file) => {
@@ -197,7 +187,32 @@ const FileUploadWithPreview = ({
       {/* File Preview */}
       {showPreview && selectedFile && (
         <div className="relative">
-
+          {/* Zoom Controls */}
+          <div className="absolute top-2 right-2 z-10 flex items-center space-x-2 bg-white bg-opacity-90 rounded-lg shadow-md p-2">
+            <button
+              onClick={handleZoomOut}
+              disabled={scale <= 0.2}
+              className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Zoom Out"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+              </svg>
+            </button>
+            <span className="text-sm text-gray-600 min-w-[3rem] text-center font-medium">
+              {Math.round(scale * 100)}%
+            </span>
+            <button
+              onClick={handleZoomIn}
+              disabled={scale >= 3.0}
+              className="p-1.5 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title="Zoom In"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7M10 7v6" />
+              </svg>
+            </button>
+          </div>
           
           <FilePreviewer file={selectedFile} scale={scale} />
         </div>
