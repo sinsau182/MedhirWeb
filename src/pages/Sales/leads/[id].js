@@ -36,6 +36,7 @@ import {
   FaDownload,
   FaInfo,
   FaArrowRight,
+  FaArrowLeft,
 } from "react-icons/fa";
 import MainLayout from "@/components/MainLayout";
 import { toast } from "sonner";
@@ -115,6 +116,7 @@ function formatRelativeTime(date) {
 // --- Sub-components for the new UI ---
 
 const OdooHeader = ({ lead, pipelines, onStatusChange }) => {
+  const router = useRouter();
 
   // Filter out LOST and JUNK stages
   const filteredPipelines = pipelines.filter(stage => stage.formType !== "LOST" && stage.formType !== "JUNK");
@@ -143,10 +145,15 @@ const OdooHeader = ({ lead, pipelines, onStatusChange }) => {
     <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
       {/* Left Side */}
       <div className="flex-1 flex flex-col">
-        <h1 className="text-2xl font-bold text-gray-800">
-          {lead.name} &ndash; {lead.projectType}
-        </h1>
-        <div className="flex items-center gap-6 mt-2">
+        <div className="flex items-center gap-2">
+          <button className="text-sm text-gray-500 font-medium" onClick={() => router.back()}>
+            <FaArrowLeft className="w-5 h-5" />
+          </button>
+          <span className="text-2xl text-gray-800 font-semibold">
+            {lead.name} &ndash; {lead.projectType}
+          </span>
+        </div>
+        <div className="flex items-center gap-6 mt-2 ml-8">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500 font-medium">Priority:</span>
             <span
