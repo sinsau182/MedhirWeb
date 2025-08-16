@@ -384,51 +384,67 @@ const Leaves = () => {
                   </div>
                 )
               ) : leaveBalance ? (
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <p className="text-gray-600">
-                      Leaves earned in this month
-                    </p>
-                    <p className="text-gray-800 font-medium">
-                      {formatNumber(leaveBalance.leavesEarnedInThisMonth)}
-                    </p>
-                  </div>
-                  <div className="flex justify-between">
-                    <p className="text-gray-600">Comp-Off earned in this month</p>
-                    <p className="text-gray-800 font-medium">
-                      {formatNumber(
-                        leaveBalance.compOffEarnedInThisMonth
-                      )}
-                    </p>
-                  </div>
-                   <div className="flex justify-between">
-                    <p className="text-gray-600">Leaves carried forward</p>
-                    <p className="text-gray-800 font-medium">
-                      {formatNumber(leaveBalance.leavesCarryForwardedFromPreviousMonth)}
-                    </p>
-                  </div>
-                  <div className="flex justify-between">
-                    <p className="text-gray-600">Comp-off carried forward</p>
-                    <p className="text-gray-800 font-medium">
-                      {formatNumber(leaveBalance.compOffCarryForwardedFromPreviousMonth)}
-                    </p>
-                  </div>
-                  <div className="flex justify-between">
-                    <p className="text-gray-600">Leaves taken in this month</p>
-                    <p className="text-gray-800 font-medium">
-                      {formatNumber(leaveBalance.leavesTakenInThisMonth)}
-                    </p>
-                  </div>
-                  <hr className="my-4" />
-                  <div className="flex justify-between">
-                    <p className="text-gray-800 font-semibold">Total Balance</p>
-                    <p className="text-gray-800 font-semibold">
+                <div className="space-y-4">
+                  {/* Total Balance - First and Prominent */}
+                  <div className="flex items-center py-3">
+                    <span className="text-gray-600 font-medium flex-1">Total Available Balance</span>
+                    <span className="text-gray-600 mx-4">-</span>
+                    <span className="text-3xl font-bold text-gray-900 flex-1 text-right">
                       {formatNumber(leaveBalance.totalAvailableBalance)}
-                    </p>
+                    </span>
                   </div>
-                  <div className="mt-2 text-xs text-gray-500">
-                    * Total = Leaves(carried & earned) + Comp-off
-                    (carried & earned) - Taken leaves
+
+                  {/* Separator Line */}
+                  <hr className="border-gray-300" />
+
+                  {/* Detailed Breakdown - Simple List */}
+                  <div className="space-y-3">
+                    <div className="flex items-center py-2 border-b border-gray-100">
+                      <span className="text-gray-600 flex-1">Leaves earned in this month</span>
+                      <span className="text-gray-600 mx-4">-</span>
+                      <span className="font-semibold text-gray-900 flex-1 text-right">
+                        {formatNumber(leaveBalance.leavesEarnedInThisMonth)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center py-2 border-b border-gray-100">
+                      <span className="text-gray-600 flex-1">Comp-Off earned in this month</span>
+                      <span className="text-gray-600 mx-4">-</span>
+                      <span className="font-semibold text-gray-900 flex-1 text-right">
+                        {formatNumber(leaveBalance.compOffEarnedInThisMonth)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center py-2 border-b border-gray-100">
+                      <span className="text-gray-600 flex-1">Leaves carried forward</span>
+                      <span className="text-gray-600 mx-4">-</span>
+                      <span className="font-semibold text-gray-900 flex-1 text-right">
+                        {formatNumber(leaveBalance.leavesCarryForwardedFromPreviousMonth)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center py-2 border-b border-gray-100">
+                      <span className="text-gray-600 flex-1">Comp-off carried forward</span>
+                      <span className="text-gray-600 mx-4">-</span>
+                      <span className="font-semibold text-gray-900 flex-1 text-right">
+                        {formatNumber(leaveBalance.compOffCarryForwardedFromPreviousMonth)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center py-2">
+                      <span className="text-gray-600 flex-1">Leaves taken in this month</span>
+                      <span className="text-gray-600 mx-4">-</span>
+                      <span className="font-semibold text-gray-900 flex-1 text-right">
+                        {formatNumber(leaveBalance.leavesTakenInThisMonth)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Formula explanation */}
+                  <div className="text-center pt-2">
+                    <p className="text-xs text-gray-500">
+                       Total = Leaves(carried & earned) + Comp-off (carried & earned) - Taken leaves
+                    </p>
                   </div>
                 </div>
               ) : (
