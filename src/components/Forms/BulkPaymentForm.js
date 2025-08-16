@@ -5,138 +5,7 @@ import { fetchVendors } from '../../redux/slices/vendorSlice';
 import { fetchBillsOfVendor } from '../../redux/slices/BillSlice';
 import { addPayment, updatePayment } from '../../redux/slices/paymentSlice';
 import { toast } from 'sonner';
-
-// Payment Receipt Upload UI Component
-const PaymentReceiptUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
-  const fileInputRef = useRef(null);
-
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    if (!validateFile(file)) {
-      return;
-    }
-    
-    onFileUpload(file);
-  };
-
-  const validateFile = (file) => {
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff', 'application/pdf'];
-    if (!validTypes.includes(file.type)) {
-      toast.error('Please select a valid file (JPG, PNG, BMP, TIFF, PDF)');
-      return false;
-    }
-    
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('File size should be less than 10MB');
-      return false;
-    }
-    
-    toast.success(`File "${file.name}" uploaded successfully (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
-    return true;
-  };
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleRemoveClick = (e) => {
-    e.stopPropagation();
-    onRemoveFile();
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.currentTarget.classList.add('border-blue-500', 'bg-blue-50');
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      const file = files[0];
-      if (validateFile(file)) {
-        onFileUpload(file);
-      }
-    }
-  };
-
-  return (
-    <div className="h-full flex flex-col items-center justify-center">
-      {/* Upload Preview Area - Centered without header */}
-      <div 
-        className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:bg-gray-100 transition-colors w-full relative"
-        onClick={handleUploadClick}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/jpg,image/png,image/bmp,image/tiff,application/pdf"
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-        
-        {uploadedImage && (
-          <button
-            onClick={handleRemoveClick}
-            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors z-10"
-            title="Remove file"
-          >
-            <FaTimes size={14} />
-          </button>
-        )}
-        
-        {uploadedImage ? (
-          <div className="flex flex-col items-center w-full h-full">
-            <div className="flex-1 flex items-center justify-center w-full">
-              {uploadedImage.type === 'application/pdf' ? (
-                <div className="text-center">
-                  <FaFilePdf className="text-red-500 text-6xl mb-4" />
-                  <span className="text-gray-700 font-medium">{uploadedImage.name}</span>
-                </div>
-              ) : (
-                <img 
-                  src={typeof uploadedImage === 'string' ? uploadedImage : URL.createObjectURL(uploadedImage)} 
-                  alt="Uploaded Payment Receipt" 
-                  className="max-w-full max-h-full object-contain rounded-md shadow-sm" 
-                />
-              )}
-            </div>
-            <div className="mt-4 text-center">
-            
-              <p className="text-sm text-gray-500 mt-1">Click to upload a different file</p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center text-center">
-            <FaUpload className="text-gray-400 text-4xl mb-4" />
-            <span className="font-semibold text-gray-700 text-lg">Click to upload a payment receipt</span>
-            <span className="text-sm text-gray-500 mt-2">or drag and drop files here</span>
-            <span className="text-xs text-gray-400 mt-2">JPG, PNG, BMP, TIFF, PDF supported</span>
-            <span className="text-xs text-gray-400">Maximum file size: 10MB</span>
-          </div>
-        )}
-      </div>
-      
-      {error && (
-        <div className="mt-4 text-red-600 bg-red-100 border border-red-300 p-3 rounded-lg text-left">
-          <strong>❌ Error:</strong> {error}
-        </div>
-      )}
-    </div>
-  );
-};
+import FileUploadWithPreview from '../ui/FileUploadWithPreview';
 
 const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel }) => {
   const dispatch = useDispatch();
@@ -151,8 +20,9 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
   const [activeTab, setActiveTab] = useState('bills'); // 'bills' | 'notes' | 'attachments'
   const [selectedVendor, setSelectedVendor] = useState(null);
 
-  // Payment receipt upload state
+  // Payment receipt upload state - updated to match AddBillForm.js pattern
   const [uploadedReceipt, setUploadedReceipt] = useState(null);
+  const [uploadedFile, setUploadedFile] = useState(null);
   const [uploadError, setUploadError] = useState('');
 
   const toggleSidebar = () => {
@@ -200,6 +70,7 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
         // Set payment receipt if available
         if (initialData.paymentProofUrl) {
           setUploadedReceipt(initialData.paymentProofUrl);
+          setUploadedFile(null);
         }
       }
     }
@@ -394,16 +265,26 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
     setAppliedCredit(amount);
   };
 
-  // Payment receipt upload handlers
+  // Payment receipt upload handlers - updated to match AddBillForm.js pattern
   const handleReceiptUpload = (file) => {
-    console.log('Receipt upload handler called with file:', file.name, file.size, file.type);
-    setUploadedReceipt(file);
+    if (!file) return;
+
     setUploadError('');
+    setUploadedFile(file);
+    setUploadedReceipt(file);
+
+    console.log(
+      "Payment receipt uploaded successfully:",
+      file.name,
+      `(${(file.size / 1024 / 1024).toFixed(2)}MB)`
+    );
   };
 
   const handleRemoveReceipt = () => {
     setUploadedReceipt(null);
+    setUploadedFile(null);
     setUploadError('');
+    toast.success("Payment receipt removed successfully");
   };
 
   const totalSelectedSubtotal = selectedBills.reduce((sum, bill) => {
@@ -477,10 +358,10 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
         formDataToSend.append(`attachments`, file);
       });
 
-      // Add payment receipt if uploaded
-      if (uploadedReceipt) {
-        formDataToSend.append('paymentProof', uploadedReceipt);
-        console.log('Payment proof added to form data:', uploadedReceipt.name, uploadedReceipt.size, uploadedReceipt.type);
+      // Add payment receipt if uploaded - updated to use uploadedFile
+      if (uploadedFile) {
+        formDataToSend.append('paymentProof', uploadedFile);
+        console.log('Payment proof added to form data:', uploadedFile.name, uploadedFile.size, uploadedFile.type);
       } else {
         console.log('No payment proof uploaded');
       }
@@ -709,229 +590,46 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
               </div>
             </div>
 
-            {/* Bills & Notes Tabbed Section */}
+                        {/* Notes Section */}
             <div className="w-full mt-8">
-              {/* Tab Buttons */}
-              <div className="flex border-b border-gray-200 mb-0">
-                <button
-                  type="button"
-                  className={`px-6 py-3 font-semibold text-lg focus:outline-none transition-colors border-b-2
-                    ${activeTab === 'bills' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-600 hover:text-blue-600'}`}
-                  onClick={() => setActiveTab('bills')}
-                  style={{ borderTopLeftRadius: 8, borderTopRightRadius: 0 }}
-                >
-                  Bills
-                </button>
-                <button
-                  type="button"
-                  className={`px-6 py-3 font-semibold text-lg focus:outline-none transition-colors border-b-2
-                    ${activeTab === 'notes' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-600 hover:text-blue-600'}`}
-                  onClick={() => setActiveTab('notes')}
-                  style={{ borderTopLeftRadius: 0, borderTopRightRadius: 8 }}
-                >
-                  Notes
-                </button>
-              </div>
-              {/* Tab Content */}
-              <div className="bg-white p-6 border border-t-0 border-gray-200 min-h-[300px]">
-                {activeTab === 'bills' && (
-                  <div>
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center">
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                        <h2 className="text-lg font-semibold text-gray-900">
-                          {mode === 'edit' ? 'Bills in Payment' : 'Select Bills to Pay'}
-                        </h2>
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        💡 Tip: {mode === 'edit' ? 'You can modify payment amounts for each bill' : 'You can pay partial amounts for each bill'}
-                      </div>
-                    </div>
-                    {!selectedVendor ? (
-                      <div className="text-center py-16">
-                        <div className="text-6xl mb-4">📋</div>
-                        <p className="text-lg font-medium text-gray-600">Please select a vendor first</p>
-                        <p className="text-sm text-gray-500 mt-2">Bills will appear here once you choose a vendor</p>
-                      </div>
-                    ) : billsLoading ? (
-                      <div className="text-center py-16">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p className="text-lg font-medium text-gray-600">Loading bills...</p>
-                      </div>
-                    ) : availableBills.length === 0 ? (
-                      <div className="text-center py-16">
-                        <div className="text-6xl mb-4">📄</div>
-                        <p className="text-lg font-medium text-gray-600">
-                          {mode === 'edit' ? 'No bills found' : 'No unpaid bills found'}
-                        </p>
-                        <p className="text-sm text-gray-500 mt-2">
-                          {mode === 'edit' 
-                            ? 'This vendor has no bills' 
-                            : 'This vendor has no outstanding bills'
-                          }
-                        </p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full">
-                            <thead>
-                              <tr className="border-b border-gray-200">
-                                <th className="text-left py-3 px-4">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedBills.length === availableBills.length && availableBills.length > 0}
-                                    onChange={e => handleSelectAll(e.target.checked)}
-                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded"
-                                  />
-                                </th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">BILL NO.</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">BILL DATE</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">DUE DATE</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">TOTAL DUE</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">PAYMENT AMOUNT</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">STATUS</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">REFERENCE/PO</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200">
-                              {availableBills.map((bill) => {
-                                const isSelected = selectedBills.some(sb => sb.billId === bill.billId);
-                                const selectedBill = selectedBills.find(sb => sb.billId === bill.billId);
-                                // In edit mode, show the actual payment amount, otherwise show due amount
-                                const paymentAmount = selectedBill ? selectedBill.paymentAmount : (mode === 'edit' ? 0 : bill.dueAmount);
-                                
-                                return (
-                                  <tr key={bill.billId} className="hover:bg-gray-50 transition-colors">
-                                    <td className="py-4 px-4">
-                                      <input
-                                        type="checkbox"
-                                        checked={isSelected}
-                                        onChange={e => handleBillSelection(bill.billId, e.target.checked)}
-                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded"
-                                      />
-                                    </td>
-                                    <td className="py-4 px-4 text-sm font-medium">{bill.billNumber}</td>
-                                    <td className="py-4 px-4 text-sm">{formatDate(bill.billDate)}</td>
-                                    <td className="py-4 px-4 text-sm">{formatDate(bill.dueDate)}</td>
-                                    <td className="py-4 px-4 text-sm font-medium">{formatCurrency(bill.dueAmount)}</td>
-                                    <td className="py-4 px-4">
-                                      {isSelected ? (
-                                        <div className="flex items-center space-x-2">
-                                          <span className="text-xs text-gray-500">₹</span>
-                                          <input
-                                            type="number"
-                                            value={paymentAmount === 0 ? '' : paymentAmount}
-                                            onChange={e => handlePaymentAmountChange(bill.billId, e.target.value)}
-                                            className="w-24 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                            min="0"
-                                            max={bill.dueAmount}
-                                            step="0.01"
-                                            placeholder="0"
-                                          />
-                                          <button
-                                            type="button"
-                                            onClick={() => handlePaymentAmountChange(bill.billId, bill.dueAmount)}
-                                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                                            title="Pay full amount"
-                                          >
-                                            Full
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <span className="text-sm text-gray-400">Select to set amount</span>
-                                      )}
-                                    </td>
-                                    <td className="py-4 px-4">
-                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                        bill.paymentStatus === 'UN_PAID' || bill.paymentStatus === 'UNPAID' || bill.paymentStatus === 'PARTIALLY_PAID'
-                                          ? 'bg-red-100 text-red-800' 
-                                          : bill.paymentStatus === 'PAID'
-                                          ? 'bg-green-100 text-green-800'
-                                          : 'bg-yellow-100 text-yellow-800'
-                                      }`}>
-                                        {bill.paymentStatus?.replace('_', ' ') || 'DRAFT'}
-                                      </span>
-                                    </td>
-                                    <td className="py-4 px-4 text-sm">{bill.billReference}</td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-
-                        {errors.bills && <div className="text-red-500 text-sm mt-4">{errors.bills}</div>}
-
-                        <div className="flex justify-end items-center mt-6 pt-4 border-t border-gray-200">
-                          <div className="w-96 space-y-2">
-                            <p className="text-sm text-gray-500 text-left mb-2">
-                              {selectedBills.length} bills selected
-                              {selectedBills.some(bill => (bill.paymentAmount || 0) < (bill.dueAmount || 0)) && (
-                                <span className="ml-2 text-blue-600">(partial payments)</span>
-                              )}
-                            </p>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-700">Subtotal (Before GST)</span>
-                              <span className="text-gray-900 font-medium">{formatCurrency(totalSelectedSubtotal)}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-700">Total GST</span>
-                              <span className="text-gray-900 font-medium">{formatCurrency(totalSelectedGst)}</span>
-                            </div>
-                            {totalSelectedTds > 0 && (
-                              <div className="flex justify-between items-center text-red-600">
-                                <span className="font-medium">TDS Applied</span>
-                                <span className="font-medium">- {formatCurrency(totalSelectedTds)}</span>
-                              </div>
-                            )}
-                            <hr className="my-1" />
-                            <div className="flex justify-between items-center">
-                              <span className="font-semibold text-gray-800">Total Payment Amount</span>
-                              <span className="font-semibold text-gray-900">{formatCurrency(totalAmountDueSelected)}</span>
-                            </div>
-                            {selectedBills.length > 0 && selectedVendor.vendorCredits && selectedVendor.totalCredit > 0 && (
-                              <div className="flex justify-between items-center text-green-600">
-                                <span className="font-medium">Vendor Credit Adjusted</span>
-                                <span className="font-medium">- {finalPaymentAmount-selectedVendor.totalCredit < 0 ? formatCurrency(finalPaymentAmount) : formatCurrency(selectedVendor.totalCredit)}</span>
-                              </div>
-                            )}
-                            <hr className="my-2 border-dashed" />
-                            <div className="flex justify-between items-center">
-                              <span className="font-bold text-lg">Final Payment</span>
-                              <span className="font-bold text-lg">{selectedBills.length > 0 ? (finalPaymentAmount-selectedVendor.totalCredit) < 0 ? '0' : formatCurrency(finalPaymentAmount-selectedVendor.totalCredit) : formatCurrency(finalPaymentAmount)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-                {activeTab === 'notes' && (
-                  <div>
-                    <textarea
-                      name="notes"
-                      value={formData.notes}
-                      onChange={handleChange}
-                      rows={6}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                      placeholder="Add payment notes (optional)"
-                    />
-                  </div>
-                )}
+              <div className="bg-white p-6 border border-gray-200 rounded-lg">
+                <div className="flex items-center mb-4">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                  <h2 className="text-lg font-semibold text-gray-900">Notes</h2>
+                </div>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleChange}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  placeholder="Add payment notes (optional)"
+                />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Upload Panel (Right) */}
+        {/* Upload Panel (Right) - Updated to use FileUploadWithPreview */}
         <div className="lg:col-span-1 overflow-y-auto bg-gray-50 p-6 pb-24">
-          <PaymentReceiptUploadUI 
-            onFileUpload={handleReceiptUpload}
-            uploadedImage={uploadedReceipt}
-            error={uploadError}
-            onRemoveFile={handleRemoveReceipt}
-          />
+          <div className="h-full flex flex-col">
+            <div className="flex-1">
+              <FileUploadWithPreview
+                onFileChange={handleReceiptUpload}
+                acceptedFileTypes=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
+                maxFileSize={10 * 1024 * 1024} // 10MB
+                placeholder="Click to upload a payment receipt or drag it here"
+                showPreview={true}
+                className="h-full"
+              />
+            </div>
+            
+            {uploadError && (
+              <div className="mt-4 text-red-600 bg-red-100 border border-red-300 p-3 rounded-lg text-left">
+                <strong>❌ Error:</strong> {uploadError}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Sticky Footer integrated within form container */}
