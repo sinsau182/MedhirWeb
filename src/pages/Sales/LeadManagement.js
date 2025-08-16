@@ -13,6 +13,7 @@ import {
   FaTrash,
   FaTimes,
   FaMagic,
+  FaFilter,
 } from "react-icons/fa";
 import { useSelector, useDispatch } from "react-redux";
 import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
@@ -53,6 +54,9 @@ import {
 import AdvancedScheduleActivityModal from "@/components/Sales/AdvancedScheduleActivityModal";
 import Tooltip from "@/components/ui/ToolTip";
 import withAuth from "@/components/withAuth";
+import SearchBar from "@/components/Sales/SearchBar";
+import ViewToggle from "@/components/Sales/ViewToggle";
+import LostJunkLeadsView from "@/components/Sales/LostJunkLeadsView";
 
 const defaultLeadData = {
   name: "",
@@ -290,12 +294,18 @@ const LeadManagementContent = ({ role }) => {
   const { leads, loading: leadsLoading } = useSelector((state) => state.leads);
   const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
 
+  const [filterText, setFilterText] = useState("");
+  const [viewMode, setViewMode] = useState("kanban");
+  const [unassignedOnly, setUnassignedOnly] = useState(false);
+
+
   // Add pipeline modal state
   const [isAddingStage, setIsAddingStage] = useState(false);
   const [newStageName, setNewStageName] = useState("");
   const [newStageColor, setNewStageColor] = useState("#3b82f6");
   const [newStageIsForm, setNewStageIsForm] = useState(false);
   const [newStageFormType, setNewStageFormType] = useState("");
+
 
   // Delete pipeline modal state
   const [showDeletePipelineModal, setShowDeletePipelineModal] = useState(false);
@@ -355,6 +365,57 @@ const LeadManagementContent = ({ role }) => {
   }, [dispatch]);
 
 
+  const dedupedLeads = useMemo(() => {
+    const seen = new Set();
+    let flatLeads = [];
+    
+    if (Array.isArray(leads) && leads.length > 0 && leads[0].stageId && Array.isArray(leads[0].leads)) {
+      // New grouped format: leads grouped by stageId
+      leads.forEach((stageGroup) => {
+        if (Array.isArray(stageGroup.leads)) {
+          // Find the pipeline/stage for this stageId
+          const pipeline = pipelines.find(p => 
+            p.stageId === stageGroup.stageId || p.pipelineId === stageGroup.stageId
+          );
+          
+          const stageName = pipeline ? pipeline.name : `Stage-${stageGroup.stageId?.slice(-8)}`;
+          const stageId = stageGroup.stageId;
+          
+          // Add stage information to each lead
+          const leadsWithStage = stageGroup.leads.map(lead => ({
+            ...lead,
+            stageId: stageId,
+            stageName: stageName
+          }));
+          
+          flatLeads = flatLeads.concat(leadsWithStage);
+        }
+      });
+    } else if (Array.isArray(leads)) {
+      // Old flat format: individual leads with pipelineId/stageId
+      flatLeads = leads.map(lead => {
+        const pipeline = pipelines.find(p => 
+          p.stageId === (lead.pipelineId || lead.stageId) || 
+          p.pipelineId === (lead.pipelineId || lead.stageId)
+        );
+        
+        return {
+          ...lead,
+          stageId: lead.pipelineId || lead.stageId,
+          stageName: pipeline ? pipeline.name : 'Unknown Stage'
+        };
+      });
+    }
+    
+    // Deduplicate by leadId
+    return flatLeads.filter((lead) => {
+      if (lead && lead.leadId && !seen.has(lead.leadId)) {
+        seen.add(lead.leadId);
+        return true;
+      }
+      return false;
+    });
+  }, [leads, pipelines]);
 
   // Group leads by pipelineId for Kanban board
   const leadsByStatus = useMemo(() => {
@@ -833,6 +894,101 @@ const LeadManagementContent = ({ role }) => {
 
   return (
     <div className="h-[calc(100vh-64px)] bg-gray-50 overflow-hidden flex flex-col">
+            <div className="flex justify-between items-center p-4 bg-white border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center space-x-6">
+          {/* <Tooltip content="Add a new lead to the pipeline">
+            <button
+              onClick={() => handleOpenAddLeadForm()}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg shadow flex items-center min-w-24 justify-center transition-colors duration-200 hover:bg-blue-700"
+            >
+              New Lead
+            </button>
+          </Tooltip> */}
+        </div>
+
+        <div className="flex items-center space-x-6">
+          {/* Enhanced Filters Section */}
+          <div className="flex items-center gap-4 bg-white rounded-lg shadow-sm border border-gray-100 px-4 py-1">
+            {/* Filter Icon with better styling */}
+            {/* <div className="flex items-center justify-center w-8 h-8 bg-blue-50 rounded-lg">
+              <FaFilter className="text-blue-600 text-sm" />
+            </div> */}
+            
+            {/* Enhanced Dropdown */}
+            {/* <div className="relative">
+              <select
+                className="appearance-none bg-white border border-gray-200 rounded-lg text-sm px-4 py-1 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-300 min-w-[180px]"
+                value={selectedEmployeeId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedEmployeeId(val);
+                  // If selecting specific employee, turn off unassigned
+                  if (val !== "all") setUnassignedOnly(false);
+                }}
+              >
+                <option value="all">All Team Members</option>
+                {Array.isArray(managerEmployees) && managerEmployees.map(emp => (
+                  <option key={emp.employeeId || emp.id} value={emp.employeeId || emp.id}>
+                    {emp.name || emp.employeeName || emp.email}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div> */}
+            
+            {/* Enhanced Checkbox */}
+            {/* <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900 transition-colors duration-200">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={unassignedOnly}
+                  onChange={(e) => {
+                    setUnassignedOnly(e.target.checked);
+                    if (e.target.checked) setSelectedEmployeeId("all");
+                  }}
+                  className="sr-only"
+                />
+                <div className={`w-5 h-5 border-2 rounded-md flex items-center justify-center transition-all duration-200 ${
+                  unassignedOnly 
+                    ? 'bg-blue-600 border-blue-600' 
+                    : 'bg-white border-gray-300 hover:border-blue-400'
+                }`}>
+                  {unassignedOnly && (
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <span className="font-medium">Unassigned only</span>
+            </label> */}
+            
+                        {/* Enhanced Clear Button - Only show when filters are active */}
+            {/* {(selectedEmployeeId !== "all" || unassignedOnly) && (
+              <button
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600 font-medium transition-colors duration-200 px-3 py-1 rounded-md hover:bg-blue-50"
+                onClick={() => { setSelectedEmployeeId("all"); setUnassignedOnly(false); }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear
+              </button>
+            )} */}
+          </div>
+
+          <SearchBar filterText={filterText} setFilterText={setFilterText} />
+          <ViewToggle 
+            viewMode={viewMode} 
+            setViewMode={setViewMode}
+            onShowLostJunk={() => setViewMode('lost-junk')}
+          />
+        </div>
+      </div>
       <div className="flex-1 overflow-hidden">
         {leadsLoading ? (
           <div className="flex items-center justify-center h-full">
@@ -842,6 +998,8 @@ const LeadManagementContent = ({ role }) => {
             </div>
           </div>
         ) : (
+          <>
+          {viewMode === "kanban" && (
           <KanbanBoardClientOnly
           leadsByStatus={leadsByStatus}
           statuses={pipelines
@@ -865,6 +1023,24 @@ const LeadManagementContent = ({ role }) => {
           debugProps={{ leadsByStatus, statuses: pipelines.map((p) => p.name) }}
           activeRoleTab={"sales"}
         />
+        )}
+        {viewMode === "table" && (
+          <div className="h-full w-full overflow-auto p-4">
+            <LeadsTable
+              leads={dedupedLeads.filter((lead) =>
+                (unassignedOnly ? !lead.salesRep : true) && (
+                  lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+                  lead.contactNumber?.includes(filterText) ||
+                  lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+                )
+              )}
+            />
+          </div>
+        )}
+        {viewMode === "lost-junk" && (
+              <LostJunkLeadsView />
+        )}
+        </>
         )}
       </div>
       <DeletePipelineModal

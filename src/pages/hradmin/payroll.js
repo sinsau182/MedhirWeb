@@ -1056,7 +1056,7 @@ function PayrollManagement() {
               <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Department
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-yellow-100">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 Old Advance
               </th>
               <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-yellow-100">
@@ -1065,7 +1065,7 @@ function PayrollManagement() {
               <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-yellow-100">
                 Deduct in This Month
               </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-yellow-100">
+              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-green-100">
                 Balance for Next Month
               </th>
             </tr>
@@ -1117,7 +1117,7 @@ function PayrollManagement() {
                   <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
                     {employee.departmentName}
                   </td>
-                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
                     ₹{advanceData?.oldAdvance || employee.oldAdvance || 0}
                   </td>
                   <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50">
@@ -1228,7 +1228,7 @@ function PayrollManagement() {
                       </div>
                     )}
                   </td>
-                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50 font-semibold">
+                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50 font-semibold">
                     <span className={advanceData?.balanceForNextMonth < 0 ? 'text-red-600' : ''}>
                       ₹{advanceData?.balanceForNextMonth || employee.balanceForNextMonth || 0}
                     </span>
@@ -1723,6 +1723,18 @@ function PayrollManagement() {
                 }
               </button>
               
+              {showCheckboxes && (
+                <button
+                  onClick={() => {
+                    setShowCheckboxes(false);
+                    setSelectedEmployees([]);
+                  }}
+                  className="px-4 py-2 bg-red-500 text-white rounded-md font-medium text-sm transition-colors duration-200 hover:bg-red-600"
+                >
+                  Cancel Payslip
+                </button>
+              )}
+              
               {isLatestAvailableMonth() && (isCalculatePayrollClicked || (payroll && Array.isArray(payroll) && payroll.length > 0)) && (
                 <button
                   onClick={() => {
@@ -1738,19 +1750,7 @@ function PayrollManagement() {
                   disabled={payroll?.sendPayslipsLoading}
                   className="px-6 py-2 bg-green-600 text-white rounded-md font-medium text-sm transition-all duration-200 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Send Payslip
-                </button>
-              )}
-              
-              {showCheckboxes && (
-                <button
-                  onClick={() => {
-                    setShowCheckboxes(false);
-                    setSelectedEmployees([]);
-                  }}
-                  className="px-4 py-2 bg-red-500 text-white rounded-md font-medium text-sm transition-colors duration-200 hover:bg-red-600"
-                >
-                  Cancel
+                  {showCheckboxes ? "Finalize Payslip" : "Send Payslip"}
                 </button>
               )}
               

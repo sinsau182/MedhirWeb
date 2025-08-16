@@ -237,6 +237,7 @@ const OdooDetailBody = ({
   setEditingActivity,
   setIsActivityModalOpen,
   activityLogs,
+  activeRole,
 }) => {
   const dispatch = useDispatch();
   const { employees: managerEmployees, loading: managerEmployeesLoading } =
@@ -295,6 +296,8 @@ const OdooDetailBody = ({
       completionTimeline: lead.completionTimeline || "",
     });
   }, [lead, isEditing]);
+
+  console.log(activeRole);
 
   const handleContactFieldChange = (field, value) => {
     let processedValue = value;
@@ -1725,6 +1728,15 @@ const OdooDetailBody = ({
               <h3 className="text-base font-semibold text-gray-800">
                 Assigned Team
               </h3>
+              {isManager && (
+              <button
+                onClick={() => setIsEditingTeam(!isEditingTeam)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-semibold hover:bg-gray-50"
+              >
+                  <FaPencilAlt className="w-3 h-3" />{" "}
+                  {isEditingTeam ? "Cancel" : "Edit"}
+                </button>
+              )}
             </div>
             <div className="border-b border-gray-200 mb-4"></div>
             {isEditingTeam ? (
@@ -1805,6 +1817,12 @@ const OdooDetailBody = ({
                     </SelectContent>
                   </Select>
                 </div>
+                <button
+              onClick={handleSaveTeam}
+              className="w-full mt-2 px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-semibold"
+            >
+              Save
+            </button>
               </div>
             ) : (
               <div className="space-y-2">
@@ -1835,6 +1853,7 @@ const OdooDetailBody = ({
                       (managerEmployees.find(emp => emp.employeeId === lead.designer)?.name || lead.designer) 
                       : "Unassigned"}
                   </span>
+
                 </div>
               </div>
             )}

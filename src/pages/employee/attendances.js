@@ -400,8 +400,6 @@ const EmployeeAttendance = () => {
       }
     });
 
-    
-
     console.log(
       "Disabled dates from leave history:",
       disabledDates.map((d) => d.toISOString().split("T")[0])
