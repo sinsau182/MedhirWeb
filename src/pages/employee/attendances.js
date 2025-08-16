@@ -6,7 +6,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { CheckCircle2, Clock, CalendarIcon, Calendar, Play } from "lucide-react";
+import { CheckCircle2, Clock, CalendarIcon, Calendar, Play, X } from "lucide-react";
 import HradminNavbar from "../../components/HradminNavbar";
 import Sidebar from "../../components/Sidebar";
 import withAuth from "@/components/withAuth";
@@ -14,16 +14,53 @@ import { toast } from "sonner";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { Badge } from "@/components/ui/badge";
 import { useDispatch, useSelector } from "react-redux";
+import {
+  applyLeave,
+  fetchLeaveHistory,
+  clearErrors,
+  applyCompOffLeave,
+} from "@/redux/slices/leaveSlice";
+import {
+  fetchLeaveBalance,
+  resetLeaveBalanceState,
+} from "@/redux/slices/leaveBalanceSlice";
 import { fetchOneEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSlice";
+import { fetchEmployeeLeavePolicy } from "@/redux/slices/leavePolicySlice";
+import { fetchPayrollSettings } from "@/redux/slices/payrollSettingsSlice";
+import CustomDatePicker from "@/components/CustomDatePicker";
 import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.attendanceURL;
 
+function formatNumber(num) {
+  if (num === null || num === undefined || isNaN(num)) return "0";
+  return Number(num) % 1 === 0 ? Number(num) : Number(num).toFixed(2);
+}
+
+function calculateRequestedDays(dates) {
+  return dates.reduce((total, date) => {
+    const shift = date.shiftType || date.timeSlot;
+    const dayValue =
+      shift === "FIRST_HALF" || shift === "SECOND_HALF" ? 0.5 : 1;
+    return total + dayValue;
+  }, 0);
+}
+
 const EmployeeAttendance = () => {
+  const employeeId = sessionStorage.getItem("employeeId");
   const dispatch = useDispatch();
   const { attendance, loading, error } = useSelector(
     (state) => state.attendances
   );
+  const {
+    balance: leaveBalance,
+    loading: isLoadingBalance,
+    error: balanceError,
+  } = useSelector((state) => state.leaveBalance);
+  const { leaveHistory, historyLoading, historyError } = useSelector(
+    (state) => state.leave
+  );
+  const { employeeData } = useSelector((state) => state.payslip);
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [date, setDate] = useState(null); // State to manage selected date
@@ -38,7 +75,11 @@ const EmployeeAttendance = () => {
   const [currentTime, setCurrentTime] = useState(new Date()); // State for real-time updates
   const [dailyAttendanceData, setDailyAttendanceData] = useState(null); // State for daily attendance data
   const prevErrorRef = useRef();
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [leaveForm, setLeaveForm] = useState({ dates: [], reason: "", shiftType: "FULL_DAY" });
+  const [leavePolicy, setLeavePolicy] = useState(null);
+  const [weeklyOffs, setWeeklyOffs] = useState([]);
+  const [requestedDays, setRequestedDays] = useState(0);
   // Get current date info
   const today = new Date();
   const currentMonth = today.toLocaleString("default", { month: "short" });
@@ -100,6 +141,10 @@ const EmployeeAttendance = () => {
     },
     [dispatch]
   );
+
+  useEffect(() => {
+    dispatch(fetchLeaveBalance(employeeId));
+  }, [dispatch, employeeId]);
 
   // Initial data fetch when component mounts
   useEffect(() => {
@@ -239,6 +284,23 @@ const EmployeeAttendance = () => {
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
+  const openModal = async () => {
+    await dispatch(fetchEmployeeLeavePolicy(employeeId));
+    
+    // Fetch payroll settings for date restrictions
+    const companyId = sessionStorage.getItem("employeeCompanyId");
+    if (companyId) {
+      await dispatch(fetchPayrollSettings(companyId));
+    }
+    
+    setIsModalOpen(true);
+  };
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setLeaveForm({ dates: [], reason: "", shiftType: "FULL_DAY" });
+    setLeavePolicy(null);
+    setWeeklyOffs([]);
+  };
 
   const generateCalendarDays = () => {
     const monthIndex = new Date(
@@ -268,6 +330,85 @@ const EmployeeAttendance = () => {
     setShowReasonForm(false);
     setReason("");
   };
+
+  const handleSubmitLeave = async (e) => {
+    e.preventDefault();
+
+    // Convert selected dates to ISO string format and sort them
+    const leaveDates = leaveForm.dates
+      .map((date) => date.date.toISOString().split("T")[0])
+      .sort();
+
+    const formData = {
+      leaveDates: leaveDates,
+      shiftType:
+        leaveForm.dates[0]?.timeSlot ||
+        leaveForm.dates[0]?.shiftType ||
+        "FULL_DAY",
+      reason: leaveForm.reason || "", // Allow empty reason
+    };
+
+    if (!formData.leaveDates.length) {
+      toast.error("Please select at least one date");
+      return;
+    }
+
+    try {
+      const resultAction = await dispatch(applyLeave(formData));
+      if (applyLeave.fulfilled.match(resultAction)) {
+        toast.success("Leave application submitted successfully");
+        closeModal();
+        dispatch(fetchLeaveHistory());
+        dispatch(fetchLeaveBalance(employeeId));
+      } else {
+        throw new Error(
+          resultAction.error.message || "Failed to apply for leave"
+        );
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to apply for leave");
+    }
+  };
+
+  const handleLeaveDatesChange = (dates) => {
+    const totalDays = calculateRequestedDays(dates);
+    setRequestedDays(totalDays);
+
+    setLeaveForm((prev) => ({ ...prev, dates }));
+  };
+  const handleShiftTypeChange = (e) => {
+    setLeaveForm((prev) => ({ ...prev, shiftType: e.target.value }));
+  };
+  const handleLeaveFormChange = (e) => {
+    const { name, value } = e.target;
+    setLeaveForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const getDisabledDates = () => {
+    if (!leaveHistory || !Array.isArray(leaveHistory)) return [];
+
+    const disabledDates = [];
+    leaveHistory.forEach((leave) => {
+      if (leave.leaveDates && Array.isArray(leave.leaveDates)) {
+        leave.leaveDates.forEach((dateString) => {
+          // Convert date string to Date object and add to disabled dates
+          const date = new Date(dateString);
+          if (!isNaN(date.getTime())) {
+            disabledDates.push(date);
+          }
+        });
+      }
+    });
+
+    
+
+    console.log(
+      "Disabled dates from leave history:",
+      disabledDates.map((d) => d.toISOString().split("T")[0])
+    );
+    return disabledDates;
+  };
+
 
   // Function to fetch attendance data for a specific date
   const fetchAttendanceData = async (selectedDate) => {
@@ -484,133 +625,176 @@ const EmployeeAttendance = () => {
             <Card className="md:col-span-2">
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="text-xl">
-                      Attendance Calendar
-                    </CardTitle>
-                    <CardDescription>
-                      View and track your attendance history
-                    </CardDescription>
-                  </div>
-                  <div className="relative" ref={calendarRef}>
-                    <Badge
-                      variant="outline"
-                      className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
-                      onClick={toggleCalendar}
+                  {/* Left Side: Month Navigation with Calendar */}
+                  <div className="flex items-center gap-4">
+                    {/* Left Arrow - Previous Month */}
+                    <button
+                      onClick={() => {
+                        const currentDate = new Date(`${selectedMonth} 1, ${selectedYear}`);
+                        const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+                        const prevMonthName = prevMonth.toLocaleString("default", { month: "short" });
+                        const prevYear = prevMonth.getFullYear().toString();
+                        handleMonthSelection(prevMonthName, prevYear);
+                      }}
+                      className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors duration-200 text-blue-600 hover:text-blue-800"
+                      title="Previous Month"
                     >
-                      <Calendar className="h-4 w-4" />
-                      <span className="font-medium text-sm">
-                        {selectedYear}-{selectedMonth}
-                      </span>
-                    </Badge>
-                    {isCalendarOpen && (
-                      <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
-                        {/* Existing calendar content */}
-                        <div className="p-3 border-b flex justify-between items-center">
-                          <div className="text-sm font-medium text-gray-700">
-                            {selectedYear}
-                          </div>
-                          <select
-                            value={selectedYear}
-                            onChange={(e) => {
-                              const newYear = e.target.value;
-                              setSelectedYear(newYear);
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
 
-                              // Set default month based on year
-                              if (newYear === "2024") {
-                                setSelectedMonth("Aug");
-                                // Fetch data for August 2024
-                                const employeeId =
-                                  sessionStorage.getItem("employeeId");
-                                if (employeeId) {
-                                  dispatch(
-                                    fetchOneEmployeeAttendanceOneMonth({
-                                      employeeId,
-                                      month: "Aug",
-                                      year: newYear,
-                                    })
-                                  );
-                                }
-                              } else {
-                                setSelectedMonth("Jan");
-                                // Fetch data for January 2025
-                                const employeeId =
-                                  sessionStorage.getItem("employeeId");
-                                if (employeeId) {
-                                  dispatch(
-                                    fetchOneEmployeeAttendanceOneMonth({
-                                      employeeId,
-                                      month: "Jan",
-                                      year: newYear,
-                                    })
-                                  );
-                                }
-                              }
-                            }}
-                            className="ml-2 border rounded px-2 py-1 text-sm"
-                          >
-                            {[2024, 2025].map((year) => (
-                              <option key={year} value={year}>
-                                {year}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1.5 p-3">
-                          {(() => {
-                            const currentYear = new Date().getFullYear();
-                            const currentMonthIdx = new Date().getMonth(); // 0-based
-                            let months = [
-                              "Jan",
-                              "Feb",
-                              "Mar",
-                              "Apr",
-                              "May",
-                              "Jun",
-                              "Jul",
-                              "Aug",
-                              "Sep",
-                              "Oct",
-                              "Nov",
-                              "Dec",
-                            ];
+                                        {/* Calendar Button */}
+                    <div className="relative" ref={calendarRef}>
+                      <Badge
+                        variant="outline"
+                        className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
+                        onClick={toggleCalendar}
+                      >
+                        <Calendar className="h-4 w-4" />
+                        <span className="font-medium text-sm">
+                          {selectedYear}-{selectedMonth}
+                        </span>
+                      </Badge>
+                      {isCalendarOpen && (
+                        <div className="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+                          {/* Existing calendar content */}
+                          <div className="p-3 border-b flex justify-between items-center">
+                            <div className="text-sm font-medium text-gray-700">
+                              {selectedYear}
+                            </div>
+                            <select
+                              value={selectedYear}
+                              onChange={(e) => {
+                                const newYear = e.target.value;
+                                setSelectedYear(newYear);
 
-                            // Determine which months to show based on year
-                            let startIdx = 0;
-                            let endIdx = 11;
-
-                            if (parseInt(selectedYear) === 2024) {
-                              startIdx = 7; // August (0-based)
-                              endIdx = 11; // December
-                            } else if (parseInt(selectedYear) === 2025) {
-                              startIdx = 0; // January
-                              endIdx =
-                                currentYear === 2025 ? currentMonthIdx : 11;
-                            }
-
-                            return months
-                              .slice(startIdx, endIdx + 1)
-                              .map((month) => (
-                                <button
-                                  key={month}
-                                  className={`p-3 text-sm rounded-md transition-colors duration-200 ${
-                                    month === selectedMonth
-                                      ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
-                                      : "hover:bg-gray-50 text-gray-700"
-                                  }`}
-                                  onClick={() =>
-                                    handleMonthSelection(month, selectedYear)
+                                // Set default month based on year
+                                if (newYear === "2024") {
+                                  setSelectedMonth("Aug");
+                                  // Fetch data for August 2024
+                                  const employeeId =
+                                    sessionStorage.getItem("employeeId");
+                                  if (employeeId) {
+                                    dispatch(
+                                      fetchOneEmployeeAttendanceOneMonth({
+                                        employeeId,
+                                        month: "Aug",
+                                        year: newYear,
+                                      })
+                                    );
                                   }
-                                >
-                                  {month}
-                                </button>
-                              ));
-                          })()}
+                                } else {
+                                  setSelectedMonth("Jan");
+                                  // Fetch data for January 2025
+                                  const employeeId =
+                                    sessionStorage.getItem("employeeId");
+                                  if (employeeId) {
+                                    dispatch(
+                                      fetchOneEmployeeAttendanceOneMonth({
+                                        employeeId,
+                                        month: "Jan",
+                                        year: newYear,
+                                      })
+                                    );
+                                  }
+                                }
+                              }}
+                              className="ml-2 border rounded px-2 py-1 text-sm"
+                            >
+                              {[2024, 2025].map((year) => (
+                                <option key={year} value={year}>
+                                  {year}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="grid grid-cols-3 gap-1.5 p-3">
+                            {(() => {
+                              const currentYear = new Date().getFullYear();
+                              const currentMonthIdx = new Date().getMonth(); // 0-based
+                              let months = [
+                                "Jan",
+                                "Feb",
+                                "Mar",
+                                "Apr",
+                                "May",
+                                "Jun",
+                                "Jul",
+                                "Aug",
+                                "Sep",
+                                "Oct",
+                                "Nov",
+                                "Dec",
+                              ];
+
+                              // Determine which months to show based on year
+                              let startIdx = 0;
+                              let endIdx = 11;
+
+                              if (parseInt(selectedYear) === 2024) {
+                                startIdx = 7; // August (0-based)
+                                endIdx = 11; // December
+                              } else if (parseInt(selectedYear) === 2025) {
+                                startIdx = 0; // January
+                                endIdx =
+                                  currentYear === 2025 ? currentMonthIdx : 11;
+                              }
+
+                              return months
+                                .slice(startIdx, endIdx + 1)
+                                .map((month) => (
+                                  <button
+                                    key={month}
+                                    className={`p-3 text-sm rounded-md transition-colors duration-200 ${
+                                      month === selectedMonth
+                                        ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
+                                        : "hover:bg-gray-50 text-gray-700"
+                                    }`}
+                                    onClick={() =>
+                                      handleMonthSelection(month, selectedYear)
+                                    }
+                                  >
+                                    {month}
+                                  </button>
+                                ));
+                            })()}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
+
+                    {/* Right Arrow - Next Month */}
+                    <button
+                      onClick={() => {
+                        const currentDate = new Date(`${selectedMonth} 1, ${selectedYear}`);
+                        const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+                        const nextMonthName = nextMonth.toLocaleString("default", { month: "short" });
+                        const nextYear = nextMonth.getFullYear().toString();
+                        handleMonthSelection(nextMonthName, nextYear);
+                      }}
+                      className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors duration-200 text-blue-600 hover:text-blue-800"
+                      title="Next Month"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
                   </div>
+                  <button
+                className={`px-4 py-2 rounded-lg transition ${
+                  balanceError 
+                    ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+                onClick={openModal}
+                disabled={!!balanceError}
+              >
+                Apply for Leave
+              </button>
                 </div>
+
+
               </CardHeader>
 
               <CardContent>
@@ -910,6 +1094,88 @@ const EmployeeAttendance = () => {
           </div>
         </div>
       )}
+
+                {/* Improved Leave Modal */}
+                {isModalOpen && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4 transform transition-all duration-300 scale-100">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    Apply for Leave
+                  </h2>
+                  <button
+                    onClick={closeModal}
+                    className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors duration-200"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmitLeave} className="space-y-6">
+                  <div>
+                    <CustomDatePicker
+                      selectedDates={leaveForm.dates}
+                      onChange={handleLeaveDatesChange}
+                      maxDays={5}
+                      shiftType={leaveForm.shiftType}
+                      onShiftTypeChange={handleShiftTypeChange}
+                      leavePolicy={leavePolicy}
+                      weeklyOffs={weeklyOffs}
+                      disabledDates={getDisabledDates()}
+                      joiningDate={employeeData?.joiningDate}
+                    />
+                    {/* {getDisabledDates().length > 0 && (
+                      <div className="mt-2 text-xs text-gray-500 flex items-center">
+                        <span className="mr-1">ℹ️</span>
+                        Dates with existing leave requests are disabled
+                      </div>
+                    )} */}
+                    {leaveForm.dates.length > 0 && (
+                      <div className="mt-2 text-sm text-gray-600">
+                        Requested:{" "}
+                        {requestedDays % 1 === 0
+                          ? requestedDays
+                          : requestedDays.toFixed(1)}{" "}
+                        day(s) | Available Balance:{" "}
+                        {formatNumber(leaveBalance?.totalAvailableBalance || 0)}{" "}
+                        day(s)
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Reason for Leave (Optional)
+                    </label>
+                    <textarea
+                      name="reason"
+                      value={leaveForm.reason}
+                      onChange={handleLeaveFormChange}
+                      rows={4}
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 resize-none"
+                      placeholder="Please provide a reason for your leave request (optional)..."
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-200"
+                    >
+                      Submit Request
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
 
       {/* Toast Notification */}
       {showToast && (

@@ -249,8 +249,8 @@ const AttendanceTable = ({
       {/* Header row with dynamic message + calendar anchored right */}
 
 
-      <div className="flex items-center gap-4 mb-2">
-        {/* Month Navigation with Display */}
+            <div className="flex items-center justify-between mb-2">
+        {/* Left Side: Month Navigation with Calendar */}
         <div className="flex items-center gap-4">
           {/* Left Arrow - Always visible for previous month */}
           <button
@@ -261,7 +261,7 @@ const AttendanceTable = ({
               const prevYear = prevMonth.getFullYear().toString();
               handleMonthSelection(prevMonthName, prevYear);
             }}
-            className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 text-gray-600 hover:text-gray-800"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors duration-200 text-blue-600 hover:text-blue-800"
             title="Previous Month"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -269,59 +269,8 @@ const AttendanceTable = ({
             </svg>
           </button>
 
-          {/* Month Display */}
-          <div className="text-gray-700 font-medium text-base">
-            {selectedEmployeeId && !selectedDate ? (
-              <>
-                Showing attendance of an employee with EMP ID{" "}
-                <span className="font-semibold">{selectedEmployeeId}</span> on {selectedMonth} {selectedYear}
-              </>
-            ) : !selectedEmployeeId && selectedDate ? (
-              <>
-                Showing attendance of the employees on{" "}
-                <span className="font-semibold">
-                  {selectedDate} {selectedMonth} {selectedYear}
-                </span>
-              </>
-            ) : (
-              <>
-                Showing attendance of the employees in {selectedMonth} {selectedYear}
-              </>
-            )}
-          </div>
-
-          {/* Right Arrow - Only visible when not on current month */}
-          {(() => {
-            const currentDate = new Date();
-            const currentMonth = currentDate.toLocaleString("default", { month: "long" });
-            const currentYear = currentDate.getFullYear().toString();
-            const isCurrentMonth = selectedMonth === currentMonth && selectedYear === currentYear;
-            
-            if (!isCurrentMonth) {
-              return (
-                <button
-                  onClick={() => {
-                    const currentDate = new Date(`${selectedMonth} 1, ${selectedYear}`);
-                    const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-                    const nextMonthName = nextMonth.toLocaleString("default", { month: "long" });
-                    const nextYear = nextMonth.getFullYear().toString();
-                    handleMonthSelection(nextMonthName, nextYear);
-                  }}
-                  className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors duration-200 text-gray-600 hover:text-gray-800"
-                  title="Next Month"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              );
-            }
-            return null;
-          })()}
-        </div>
-        {/* Calendar - Hide only when Single Employee Month is open */}
-        {!isSingleEmployeeModalOpen && (
-          <div className="relative ml-auto" ref={calendarRef}>
+          {/* Calendar - Moved from right side to replace the text */}
+          <div className="relative" ref={calendarRef}>
             <Badge
               variant="outline"
               className="px-4 py-2 cursor-pointer bg-blue-500 hover:bg-blue-600 transition-colors duration-200 flex items-center gap-2 text-white"
@@ -334,7 +283,7 @@ const AttendanceTable = ({
               </span>
             </Badge>
             {isCalendarOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+              <div className="absolute left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
                 <div className="p-3 border-b flex justify-between items-center">
                   <div className="text-sm font-medium text-gray-700">
                     {selectedYear}
@@ -376,32 +325,24 @@ const AttendanceTable = ({
                       "Nov",
                       "Dec",
                     ];
-                    let startIdx = 0;
-                    let endIdx = 11;
-                    if (parseInt(selectedYear) === 2024) {
-                      startIdx = 7;
-                      endIdx = 11;
-                    } else if (parseInt(selectedYear) === 2025) {
-                      startIdx = 0;
-                      endIdx = currentYear === 2025 ? currentMonthIdx : 11;
+
+                    // Filter months based on year
+                    if (parseInt(selectedYear) === currentYear) {
+                      months = months.slice(0, currentMonthIdx + 1);
                     }
-                    return months.slice(startIdx, endIdx + 1).map((month) => (
+
+                    return months.map((month) => (
                       <button
                         key={month}
-                        className={`p-3 text-sm rounded-md transition-colors duration-200 ${
-                          month === selectedMonth.slice(0, 3)
-                            ? "bg-blue-50 text-blue-600 font-medium hover:bg-blue-100"
-                            : "hover:bg-gray-50 text-gray-700"
-                        }`}
                         onClick={() => {
-                          const monthMap = {
-                            "Jan": "January", "Feb": "February", "Mar": "March", "Apr": "April",
-                            "May": "May", "Jun": "June", "Jul": "July", "Aug": "August",
-                            "Sep": "September", "Oct": "October", "Nov": "November", "Dec": "December"
-                          };
-                          const fullMonthName = monthMap[month] || month;
-                          handleMonthSelection(fullMonthName, selectedYear);
+                          handleMonthSelection(month, selectedYear);
+                          toggleCalendar();
                         }}
+                        className={`px-3 py-2 text-sm rounded-md transition-colors duration-200 ${
+                          month === selectedMonth
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        }`}
                       >
                         {month}
                       </button>
@@ -411,12 +352,43 @@ const AttendanceTable = ({
               </div>
             )}
           </div>
-        )}
+
+          {/* Right Arrow - Only visible when not on current month */}
+          {(() => {
+            const currentDate = new Date();
+            const currentMonth = currentDate.toLocaleString("default", { month: "long" });
+            const currentYear = currentDate.getFullYear().toString();
+            const isCurrentMonth = selectedMonth === currentMonth && selectedYear === currentYear;
+            
+            if (!isCurrentMonth) {
+              return (
+                <button
+                  onClick={() => {
+                    const currentDate = new Date(`${selectedMonth} 1, ${selectedYear}`);
+                    const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+                    const nextMonthName = nextMonth.toLocaleString("default", { month: "long" });
+                    const nextYear = nextMonth.getFullYear().toString();
+                    handleMonthSelection(nextMonthName, nextYear);
+                  }}
+                  className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 hover:bg-blue-200 transition-colors duration-200 text-blue-600 hover:text-blue-800"
+                  title="Next Month"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              );
+            }
+            return null;
+          })()}
+        </div>
+
+        {/* Right Side: Process Attendance Button */}
         {!isSingleEmployeeModalOpen && (
           <button
             type="button"
             onClick={handleProcessCompanyMonthAttendance}
-            className="ml-2 px-4 py-2 rounded bg-indigo-500 text-white text-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            className="px-4 py-2 rounded bg-indigo-500 text-white text-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-300"
             title="Process company month attendance for selected month"
           >
             Process Attendance

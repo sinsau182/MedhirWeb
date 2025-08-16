@@ -311,11 +311,11 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
               if (item.label === "Sales Settings") {
                 return hasAdminRole();
               }
-              if (item.label === "Team Leads") {
-                return isManagerOrAdmin;
+              if (item.label === "My Leads") {
+                return !isManagerOrAdmin; // Hide My Leads for manager/admin
               }
-              if (item.label === "Lead Management") {
-                return true; // visible to everyone, including manager/admin
+              if (item.label === "All Leads") {
+                return isManagerOrAdmin; // Show All Leads only for manager/admin
               }
               // Keep Dashboard for everyone
               return true;
@@ -357,16 +357,16 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
             modules.push({ key: moduleId, ...filteredModule });
           } else if (moduleId === "MOD_SALES") {
             const isManagerOrAdmin = hasManagerRole() || hasAdminRole();
-            // Filter Sales items: Dashboard for all; Team Leads only for manager/admin; Lead Management for everyone
+            // Filter Sales items: Dashboard for all; My Leads only for non-manager/non-admin; All Leads for manager/admin
             const filteredItems = modularMenus[moduleId].items.filter(item => {
               if (item.label === "Sales Settings") {
                 return hasAdminRole();
               }
-              if (item.label === "Team Leads") {
-                return isManagerOrAdmin;
+              if (item.label === "My Leads") {
+                return !isManagerOrAdmin; // Hide My Leads for manager/admin
               }
-              if (item.label === "Lead Management") {
-                return true; // visible to everyone, including manager/admin
+              if (item.label === "All Leads") {
+                return isManagerOrAdmin; // Show All Leads only for manager/admin
               }
               return true; // Dashboard
             });
