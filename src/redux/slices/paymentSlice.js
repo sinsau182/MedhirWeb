@@ -4,13 +4,44 @@ import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL + "/payments";
 
+// Helper function to get company ID from session storage
+const getCompanyId = () => {
+  try {
+    // Try to get from encrypted session storage first
+    const encryptedCompanyId = getItemFromSessionStorage('employeeCompanyId', null);
+    if (encryptedCompanyId) return encryptedCompanyId;
+    
+    // Fallback to direct session storage access
+    if (typeof window !== 'undefined') {
+      const rawCompanyId = sessionStorage.getItem('employeeCompanyId');
+      if (rawCompanyId) {
+        try {
+          return JSON.parse(rawCompanyId);
+        } catch {
+          return rawCompanyId;
+        }
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting company ID:', error);
+    return null;
+  }
+};
+
 // fetch payments
 export const fetchPayments = createAsyncThunk(
     "payments/fetchPayments",
     async (_, { rejectWithValue }) => {
         try {
         const token = getItemFromSessionStorage("token", null);
-        const response = await fetch(`${API_BASE_URL}`, {
+        const companyId = getCompanyId();
+        
+        if (!companyId) {
+          return rejectWithValue("Company ID not found");
+        }
+        
+        const response = await fetch(`${API_BASE_URL}?companyId=${companyId}`, {
             headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -33,7 +64,13 @@ export const fetchPaymentsOfVendor = createAsyncThunk(
     async (vendorId, { rejectWithValue }) => {
         try {
         const token = getItemFromSessionStorage("token", null);
-        const response = await fetch(`${API_BASE_URL}/vendor/${vendorId}`, {
+        const companyId = getCompanyId();
+        
+        if (!companyId) {
+          return rejectWithValue("Company ID not found");
+        }
+        
+        const response = await fetch(`${API_BASE_URL}/vendor/${vendorId}?companyId=${companyId}`, {
             headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -56,7 +93,13 @@ export const addPayment = createAsyncThunk(
     async (payment, { rejectWithValue }) => {
         try {
         const token = getItemFromSessionStorage("token", null);
-        const response = await fetch(`${API_BASE_URL}`, {
+        const companyId = getCompanyId();
+        
+        if (!companyId) {
+          return rejectWithValue("Company ID not found");
+        }
+        
+        const response = await fetch(`${API_BASE_URL}?companyId=${companyId}`, {
             method: "POST",
             headers: {
             Authorization: `Bearer ${token}`,
@@ -80,7 +123,13 @@ export const updatePayment = createAsyncThunk(
     async ({ paymentId, payment }, { rejectWithValue }) => {
         try {
         const token = getItemFromSessionStorage("token", null);
-        const response = await fetch(`${API_BASE_URL}/${paymentId}`, {
+        const companyId = getCompanyId();
+        
+        if (!companyId) {
+          return rejectWithValue("Company ID not found");
+        }
+        
+        const response = await fetch(`${API_BASE_URL}/${paymentId}?companyId=${companyId}`, {
             method: "PUT",
             headers: {
             Authorization: `Bearer ${token}`,

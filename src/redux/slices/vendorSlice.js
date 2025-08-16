@@ -4,13 +4,44 @@ import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL + "/vendors";
 
+// Helper function to get company ID from session storage
+const getCompanyId = () => {
+  try {
+    // Try to get from encrypted session storage first
+    const encryptedCompanyId = getItemFromSessionStorage('employeeCompanyId', null);
+    if (encryptedCompanyId) return encryptedCompanyId;
+    
+    // Fallback to direct session storage access
+    if (typeof window !== 'undefined') {
+      const rawCompanyId = sessionStorage.getItem('employeeCompanyId');
+      if (rawCompanyId) {
+        try {
+          return JSON.parse(rawCompanyId);
+        } catch {
+          return rawCompanyId;
+        }
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting company ID:', error);
+    return null;
+  }
+};
+
 // Fetch vendors
 export const fetchVendors = createAsyncThunk(
   "vendors/fetchVendors",
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}?companyId=${companyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -33,6 +64,11 @@ export const addVendor = createAsyncThunk(
   async (vendor, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
       
       // Create FormData for multipart/form-data
       const formData = new FormData();
@@ -54,7 +90,7 @@ export const addVendor = createAsyncThunk(
         formData.append('bankPassbook', vendor.bankPassbook);
       }
       
-      const response = await fetch(`${API_BASE_URL}`, {
+      const response = await fetch(`${API_BASE_URL}?companyId=${companyId}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -79,6 +115,11 @@ export const updateVendor = createAsyncThunk(
   async (vendor, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
       
       // Create FormData for multipart/form-data
       const formData = new FormData();
@@ -100,7 +141,7 @@ export const updateVendor = createAsyncThunk(
         formData.append('bankPassbook', vendor.bankPassbook);
       }
       
-      const response = await fetch(`${API_BASE_URL}/${vendor.vendorId}`, {
+      const response = await fetch(`${API_BASE_URL}/${vendor.vendorId}?companyId=${companyId}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -125,7 +166,13 @@ export const addVendorBills = createAsyncThunk(
   async (vendorBills, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}/bills`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/bills?companyId=${companyId}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -150,7 +197,13 @@ export const updateVendorCredit = createAsyncThunk(
   async (vendorCredit, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}/${vendorCredit.vendorId}/credits`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/${vendorCredit.vendorId}/credits?companyId=${companyId}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,

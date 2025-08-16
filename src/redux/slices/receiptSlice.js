@@ -12,13 +12,44 @@ function getTokenOrThrow() {
   return token;
 }
 
+// Helper function to get company ID from session storage
+const getCompanyId = () => {
+  try {
+    // Try to get from encrypted session storage first
+    const encryptedCompanyId = getItemFromSessionStorage('employeeCompanyId', null);
+    if (encryptedCompanyId) return encryptedCompanyId;
+    
+    // Fallback to direct session storage access
+    if (typeof window !== 'undefined') {
+      const rawCompanyId = sessionStorage.getItem('employeeCompanyId');
+      if (rawCompanyId) {
+        try {
+          return JSON.parse(rawCompanyId);
+        } catch {
+          return rawCompanyId;
+        }
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting company ID:', error);
+    return null;
+  }
+};
+
 // Fetch all receipts
 export const fetchReceipts = createAsyncThunk(
   "receipts/fetchReceipts",
   async (_, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
-      const response = await fetch(`${API_BASE_URL}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}?companyId=${companyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -41,7 +72,13 @@ export const fetchReceiptByNumber = createAsyncThunk(
   async (receiptNumber, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
-      const response = await fetch(`${API_BASE_URL}/${receiptNumber}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/${receiptNumber}?companyId=${companyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -64,7 +101,13 @@ export const fetchReceiptsByProject = createAsyncThunk(
   async (projectId, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
-      const response = await fetch(`${API_BASE_URL}/project/${projectId}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/project/${projectId}?companyId=${companyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -87,7 +130,13 @@ export const fetchUnallocatedReceipts = createAsyncThunk(
   async (projectId, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
-      const response = await fetch(`${API_BASE_URL}/unallocated/project/${projectId}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/unallocated/project/${projectId}?companyId=${companyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -110,7 +159,13 @@ export const getNextReceiptNumber = createAsyncThunk(
   async (companyId, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
-      const response = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/account/document-numbering/company/${companyId}/preview-receipt-number`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+
+      const response = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/account/document-numbering/company/${companyId}/preview-receipt-number?companyId=${companyId}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -134,7 +189,13 @@ export const generateNextReceiptNumber = createAsyncThunk(
   async (companyId, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
-      const response = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/account/document-numbering/company/${companyId}/generate-receipt-number`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+
+      const response = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/account/document-numbering/company/${companyId}/generate-receipt-number?companyId=${companyId}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -158,6 +219,11 @@ export const addReceipt = createAsyncThunk(
   async (receiptData, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
       
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -169,7 +235,7 @@ export const addReceipt = createAsyncThunk(
         headers["Content-Type"] = "application/json";
       }
       
-      const response = await fetch(`${API_BASE_URL}`, {
+      const response = await fetch(`${API_BASE_URL}?companyId=${companyId}`, {
         method: "POST",
         headers,
         body: isFormData ? receiptData : JSON.stringify(receiptData),
@@ -191,7 +257,13 @@ export const fetchProjectCustomerList = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
-      const response = await fetch(`${publicRuntimeConfig.apiURL}/leads/project-customer/all`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+
+      const response = await fetch(`${publicRuntimeConfig.apiURL}/leads/project-customer/all?companyId=${companyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -212,7 +284,13 @@ export const fetchInvoicesByProject = createAsyncThunk(
   async (projectId, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
-      const response = await fetch(`${publicRuntimeConfig.apiURL}/invoices/project/${projectId}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+
+      const response = await fetch(`${publicRuntimeConfig.apiURL}/invoices/project/${projectId}?companyId=${companyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",

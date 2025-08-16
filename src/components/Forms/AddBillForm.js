@@ -10,10 +10,8 @@ import {
   FaTimes,
   FaSave,
   FaUpload,
-  FaDownload,
-  FaSearchPlus,
-  FaSearchMinus,
 } from "react-icons/fa";
+import FileUploadWithPreview from "../ui/FileUploadWithPreview";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchVendors,
@@ -36,290 +34,38 @@ const AutoGrowTextarea = ({ className, ...props }) => {
     <textarea
       ref={textareaRef}
       rows="1"
-      className={`${className} resize-none overflow-hidden`}
+      className={`${className} resize-none overflow-hidden text-xs`}
+      style={{ 
+        fontSize: '12px',
+        lineHeight: '1.2'
+      }}
       {...props}
     />
   );
 };
 
 const BillUploadUI = ({ onFileUpload, uploadedImage, error, onRemoveFile }) => {
-  const fileInputRef = useRef(null);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [showZoomControls, setShowZoomControls] = useState(false);
-
-  const isPdf = (value) => {
-    if (!value) return false;
-    if (typeof value !== "string") {
-      return value.type === "application/pdf";
+  const handleFileChange = (file) => {
+    if (file) {
+      onFileUpload(file);
+    } else {
+      onRemoveFile();
     }
-    const lower = value.toLowerCase();
-    return (
-      lower.endsWith(".pdf") ||
-      lower.includes("application%2Fpdf") ||
-      lower.includes("content-type=application/pdf")
-    );
-  };
-
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (!validateFile(file)) {
-      return;
-    }
-
-    onFileUpload(file);
-    setZoomLevel(1); // reset the zoom when new functionality is uploaded
-  };
-
-  const validateFile = (file) => {
-    const validTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/bmp",
-      "image/tiff",
-      "application/pdf",
-    ];
-    if (!validTypes.includes(file.type)) {
-      toast.error("Please select a valid file (JPG, PNG, BMP, TIFF, PDF)");
-      return false;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("File size should be less than 10MB");
-      return false;
-    }
-
-    toast.success(
-      `File "${file.name}" uploaded successfully (${(
-        file.size /
-        1024 /
-        1024
-      ).toFixed(2)}MB)`
-    );
-    return true;
-  };
-
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleRemoveClick = (e) => {
-    e.stopPropagation();
-    onRemoveFile();
-    setZoomLevel(1);
-    setShowZoomControls(false);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.currentTarget.classList.add("border-blue-500", "bg-blue-50");
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    e.currentTarget.classList.remove("border-blue-500", "bg-blue-50");
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.currentTarget.classList.remove("border-blue-500", "bg-blue-50");
-
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      const file = files[0];
-      if (validateFile(file)) {
-        onFileUpload(file);
-        setZoomLevel(1);
-      }
-    }
-  };
-
-  const handleZoomIn = () => {
-    setZoomLevel((prev) => Math.min(prev + 0.25, 3));
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel((prev) => Math.max(prev - 0.25, 0.25));
-  };
-
-  const handleDownload = () => {
-    if (!uploadedImage) return;
-
-    const url =
-      typeof uploadedImage === "string"
-        ? uploadedImage
-        : URL.createObjectURL(uploadedImage);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = uploadedImage.name || "bill-document";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    if (typeof uploadedImage !== "string") {
-      URL.revokeObjectURL(url);
-    }
-  };
-
-  const handleImageLoad = () => {
-    setShowZoomControls(true);
   };
 
   return (
-    <div className="h-full flex flex-col items-center justify-center">
-      {/* Upload Preview Area - Centered without header */}
-      <div
-        className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:bg-gray-100 transition-colors w-full relative"
-        onClick={handleUploadClick}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/jpg,image/png,image/bmp,image/tiff,application/pdf"
-          onChange={handleFileSelect}
-          className="hidden"
+    <div className="h-full flex flex-col">
+      <div className="flex-1">
+        <FileUploadWithPreview
+          onFileChange={handleFileChange}
+          acceptedFileTypes=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
+          maxFileSize={10 * 1024 * 1024} // 10MB
+          placeholder="Click to upload a bill or drag it here"
+          showPreview={true}
+          className="h-full"
         />
-
-        {uploadedImage ? (
-          <div className="flex flex-col items-center w-full h-full">
-            <div className="flex-1 flex items-center justify-center w-full relative overflow-hidden">
-              {isPdf(uploadedImage) ? (
-                <div className="relative w-full h-full flex flex-col">
-                  <div className="absolute top-2 right-2 flex gap-2 z-10">
-                    <button
-                      onClick={handleRemoveClick}
-                      className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors"
-                      title="Remove file"
-                    >
-                      <FaTimes size={14} />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDownload();
-                      }}
-                      className="bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 shadow-lg transition-colors"
-                      title="Download file"
-                    >
-                      <FaDownload size={14} />
-                    </button>
-                  </div>
-                  <div className="w-full h-full flex items-center justify-center">
-                    <iframe
-                      src={
-                        typeof uploadedImage === "string"
-                          ? uploadedImage
-                          : URL.createObjectURL(uploadedImage)
-                      }
-                      className="w-full h-full border-0 rounded-md shadow-sm"
-                      title="PDF Preview"
-                      onLoad={() => setShowZoomControls(true)}
-                    />
-                  </div>
-                  {showZoomControls && (
-                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2 bg-white bg-opacity-90 rounded-lg p-2 shadow-lg">
-                      <span className="px-2 py-1 text-sm text-gray-600 font-medium">
-                        PDF Document
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="relative w-full h-full flex items-center justify-center">
-                  <img
-                    src={
-                      typeof uploadedImage === "string"
-                        ? uploadedImage
-                        : URL.createObjectURL(uploadedImage)
-                    }
-                    alt="Uploaded Bill"
-                    className="max-w-full max-h-full object-contain rounded-md shadow-sm transition-transform duration-200"
-                    style={{ transform: `scale(${zoomLevel})` }}
-                    onLoad={handleImageLoad}
-                  />
-                  {showZoomControls && (
-                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2 bg-white bg-opacity-90 rounded-lg p-2 shadow-lg">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleZoomOut();
-                        }}
-                        className="p-2 rounded-md hover:bg-gray-200 transition-colors"
-                        title="Zoom Out"
-                        disabled={zoomLevel <= 0.25}
-                      >
-                        <FaSearchMinus
-                          size={14}
-                          className={
-                            zoomLevel <= 0.25
-                              ? "text-gray-400"
-                              : "text-gray-600"
-                          }
-                        />
-                      </button>
-                      <span className="px-2 py-1 text-sm text-gray-600 font-medium">
-                        {Math.round(zoomLevel * 100)}%
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleZoomIn();
-                        }}
-                        className="p-2 rounded-md hover:bg-gray-200 transition-colors"
-                        title="Zoom In"
-                        disabled={zoomLevel >= 3}
-                      >
-                        <FaSearchPlus
-                          size={14}
-                          className={
-                            zoomLevel >= 3 ? "text-gray-400" : "text-gray-600"
-                          }
-                        />
-                      </button>
-                    </div>
-                  )}
-                  <div className="absolute top-2 right-2">
-                    <button
-                      onClick={handleRemoveClick}
-                      className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors"
-                      title="Remove file"
-                    >
-                      <FaTimes size={14} />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="mt-4 text-center">
-              <p className="text-sm text-gray-500 mt-1">
-                Click to upload a different file
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center text-center">
-            <FaUpload className="text-gray-400 text-4xl mb-4" />
-            <span className="font-semibold text-gray-700 text-lg">
-              Click to upload a bill
-            </span>
-            <span className="text-sm text-gray-500 mt-2">
-              or drag and drop files here
-            </span>
-            <span className="text-xs text-gray-400 mt-2">
-              JPG, PNG, BMP, TIFF, PDF supported
-            </span>
-            <span className="text-xs text-gray-400">
-              Maximum file size: 10MB
-            </span>
-          </div>
-        )}
       </div>
-
+      
       {error && (
         <div className="mt-4 text-red-600 bg-red-100 border border-red-300 p-3 rounded-lg text-left">
           <strong>❌ Error:</strong> {error}
@@ -348,7 +94,7 @@ const BillForm = ({ bill, onCancel }) => {
   const companyId = sessionStorage.getItem("employeeCompanyId");
   const dispatch = useDispatch();
   const isEditMode = !!bill;
-  const fileInputRef = useRef(null);
+
   const mainCardRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedImage, setUploadedImage] = useState(null);
@@ -764,7 +510,7 @@ const BillForm = ({ bill, onCancel }) => {
   // Render
   return (
     <div className="w-full h-screen flex flex-col bg-white">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 flex-1 min-h-0 border border-gray-200 rounded-t-lg overflow-hidden shadow-sm relative">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 flex-1 min-h-0 border border-gray-200 rounded-t-lg overflow-hidden shadow-sm relative min-w-0">
         {/* Form Panel (Left) */}
         <div className="lg:col-span-1 overflow-y-auto p-6 border-r border-gray-200 pb-24">
           <div className="flex justify-between items-center mb-6">
@@ -1025,28 +771,28 @@ const BillForm = ({ bill, onCancel }) => {
                     <table className="min-w-full">
                       <thead>
                         <tr className="border-b border-gray-200">
-                          <th className="w-[8%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <th className="w-[8%] px-3 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             Sr. No.
                           </th>
-                          <th className="w-[25%] px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <th className="w-[25%] px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             Description
                           </th>
-                          <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <th className="w-[10%] px-3 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             Qty
                           </th>
-                          <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <th className="w-[10%] px-3 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             UOM
                           </th>
-                          <th className="w-[12%] px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <th className="w-[12%] px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             Rate
                           </th>
-                          <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <th className="w-[10%] px-3 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             GST%
                           </th>
-                          <th className="w-[15%] px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <th className="w-[15%] px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             Total Amount
                           </th>
-                          <th className="w-[10%] px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <th className="w-[10%] px-3 py-2 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
                             Action
                           </th>
                         </tr>
@@ -1066,12 +812,12 @@ const BillForm = ({ bill, onCancel }) => {
                               key={idx}
                               className="hover:bg-gray-50 transition-colors"
                             >
-                              <td className="px-4 py-3 text-center text-sm font-medium">
+                              <td className="px-3 py-2 text-center text-xs font-medium">
                                 {idx + 1}
                               </td>
-                              <td className="px-4 py-3">
+                              <td className="px-3 py-2">
                                 <AutoGrowTextarea
-                                  className={`w-full bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 ${
+                                  className={`w-full bg-transparent p-1 rounded-md focus:bg-white focus:ring-1 text-xs ${
                                     errors[`item${idx}`]
                                       ? "ring-red-500"
                                       : "focus:ring-blue-500"
@@ -1093,10 +839,10 @@ const BillForm = ({ bill, onCancel }) => {
                                 )}
                               </td>
 
-                              <td className="px-4 py-3 text-center">
+                              <td className="px-3 py-2 text-center">
                                 <input
                                   type="text"
-                                  className={`w-full text-center bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 ${
+                                  className={`w-full text-center bg-transparent p-1 rounded-md focus:bg-white focus:ring-1 text-xs ${
                                     errors[`qty${idx}`]
                                       ? "ring-red-500"
                                       : "focus:ring-blue-500"
@@ -1113,9 +859,9 @@ const BillForm = ({ bill, onCancel }) => {
                                   </div>
                                 )}
                               </td>
-                              <td className="px-4 py-3 text-center">
+                              <td className="px-3 py-2 text-center">
                                 <input
-                                  className={`w-full text-center bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500`}
+                                  className={`w-full text-center bg-transparent p-1 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500 text-xs`}
                                   value={line.uom}
                                   onChange={(e) =>
                                     handleLineChange(idx, "uom", e.target.value)
@@ -1123,14 +869,14 @@ const BillForm = ({ bill, onCancel }) => {
                                   placeholder="PCS"
                                 />
                               </td>
-                              <td className="px-4 py-3 text-right">
+                              <td className="px-3 py-2 text-right">
                                 <div className="flex items-center justify-end">
-                                  <span className="text-gray-500 mr-0.5">
+                                  <span className="text-gray-500 mr-0.5 text-xs">
                                     ₹
                                   </span>
                                   <input
                                     type="text"
-                                    className={`w-full text-right bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 ${
+                                    className={`w-full text-right bg-transparent p-1 rounded-md focus:bg-white focus:ring-1 text-xs ${
                                       errors[`rate${idx}`]
                                         ? "ring-red-500"
                                         : "focus:ring-blue-500"
@@ -1152,9 +898,9 @@ const BillForm = ({ bill, onCancel }) => {
                                   </div>
                                 )}
                               </td>
-                              <td className="px-4 py-3 text-center">
+                              <td className="px-3 py-2 text-center">
                                 <select
-                                  className="w-full text-center bg-transparent p-2 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500"
+                                  className="w-full text-center bg-transparent p-1 rounded-md focus:bg-white focus:ring-1 focus:ring-blue-500 text-xs"
                                   value={line.gst}
                                   onChange={(e) =>
                                     handleLineChange(
@@ -1172,13 +918,13 @@ const BillForm = ({ bill, onCancel }) => {
                                 </select>
                               </td>
 
-                              <td className="px-4 py-3 text-right text-sm font-semibold">
+                              <td className="px-3 py-2 text-right text-xs font-semibold">
                                 ₹
                                 {total.toLocaleString("en-IN", {
                                   minimumFractionDigits: 2,
                                 })}
                               </td>
-                              <td className="px-4 py-3 text-center">
+                              <td className="px-3 py-2 text-center">
                                 <button
                                   type="button"
                                   className="text-red-500 hover:text-red-700 transition-colors"
@@ -1435,7 +1181,7 @@ const BillForm = ({ bill, onCancel }) => {
         </div>
 
         {/* Upload Panel (Right) */}
-        <div className="lg:col-span-1 overflow-y-auto bg-gray-50 p-6 pb-24">
+        <div className="lg:col-span-1 overflow-y-auto bg-gray-50 p-6 pb-24 h-full">
           <BillUploadUI
             onFileUpload={handleFileUpload}
             uploadedImage={uploadedImage}

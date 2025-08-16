@@ -4,13 +4,44 @@ import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL + "/customers";
 
+// Helper function to get company ID from session storage
+const getCompanyId = () => {
+  try {
+    // Try to get from encrypted session storage first
+    const encryptedCompanyId = getItemFromSessionStorage('employeeCompanyId', null);
+    if (encryptedCompanyId) return encryptedCompanyId;
+    
+    // Fallback to direct session storage access
+    if (typeof window !== 'undefined') {
+      const rawCompanyId = sessionStorage.getItem('employeeCompanyId');
+      if (rawCompanyId) {
+        try {
+          return JSON.parse(rawCompanyId);
+        } catch {
+          return rawCompanyId;
+        }
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting company ID:', error);
+    return null;
+  }
+};
+
 // Fetch customers
 export const fetchCustomers = createAsyncThunk(
   "customers/fetchCustomers",
   async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}?companyId=${companyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -33,7 +64,13 @@ export const addCustomer = createAsyncThunk(
   async (customer, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}?companyId=${companyId}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -58,7 +95,13 @@ export const updateCustomer = createAsyncThunk(
   async (customer, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}/${customer.customerId}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/${customer.customerId}?companyId=${companyId}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -83,7 +126,13 @@ export const getCustomerById = createAsyncThunk(
   async (customerId, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}/${customerId}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/${customerId}?companyId=${companyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -106,7 +155,13 @@ export const searchCustomersByName = createAsyncThunk(
   async (customerName, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}/search/name?customerName=${encodeURIComponent(customerName)}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+
+      const response = await fetch(`${API_BASE_URL}/search/name?customerName=${encodeURIComponent(customerName)}&companyId=${companyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -129,7 +184,13 @@ export const searchCustomersByEmail = createAsyncThunk(
   async (email, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}/search/email?email=${encodeURIComponent(email)}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+
+      const response = await fetch(`${API_BASE_URL}/search/email?email=${encodeURIComponent(email)}&companyId=${companyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -152,7 +213,13 @@ export const getCustomerByEmail = createAsyncThunk(
   async (email, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}/email/${encodeURIComponent(email)}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+
+      const response = await fetch(`${API_BASE_URL}/email/${encodeURIComponent(email)}?companyId=${companyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -175,7 +242,13 @@ export const customerExistsByEmail = createAsyncThunk(
   async (email, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}/exists/email/${encodeURIComponent(email)}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+
+      const response = await fetch(`${API_BASE_URL}/exists/email/${encodeURIComponent(email)}?companyId=${companyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -198,7 +271,13 @@ export const getCustomersByLeadId = createAsyncThunk(
   async (leadId, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage("token", null);
-      const response = await fetch(`${API_BASE_URL}/lead/${leadId}`, {
+      const companyId = getCompanyId();
+      
+      if (!companyId) {
+        return rejectWithValue("Company ID not found");
+      }
+
+      const response = await fetch(`${API_BASE_URL}/lead/${leadId}?companyId=${companyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",

@@ -253,7 +253,7 @@ const PayrollPage = () => {
                     No payslip data is available for {selectedMonth} {selectedYear}.
                   </p>
                   <p className="text-sm text-blue-600 mb-4 font-medium">
-                    Please ask your HR admin to click the "Calculate Payroll" button to generate your payslip.
+                    Please ask your HR admin to click the &quot;Calculate Payroll&quot; button to generate your payslip.
                   </p>
                   <div className="bg-blue-100 border border-blue-300 rounded-md p-3">
                     <p className="text-xs text-blue-700">
@@ -617,7 +617,7 @@ const PayrollPage = () => {
                     No payslip data is available for {selectedMonth} {selectedYear}.
                   </p>
                   <p className="text-sm text-blue-600 mb-4 font-medium">
-                    Please ask your HR admin to click the "Calculate Payroll" button to generate your payslip.
+                    Please ask your HR admin to click the &quot;Calculate Payroll&quot; button to generate your payslip.
                   </p>
                   <div className="bg-blue-100 border border-blue-300 rounded-md p-3">
                     <p className="text-xs text-blue-700">

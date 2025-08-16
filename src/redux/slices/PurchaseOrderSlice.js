@@ -4,13 +4,44 @@ import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL + "/purchase-orders";
 
+// Helper function to get company ID from session storage
+const getCompanyId = () => {
+  try {
+    // Try to get from encrypted session storage first
+    const encryptedCompanyId = getItemFromSessionStorage('employeeCompanyId', null);
+    if (encryptedCompanyId) return encryptedCompanyId;
+    
+    // Fallback to direct session storage access
+    if (typeof window !== 'undefined') {
+      const rawCompanyId = sessionStorage.getItem('employeeCompanyId');
+      if (rawCompanyId) {
+        try {
+          return JSON.parse(rawCompanyId);
+        } catch {
+          return rawCompanyId;
+        }
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error('Error getting company ID:', error);
+    return null;
+  }
+};
+
 // fetch purchase orders
 export const fetchPurchaseOrders = createAsyncThunk(
     "purchase-orders/fetchPurchaseOrders",
     async (_, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
-            const response = await fetch(`${API_BASE_URL}`, {
+            const companyId = getCompanyId();
+            
+            if (!companyId) {
+              return rejectWithValue("Company ID not found");
+            }
+            
+            const response = await fetch(`${API_BASE_URL}?companyId=${companyId}`, {
                 headers: {
                     "Authorization": `Bearer ${token}`,
                     "Content-Type": "application/json",
@@ -33,7 +64,13 @@ export const createPurchaseOrder = createAsyncThunk(
     async (purchaseOrder, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
-            const response = await fetch(`${API_BASE_URL}`, {
+            const companyId = getCompanyId();
+            
+            if (!companyId) {
+              return rejectWithValue("Company ID not found");
+            }
+            
+            const response = await fetch(`${API_BASE_URL}?companyId=${companyId}`, {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`,
@@ -57,7 +94,13 @@ export const updatePurchaseOrder = createAsyncThunk(
     async ({ purchaseOrderId, purchaseOrder }, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
-            const response = await fetch(`${API_BASE_URL}/${purchaseOrderId}`, {
+            const companyId = getCompanyId();
+            
+            if (!companyId) {
+              return rejectWithValue("Company ID not found");
+            }
+            
+            const response = await fetch(`${API_BASE_URL}/${purchaseOrderId}?companyId=${companyId}`, {
                 method: "PUT",
                 headers: {
                     "Authorization": `Bearer ${token}`,
