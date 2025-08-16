@@ -394,6 +394,13 @@ const Leaves = () => {
                     </span>
                   </div>
 
+                  {/* Formula explanation - Just above the horizontal line */}
+                  <div className="text-center pb-2">
+                    <p className="text-xs text-gray-500">
+                       Total = Leaves(carried & earned) + Comp-off (carried & earned) - Taken leaves
+                    </p>
+                  </div>
+
                   {/* Separator Line */}
                   <hr className="border-gray-300" />
 
@@ -440,12 +447,7 @@ const Leaves = () => {
                     </div>
                   </div>
 
-                  {/* Formula explanation */}
-                  <div className="text-center pt-2">
-                    <p className="text-xs text-gray-500">
-                       Total = Leaves(carried & earned) + Comp-off (carried & earned) - Taken leaves
-                    </p>
-                  </div>
+
                 </div>
               ) : (
                 <div className="text-center py-4 text-gray-500">

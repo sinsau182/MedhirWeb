@@ -9,9 +9,11 @@ import {
   TableCell,
 } from "@/components/ui/table"; // Adjust this import to your actual table component path
 import { fetchPipelines } from "@/redux/slices/pipelineSlice";
+import { useRouter } from "next/router";
 
 const LeadsTable = ({ leads }) => {
   const dispatch = useDispatch();
+  const router = useRouter();
   useEffect(() => {
     dispatch(fetchPipelines());
   }, [dispatch]);
@@ -34,7 +36,9 @@ const LeadsTable = ({ leads }) => {
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
-          <TableRow key={lead.leadId}>
+          <TableRow key={lead.leadId}
+          onClick={() => router.push(`/Sales/leads/${lead.leadId}`)}
+          className="cursor-pointer">
             <TableCell className="font-medium">{lead.name}</TableCell>
             <TableCell>{lead.contactNumber}</TableCell>
             <TableCell>{lead.email}</TableCell>

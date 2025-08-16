@@ -255,8 +255,8 @@ function AttendanceTracker({
   const [originalMonthAttendanceData, setOriginalMonthAttendanceData] =
     useState({}); // Track original data for change detection
   const [monthYear, setMonthYear] = useState({
-    month: new Date().toLocaleString("default", { month: "long" }),
-    year: new Date().getFullYear().toString(),
+    month: initialSelectedMonth || new Date().toLocaleString("default", { month: "long" }),
+    year: initialSelectedYear || new Date().getFullYear().toString(),
   });
 
   // All Employees Date Modal State
@@ -501,9 +501,19 @@ function AttendanceTracker({
     dispatch,
   ]);
 
+  // Always keep monthYear in sync with main selectedMonth/selectedYear
+  useEffect(() => {
+    console.log('Main month/year changed:', { selectedMonth, selectedYear });
+    setMonthYear({
+      month: selectedMonth,
+      year: selectedYear
+    });
+  }, [selectedMonth, selectedYear]);
+
   // Synchronize monthYear state with main selectedMonth/selectedYear when single employee modal opens
   useEffect(() => {
     if (isSingleEmployeeModalOpen) {
+      console.log('Syncing monthYear for modal:', { selectedMonth, selectedYear });
       setMonthYear({
         month: selectedMonth,
         year: selectedYear
@@ -577,11 +587,19 @@ function AttendanceTracker({
     if (
       selectedEmployeeForMonth &&
       isSingleEmployeeModalOpen &&
+      monthYear.month &&
+      monthYear.year &&
       !isFetchingEmployeeDataRef.current
     ) {
       isFetchingEmployeeDataRef.current = true;
 
       // Fetch existing attendance data for this employee and month/year
+      console.log('Making API call with:', {
+        employeeId: selectedEmployeeForMonth.id,
+        month: monthYear.month,
+        year: monthYear.year,
+        monthYear
+      });
       dispatch(
         fetchOneEmployeeAttendanceOneMonth({
           employeeId: selectedEmployeeForMonth.id,

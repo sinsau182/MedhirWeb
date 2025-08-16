@@ -103,9 +103,13 @@ export const fetchOneEmployeeAttendanceOneMonth = createAsyncThunk(
         try {
             const token = getItemFromSessionStorage("token", null);
             
+            console.log('Redux slice received:', { employeeId, month, year });
+            
             // Convert month name to numeric month (1-12)
             const monthIndex = new Date(`${month} 1, ${year}`).getMonth();
             const numericMonth = monthIndex + 1; // getMonth() returns 0-11, so add 1
+            
+            console.log('Month conversion:', { month, year, monthIndex, numericMonth });
             
             const response = await fetch(`${API_BASE_URL}/employee/${employeeId}/${year}/${numericMonth}`, {
                 headers: {

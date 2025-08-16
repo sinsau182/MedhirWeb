@@ -1,4 +1,4 @@
-import { User, Settings } from "lucide-react";
+import { User } from "lucide-react";
 import { useState, useEffect } from "react";
 import axios from "axios"; // Import axios for API requests
 import {
@@ -274,12 +274,7 @@ const Navbar = () => {
                 <User className="mr-2 h-4 w-4" />
                 <span>My Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+
               <DropdownMenuItem
                 onClick={handleLogout}
                 className="text-destructive cursor-pointer"
