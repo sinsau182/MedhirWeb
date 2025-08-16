@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import { FaPlus, FaPaperclip, FaFilePdf, FaFileImage, FaTimes, FaUpload, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaPaperclip, FaFilePdf, FaFileImage, FaTimes, FaUpload } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchVendors } from '../../redux/slices/vendorSlice';
 import { fetchBillsOfVendor } from '../../redux/slices/BillSlice';
 import { addPayment, updatePayment } from '../../redux/slices/paymentSlice';
 import { toast } from 'sonner';
-import FilePreviewer from '../ui/FilePreviewer';
-import { ToWords } from 'to-words';
+import FileUploadWithPreview from '../ui/FileUploadWithPreview';
 
 const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel }) => {
   const dispatch = useDispatch();
@@ -25,17 +24,6 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
   const [uploadedReceipt, setUploadedReceipt] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
   const [uploadError, setUploadError] = useState('');
-  const [scale, setScale] = useState(0); // 0 = fit to container, 1.0 = 100%, etc.
-
-  // Initialize ToWords for converting numbers to words
-  const toWords = new ToWords({
-    localeCode: 'en-IN',
-    converterOptions: {
-      currency: true,
-      ignoreDecimal: false,
-      ignoreZeroCurrency: false,
-    }
-  });
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -281,22 +269,6 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
   const handleReceiptUpload = (file) => {
     if (!file) return;
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff', 'application/pdf'];
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const allowedExtensions = ['jpg', 'jpeg', 'png', 'bmp', 'tiff', 'pdf'];
-    
-    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
-      setUploadError('Invalid file type. Please upload JPG, JPEG, PNG, BMP, TIFF, or PDF files only.');
-      return;
-    }
-
-    // Validate file size (10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadError('File size too large. Maximum allowed size is 10MB.');
-      return;
-    }
-
     setUploadError('');
     setUploadedFile(file);
     setUploadedReceipt(file);
@@ -306,15 +278,12 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
       file.name,
       `(${(file.size / 1024 / 1024).toFixed(2)}MB)`
     );
-    
-    toast.success(`Payment receipt "${file.name}" uploaded successfully!`);
   };
 
   const handleRemoveReceipt = () => {
     setUploadedReceipt(null);
     setUploadedFile(null);
     setUploadError('');
-    setScale(0); // Reset zoom when removing file
     toast.success("Payment receipt removed successfully");
   };
 
@@ -466,22 +435,27 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
   }, []);
 
   return (
-    <div className="flex flex-col h-screen">
-      {/* Main Content */}
-      <main className="flex-1 overflow-hidden pl-0 pr-2 pt-2 pb-2 min-w-0">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 h-full min-w-0">
-          {/* Form Panel (Left) */}
-          <div className="lg:col-span-1 overflow-hidden pb-8 min-w-0">
-            {/* Form Content */}
-            <div className="space-y-3 pb-4 overflow-y-auto h-full">
-              {/* Top Section - Payment Details */}
-              <div className="flex flex-col lg:flex-row gap-3">
-                {/* Payment Details */}
-                <div className="flex-1 space-y-2">
-                  <h2 className="text-lg font-semibold border-b pb-2 mb-2 text-gray-900">
-                    Payment Details
-                  </h2>
-                  
+    <div className="w-full h-screen flex flex-col bg-white">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 flex-1 min-h-0 border border-gray-200 rounded-t-lg overflow-hidden shadow-sm relative">
+        {/* Form Panel (Left) */}
+        <div className="lg:col-span-1 overflow-y-auto p-6 border-r border-gray-200 pb-24">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-900">
+              {mode === 'edit' ? 'Edit Bulk Payment' : 'Bulk Payment'}
+            </h2>
+          </div>
+          
+          {/* Form Content */}
+          <div className="space-y-6 pb-6">
+            {/* Payment Details */}
+            <div>
+              <div className="flex items-center mb-6">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                <h2 className="text-lg font-semibold text-gray-900">Payment Details</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left column */}
+                <div className="space-y-6">
                   {/* Vendor */}
                   <div className="relative" ref={vendorInputRef}>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -524,7 +498,6 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
                     </div>
                     {errors.vendor && <p className="text-red-500 text-xs mt-1">{errors.vendor}</p>}
                   </div>
-                  
                   {/* Vendor GSTIN */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Vendor GSTIN</label>
@@ -536,7 +509,6 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
                       readOnly
                     />
                   </div>
-                  
                   {/* Bank Account */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Paid From Bank Account</label>
@@ -556,13 +528,8 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
                     {errors.bankAccount && <p className="text-red-500 text-xs mt-1">{errors.bankAccount}</p>}
                   </div>
                 </div>
-
-                {/* Payment Details Right Column */}
-                <div className="flex-1 space-y-2">
-                  <h2 className="text-lg font-semibold border-b pb-2 mb-2 text-gray-900">
-                    Payment Information
-                  </h2>
-                  
+                {/* Right column */}
+                <div className="space-y-6">
                   {/* Payment Date */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -579,7 +546,6 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
                     />
                     {errors.paymentDate && <p className="text-red-500 text-xs mt-1">{errors.paymentDate}</p>}
                   </div>
-                  
                   {/* Payment Method */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -600,8 +566,7 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
                     </select>
                     {errors.paymentMethod && <p className="text-red-500 text-xs mt-1">{errors.paymentMethod}</p>}
                   </div>
-                  
-                  {/* Payment Transaction ID */}
+                  {/* Payment Transaction ID (was Reference) */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Payment Transaction ID</label>
                     <input
@@ -615,8 +580,6 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
                   </div>
                 </div>
               </div>
-
-              {/* TDS Information */}
               <div className="flex items-center space-x-4 pt-4 border-t border-gray-100 mt-2">
                 {/* Show vendor's TDS percentage if available */}
                 {selectedVendor && selectedVendor.tdsPercentage && (
@@ -625,182 +588,80 @@ const BulkPaymentForm = ({ mode = 'add', initialData = null, onSubmit, onCancel 
                   </div>
                 )}
               </div>
+            </div>
 
-              {/* Notes Section */}
-              <div className="w-full mt-4">
-                <h2 className="text-lg font-semibold border-b pb-2 mb-2 text-gray-900">Notes</h2>
+                        {/* Notes Section */}
+            <div className="w-full mt-8">
+              <div className="bg-white p-6 border border-gray-200 rounded-lg">
+                <div className="flex items-center mb-4">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mr-3"></div>
+                  <h2 className="text-lg font-semibold text-gray-900">Notes</h2>
+                </div>
                 <textarea
                   name="notes"
                   value={formData.notes}
                   onChange={handleChange}
-                  rows={4}
+                  rows={6}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   placeholder="Add payment notes (optional)"
                 />
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Upload Panel (Right) */}
-          <div className="lg:col-span-1 overflow-y-auto p-4 lg:p-6 pb-8 h-full min-w-0">
-            <div className="h-full flex flex-col">
-              <div className="flex-1">
-                {uploadedReceipt ? (
-                  <div className="h-full flex flex-col">
-                    <div className="flex-1 relative">
-                      <FilePreviewer
-                        file={uploadedReceipt}
-                        className="h-full w-full"
-                        scale={scale}
-                      />
-                      
-                      {/* Zoom Controls Overlay */}
-                      <div className="absolute top-2 left-2 z-10">
-                        <div className="bg-white bg-opacity-90 rounded-lg shadow-md p-2 text-xs text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">Zoom:</span>
-                            <span>{scale === 0 ? 'Fit' : `${Math.round(scale * 100)}%`}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* File Controls */}
-                    <div className="mt-4 flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <FaFileImage className="text-blue-500" />
-                        <span className="font-medium">
-                          {uploadedReceipt.name || 'Uploaded Receipt'}
-                        </span>
-                        {uploadedReceipt.size && uploadedReceipt.size > 0 && (
-                          <span className="text-gray-500">
-                            ({(uploadedReceipt.size / 1024 / 1024).toFixed(2)} MB)
-                          </span>
-                        )}
-                        {uploadedReceipt.isExistingAttachment && (
-                          <span className="text-blue-600 text-xs bg-blue-100 px-2 py-1 rounded-full">
-                            Existing
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {scale !== 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setScale(0)}
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
-                            title="Reset zoom to fit"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={handleRemoveReceipt}
-                          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
-                          title="Remove receipt"
-                        >
-                          <FaTrash className="text-sm" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="h-full flex flex-col">
-                    <div className="flex-1">
-                      <div className="h-full border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all duration-200">
-                        <div className="h-full flex flex-col items-center justify-center p-6">
-                          <div className="text-center">
-                            <FaUpload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                            <p className="text-lg font-medium text-gray-700 mb-2">
-                              Upload Payment Receipt
-                            </p>
-                            <p className="text-sm text-gray-500 mb-4">
-                              Click to browse or drag and drop your receipt here
-                            </p>
-                            <p className="text-xs text-gray-400 mb-4">
-                              Supported formats: JPG, JPEG, PNG, BMP, TIFF, PDF
-                            </p>
-                            <p className="text-xs text-gray-400 mb-4">
-                              Maximum file size: 10MB
-                            </p>
-                            
-                            <label className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer transition-all hover:scale-105 active:scale-95">
-                              <FaPaperclip className="mr-2" />
-                              Choose File
-                              <input
-                                type="file"
-                                className="hidden"
-                                accept=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
-                                onChange={(e) => {
-                                  if (e.target.files && e.target.files[0]) {
-                                    handleReceiptUpload(e.target.files[0]);
-                                  }
-                                }}
-                              />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              {uploadError && (
-                <div className="mt-4 text-red-600 bg-red-100 border border-red-300 p-3 rounded-lg text-left">
-                  <strong>❌ Error:</strong> {uploadError}
-                </div>
-              )}
+        {/* Upload Panel (Right) - Updated to use FileUploadWithPreview */}
+        <div className="lg:col-span-1 overflow-y-auto bg-gray-50 p-6 pb-24">
+          <div className="h-full flex flex-col">
+            <div className="flex-1">
+              <FileUploadWithPreview
+                onFileChange={handleReceiptUpload}
+                acceptedFileTypes=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
+                maxFileSize={10 * 1024 * 1024} // 10MB
+                placeholder="Click to upload a payment receipt or drag it here"
+                showPreview={true}
+                className="h-full"
+              />
             </div>
+            
+            {uploadError && (
+              <div className="mt-4 text-red-600 bg-red-100 border border-red-300 p-3 rounded-lg text-left">
+                <strong>❌ Error:</strong> {uploadError}
+              </div>
+            )}
           </div>
         </div>
-      </main>
 
-      {/* Sticky Footer */}
-      <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 shadow-sm">
-        <div className="flex justify-between items-center">
-          <div className="flex flex-col">
+        {/* Sticky Footer integrated within form container */}
+        <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white px-6 py-4 rounded-b-lg shadow-sm z-10">
+          <div className="flex justify-between items-center">
             <div className="text-lg font-bold">
               Total Payment: {formatCurrency(finalPaymentAmount)}
             </div>
-            <div className="text-sm text-gray-600 mt-1">
-              Amount in Words: <span className="italic">{toWords.convert(finalPaymentAmount)}</span>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="px-6 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+                onClick={() => alert('Draft saved!')}
+              >
+                Save Draft
+              </button>
+              <button
+                type="button"
+                className="px-6 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+                onClick={() => alert('Preview opened!')}
+              >
+                Preview
+              </button>
+              <button
+                type="button"
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
+                onClick={handleSubmit}
+              >
+                {mode === 'edit' ? 'Update Payment' : 'Confirm Payment'}
+              </button>
             </div>
           </div>
-          <div className="flex gap-3">
-            <button
-              type="button"
-              className="px-6 py-2 border border-gray-300 rounded-lg transition-colors text-gray-700 bg-white hover:bg-gray-50"
-              onClick={() => alert('Draft saved!')}
-            >
-              Save Draft
-            </button>
-            <button
-              type="button"
-              className="px-6 py-2 border border-gray-300 rounded-lg transition-colors text-gray-700 bg-white hover:bg-gray-50"
-              onClick={() => alert('Preview opened!')}
-            >
-              Preview
-            </button>
-            <button
-              type="button"
-              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors"
-              onClick={handleSubmit}
-            >
-              {mode === 'edit' ? 'Update Payment' : 'Confirm Payment'}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="w-full bg-gray-50 border-t border-gray-200 p-2">
-        <div className="text-center text-sm text-gray-500">
-          {/* Footer content can be added here */}
         </div>
       </div>
     </div>
