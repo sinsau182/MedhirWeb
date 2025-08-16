@@ -162,7 +162,8 @@ function PayrollManagement() {
         companyId: selectedCompanyId,
         month,
         year,
-        arrearsPaid: numericValue
+        arrearsPaid: numericValue,
+        arrearsDeducted: getEmployeeArrears(employeeId)?.arrearsDeducted || 0
       };
 
       const result = await dispatch(updateArrearsPaid(payload)).unwrap();
@@ -264,7 +265,8 @@ function PayrollManagement() {
         companyId: selectedCompanyId,
         month,
         year,
-        arrearsDeducted: numericValue
+        arrearsDeducted: numericValue,
+        arrearsPaid: getEmployeeArrears(employeeId)?.arrearsPaid || 0
       };
 
       const result = await dispatch(updateArrearsDeducted(payload)).unwrap();
