@@ -203,7 +203,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
           
           // Fallback to direct API call if not found in Redux
           const token = sessionStorage.getItem('token');
-          const apiUrl = `${publicRuntimeConfig.apiURL}/superadmin/companies/${companyId}`;
+          const apiUrl = `${publicRuntimeConfig.apiURL}/superadmin/companies/${companyId}?companyId=${companyId}`;
           console.log('API URL:', apiUrl);
           
           const response = await fetch(apiUrl, {
