@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addVendor, updateVendor } from '../../redux/slices/vendorSlice';
 import { toast } from 'sonner';
 import VendorPreview from '../Previews/VendorPreview';
+import FileUploadWithPreview from '../ui/FileUploadWithPreview';
 
 const steps = [
   { label: 'Basic Details' },
@@ -24,8 +25,8 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
   // State for vendor preview
   const [showVendorPreview, setShowVendorPreview] = useState(false);
   
-  // State for file previews
-  const [filePreviews, setFilePreviews] = useState({
+  // State for file uploads - updated to match other forms
+  const [uploadedFiles, setUploadedFiles] = useState({
     gstDocument: null,
     bankPassbook: null
   });
@@ -112,8 +113,8 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
         bankPassbook: null // Will be handled separately for file uploads
       });
       
-      // Reset file previews in edit mode
-      setFilePreviews({
+      // Reset file uploads in edit mode
+      setUploadedFiles({
         gstDocument: null,
         bankPassbook: null
       });
@@ -641,90 +642,28 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Document handling functions - Updated for GST and Bank Passbook
-  // Function to create file preview
-  const createFilePreview = (file, documentType) => {
-    if (file.type.startsWith('image/')) {
-      // For images, create a URL for preview
-      const previewUrl = URL.createObjectURL(file);
-      setFilePreviews(prev => ({
-        ...prev,
-        [documentType]: {
-          type: 'image',
-          url: previewUrl,
-          name: file.name
-        }
-      }));
-    } else if (file.type === 'application/pdf') {
-      // For PDFs, create a URL for preview
-      const previewUrl = URL.createObjectURL(file);
-      setFilePreviews(prev => ({
-        ...prev,
-        [documentType]: {
-          type: 'pdf',
-          url: previewUrl,
-          name: file.name
-        }
-      }));
-    }
+  // Document handling functions - Updated to use FileUploadWithPreview pattern
+  const handleFileUpload = (file, documentType) => {
+    if (!file) return;
+
+    setUploadedFiles(prev => ({
+      ...prev,
+      [documentType]: file
+    }));
+
+    console.log(
+      `${documentType} uploaded successfully:`,
+      file.name,
+      `(${(file.size / 1024 / 1024).toFixed(2)}MB)`
+    );
   };
 
-  // Function to clean up file preview URLs
-  const cleanupFilePreview = (documentType) => {
-    const preview = filePreviews[documentType];
-    if (preview && preview.url) {
-      URL.revokeObjectURL(preview.url);
-    }
-    setFilePreviews(prev => ({
+  const handleRemoveFile = (documentType) => {
+    setUploadedFiles(prev => ({
       ...prev,
       [documentType]: null
     }));
-  };
-
-  const handleFileUpload = (files, documentType) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/bmp', 'image/tiff', 'application/pdf'];
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    
-    const validFiles = Array.from(files).filter(file => {
-      if (!allowedTypes.includes(file.type)) {
-        toast.error(`${file.name} is not a supported file type. Only JPG, PNG, BMP, TIFF, PDF are allowed.`);
-        return false;
-      }
-      if (file.size > maxSize) {
-        toast.error(`${file.name} is too large. Maximum file size is 10MB.`);
-        return false;
-      }
-      return true;
-    });
-
-    if (validFiles.length > 0) {
-      // For GST Document and Bank Passbook, we only allow one file each
-      const file = validFiles[0]; // Take the first file
-      
-      // Clean up previous preview if exists
-      cleanupFilePreview(documentType);
-      
-      setFormData(prev => ({
-        ...prev,
-        [documentType]: file
-      }));
-
-      // Create preview for the uploaded file
-      createFilePreview(file, documentType);
-
-      toast.success(`${file.name} uploaded successfully!`);
-    }
-  };
-
-  const removeDocument = (documentType) => {
-    // Clean up file preview
-    cleanupFilePreview(documentType);
-    
-    setFormData(prev => ({
-      ...prev,
-      [documentType]: null
-    }));
-    toast.success('Document removed successfully!');
+    toast.success(`${documentType === 'gstDocument' ? 'GST Document' : 'Bank Passbook'} removed successfully`);
   };
 
   const handleDragOver = (e) => {
@@ -741,7 +680,7 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
     e.preventDefault();
     e.currentTarget.classList.remove('border-blue-500', 'bg-blue-50');
     const files = e.dataTransfer.files;
-    handleFileUpload(files, documentType);
+    handleFileUpload(files[0], documentType); // FileUploadWithPreview handles multiple files
   };
 
   const handlePreview = () => {
@@ -778,9 +717,9 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
         updatedAt: isEditMode ? new Date().toISOString() : undefined,
         // Convert tdsPercentage to double type
         tdsPercentage: formData.tdsPercentage ? parseFloat(formData.tdsPercentage) : null,
-        // Include file objects for backend
-        gstDocument: formData.gstDocument,
-        bankPassbook: formData.bankPassbook
+        // Include file objects for backend - updated to use uploadedFiles
+        gstDocument: uploadedFiles.gstDocument,
+        bankPassbook: uploadedFiles.bankPassbook
       };
       
       try {
@@ -1473,144 +1412,32 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
               <div className="space-y-4">
                 <h3 className="text-md font-semibold text-gray-800 mb-4">Bank Passbook</h3>
                 
-                {/* Upload Area with Preview */}
-                {!filePreviews.bankPassbook ? (
-                  <div
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 hover:bg-blue-50"
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, 'bankPassbook')}
-                    onClick={() => document.getElementById('bankPassbook-upload').click()}
-                  >
-                    <div className="flex flex-col items-center space-y-4">
-                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                        <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-lg font-semibold text-gray-700">Click to upload bank passbook</p>
-                        <p className="text-sm text-gray-500 mt-1">or drag and drop file here</p>
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        <p>JPG, PNG, BMP, TIFF, PDF supported</p>
-                        <p>Maximum file size: 10MB</p>
-                      </div>
-                    </div>
-                    <input
-                      id="bankPassbook-upload"
-                      type="file"
-                      accept=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
-                      className="hidden"
-                      onChange={(e) => handleFileUpload(e.target.files, 'bankPassbook')}
-                    />
-                  </div>
-                ) : (
-                  <div className="border-2 border-gray-300 rounded-lg p-4 bg-white">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-medium text-gray-700">Bank Passbook Preview:</h4>
-                      <button
-                        type="button"
-                        onClick={() => removeDocument('bankPassbook')}
-                        className="text-red-500 hover:text-red-700 transition-colors"
-                      >
-                        <FaTrash className="w-4 h-4" />
-                      </button>
-                    </div>
-                    
-                    {filePreviews.bankPassbook.type === 'image' ? (
-                      <div className="space-y-2">
-                        <img 
-                          src={filePreviews.bankPassbook.url} 
-                          alt="Bank Passbook Preview" 
-                          className="w-full h-64 object-contain border border-gray-200 rounded-lg"
-                        />
-                        <p className="text-sm text-gray-600">{filePreviews.bankPassbook.name}</p>
-                      </div>
-                    ) : filePreviews.bankPassbook.type === 'pdf' ? (
-                      <div className="space-y-2">
-                        <iframe 
-                          src={filePreviews.bankPassbook.url} 
-                          title="Bank Passbook Preview"
-                          className="w-full h-64 border border-gray-200 rounded-lg"
-                        />
-                        <p className="text-sm text-gray-600">{filePreviews.bankPassbook.name}</p>
-                      </div>
-                    ) : null}
-                  </div>
-                )}
+                <div className="h-64">
+                  <FileUploadWithPreview
+                    onFileChange={(file) => handleFileUpload(file, 'bankPassbook')}
+                    acceptedFileTypes=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
+                    maxFileSize={10 * 1024 * 1024} // 10MB
+                    placeholder="Click to upload bank passbook or drag it here"
+                    showPreview={true}
+                    className="h-full"
+                  />
+                </div>
               </div>
 
               {/* GST Document Upload Section */}
               <div className="space-y-4">
                 <h3 className="text-md font-semibold text-gray-800 mb-4">GST Document</h3>
                 
-                {/* Upload Area with Preview */}
-                {!filePreviews.gstDocument ? (
-                  <div
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-gray-50 hover:bg-blue-50"
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, 'gstDocument')}
-                    onClick={() => document.getElementById('gstDocument-upload').click()}
-                  >
-                    <div className="flex flex-col items-center space-y-4">
-                      <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                        <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-lg font-semibold text-gray-700">Click to upload GST document</p>
-                        <p className="text-sm text-gray-500 mt-1">or drag and drop file here</p>
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        <p>JPG, PNG, BMP, TIFF, PDF supported</p>
-                        <p>Maximum file size: 10MB</p>
-                      </div>
-                    </div>
-                    <input
-                      id="gstDocument-upload"
-                      type="file"
-                      accept=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
-                      className="hidden"
-                      onChange={(e) => handleFileUpload(e.target.files, 'gstDocument')}
-                    />
-                  </div>
-                ) : (
-                  <div className="border-2 border-gray-300 rounded-lg p-4 bg-white">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-sm font-medium text-gray-700">GST Document Preview:</h4>
-                      <button
-                        type="button"
-                        onClick={() => removeDocument('gstDocument')}
-                        className="text-red-500 hover:text-red-700 transition-colors"
-                      >
-                        <FaTrash className="w-4 h-4" />
-                      </button>
-                    </div>
-                    
-                    {filePreviews.gstDocument.type === 'image' ? (
-                      <div className="space-y-2">
-                        <img 
-                          src={filePreviews.gstDocument.url} 
-                          alt="GST Document Preview" 
-                          className="w-full h-64 object-contain border border-gray-200 rounded-lg"
-                        />
-                        <p className="text-sm text-gray-600">{filePreviews.gstDocument.name}</p>
-                      </div>
-                    ) : filePreviews.gstDocument.type === 'pdf' ? (
-                      <div className="space-y-2">
-                        <iframe 
-                          src={filePreviews.gstDocument.url} 
-                          title="GST Document Preview"
-                          className="w-full h-64 border border-gray-200 rounded-lg"
-                        />
-                        <p className="text-sm text-gray-600">{filePreviews.gstDocument.name}</p>
-                      </div>
-                    ) : null}
-                  </div>
-                )}
+                <div className="h-64">
+                  <FileUploadWithPreview
+                    onFileChange={(file) => handleFileUpload(file, 'gstDocument')}
+                    acceptedFileTypes=".jpg,.jpeg,.png,.bmp,.tiff,.pdf"
+                    maxFileSize={10 * 1024 * 1024} // 10MB
+                    placeholder="Click to upload GST document or drag it here"
+                    showPreview={true}
+                    className="h-full"
+                  />
+                </div>
               </div>
             </div>
           </>
@@ -1681,17 +1508,16 @@ const AddVendorForm = ({ vendor, onSubmit, onCancel }) => {
     };
   }, [tagsDropdownRef]);
 
-  // Cleanup file preview URLs on component unmount
+  // Cleanup file uploads on component unmount
   useEffect(() => {
     return () => {
-      Object.keys(filePreviews).forEach(documentType => {
-        const preview = filePreviews[documentType];
-        if (preview && preview.url) {
-          URL.revokeObjectURL(preview.url);
-        }
+      // Clean up any file objects if needed
+      setUploadedFiles({
+        gstDocument: null,
+        bankPassbook: null
       });
     };
-  }, [filePreviews]);
+  }, []);
 
   return (
     <form ref={formRef} className="w-full bg-white border border-gray-200 shadow-lg p-0 flex flex-col relative pb-6">
