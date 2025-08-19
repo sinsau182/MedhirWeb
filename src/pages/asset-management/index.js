@@ -1275,4 +1275,4 @@ const AssetManagementPage = () => {
     );
 };
 
-export default withAuth(AssetManagementPage); 
+export default withAuth(AssetManagementPage);
