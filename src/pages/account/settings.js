@@ -742,7 +742,7 @@ const VendorTagsSettings = ({ vendorTags, onAddTag, onRemoveTag }) => {
             <div className="text-sm text-blue-700">
               <p className="font-medium mb-1">How to use Vendor Tags:</p>
               <ul className="list-disc list-inside space-y-1 text-xs">
-                <li>Add descriptive tags like "Critical Supplier", "Local Vendor", "Service Provider"</li>
+                <li>Add descriptive tags like &quot;Critical Supplier&quot;, &quot;Local Vendor&quot;, &quot;Service Provider&quot;</li>
                 <li>Tags help categorize and organize your vendor database</li>
                 <li>You can assign multiple tags to each vendor when creating vendor profiles</li>
                 <li>Tags are searchable and help in vendor management</li>

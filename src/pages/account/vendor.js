@@ -288,7 +288,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
           
           // Fallback to direct API call if not found in Redux
           const token = sessionStorage.getItem('token');
-          const apiUrl = `${publicRuntimeConfig.apiURL}/superadmin/companies/${companyId}`;
+          const apiUrl = `${publicRuntimeConfig.apiURL}/superadmin/companies/${companyId}?companyId=${companyId}`;
           console.log('API URL:', apiUrl);
           
           const response = await fetch(apiUrl, {
@@ -444,14 +444,11 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
     switch (showAddForm) {
       case 'bill':
         return (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
+          <div className="bg-white rounded-lg shadow-md pl-2 pr-4 pt-4 pb-4">
+            <div className="flex items-center mb-2">
               <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
-                <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
+                <FaArrowLeft className="w-4 h-4" /> <span>Back</span>
               </button>
-              <h2 className="text-xl font-bold text-gray-900">
-                {selectedBill ? 'Edit Bill' : 'Add New Bill'}
-              </h2>
             </div>
             <AddBillForm
               bill={selectedBill}
@@ -465,10 +462,10 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
         );
            case 'po':
           return (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center mb-4">
+            <div className="bg-white rounded-lg shadow-md p-4">
+              <div className="flex items-center mb-2">
                 <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
-                  <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
+                  <FaArrowLeft className="w-4 h-4" /> <span>Back</span>
                 </button>
                 <h2 className="text-xl font-bold text-gray-900">
                   {editingPO ? 'Edit Purchase Order' : 'Create Purchase Order'}
@@ -484,10 +481,10 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
           );
       case 'payment':
         return (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
+          <div className="bg-white rounded-lg shadow-md p-4">
+            <div className="flex items-center mb-2">
               <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
-                <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
+                <FaArrowLeft className="w-4 h-4" /> <span>Back</span>
               </button>
               <h2 className="text-xl font-bold text-gray-900">
                 {selectedPayment ? 'Edit Vendor Payment' : 'Add Vendor Payment'}
@@ -503,10 +500,10 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
         );
       case 'vendor':
         return (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
+          <div className="bg-white rounded-lg shadow-md p-4">
+            <div className="flex items-center mb-2">
               <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
-                <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
+                <FaArrowLeft className="w-4 h-4" /> <span>Back</span>
               </button>
               <h2 className="text-xl font-bold text-gray-900">
                 {selectedVendor ? 'Edit Vendor' : 'Add New Vendor'}
@@ -536,77 +533,75 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
           <div className="flex gap-6">
             {/* Statement Table - 40% width */}
             <div className="w-2/5 bg-white rounded-lg shadow">
-              <div className="p-6">
-                {/* Header */}
-                <div className="mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Vendor Statement</h3>
-                </div>
-                
-                <div className="overflow-x-auto">
-                  <table className="min-w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company Name</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Net Payables</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {vendors
-                        .filter(vendor =>
-                          (vendor.vendorName && vendor.vendorName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                          (vendor.companyName && vendor.companyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                          (vendor.email && vendor.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                          (vendor.contactNumber && vendor.contactNumber.toLowerCase().includes(searchTerm.toLowerCase()))
-                        )
-                        .map((vendor) => {
-                          // Calculate net payables for this vendor
-                          const vendorBills = bills.filter(bill => bill.vendorId === vendor.vendorId);
-                          const vendorPayments = payments.filter(payment => payment.vendorId === vendor.vendorId);
-                          
-                          const totalBills = vendorBills.reduce((sum, bill) => sum + (bill.finalAmount || 0), 0);
-                          const totalPayments = vendorPayments.reduce((sum, payment) => sum + (payment.totalAmount || 0), 0);
-                          const netPayables = totalBills - totalPayments;
-                          
-                          return (
-                            <tr 
-                              key={vendor.id} 
-                              className="hover:bg-gray-50 transition-colors cursor-pointer"
-                              onClick={() => setSelectedVendor(vendor)}
-                            >
-                              <td className="px-4 py-4 whitespace-nowrap">
-                                <span className="text-sm font-medium text-gray-900">{vendor.vendorName}</span>
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap">
-                                <span className="text-sm text-gray-700">{vendor.companyName || 'N/A'}</span>
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap">
-                                <span className={`text-sm font-semibold ${
-                                  netPayables > 0 ? 'text-red-600' : netPayables < 0 ? 'text-green-600' : 'text-gray-600'
-                                }`}>
-                                  ₹{netPayables.toLocaleString('en-IN')}
-                                </span>
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-center">
-                  <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setPreviewVendorData(vendor);
-                                    setShowVendorPreview(true);
-                                  }}
-                                  className="text-gray-600 hover:text-blue-600"
-                                >
-                                  <FaEye className="w-5 h-5" />
-                  </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                  </table>
-                </div>
+              {/* Table Header */}
+              <div className="p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Vendor Statement</h3>
               </div>
+              
+              {/* Table Content */}
+              <table className="min-w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Net Payables</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {vendors
+                    .filter(vendor =>
+                      (vendor.vendorName && vendor.vendorName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                      (vendor.companyName && vendor.companyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                      (vendor.email && vendor.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                      (vendor.contactNumber && vendor.contactNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+                    )
+                    .map((vendor) => {
+                      // Calculate net payables for this vendor
+                      const vendorBills = bills.filter(bill => bill.vendorId === vendor.vendorId);
+                      const vendorPayments = payments.filter(payment => payment.vendorId === vendor.vendorId);
+                      
+                      const totalBills = vendorBills.reduce((sum, bill) => sum + (bill.finalAmount || 0), 0);
+                      const totalPayments = vendorPayments.reduce((sum, payment) => sum + (payment.totalAmount || 0), 0);
+                      const netPayables = totalBills - totalPayments;
+                      
+                      return (
+                        <tr 
+                          key={vendor.id} 
+                          className="hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => setSelectedVendor(vendor)}
+                        >
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="text-sm font-medium text-gray-900">{vendor.vendorName}</span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="text-sm text-gray-700">{vendor.companyName || 'N/A'}</span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`text-sm font-semibold ${
+                              netPayables > 0 ? 'text-red-600' : netPayables < 0 ? 'text-green-600' : 'text-gray-600'
+                            }`}>
+                              ₹{netPayables.toLocaleString('en-IN')}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewVendorData(vendor);
+                                setShowVendorPreview(true);
+                              }}
+                              className="text-gray-600 hover:text-blue-600 transition-colors"
+                              title="Preview Vendor"
+                            >
+                              <FaEye className="w-4 h-4 mx-auto" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
             </div>
             
             {/* Right side - 60% width - Vendor Details with Tabs */}
@@ -669,14 +664,14 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       </div>
                       <div className="overflow-x-auto">
                 <table className="min-w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Bill No.</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Bill Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Due Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reference/PO No.</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Bill No.</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Bill Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Due Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Total Amount</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Reference/PO No.</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Attachments</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -749,14 +744,14 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                     </div>
                       <div className="overflow-x-auto">
                   <table className="min-w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">PO Number</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Order Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Delivery Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
-                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
-                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">PO Number</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Order Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Delivery Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Total Amount</th>
+                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Attachments</th>
+                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Preview</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -836,14 +831,14 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                   </div>
                       <div className="overflow-x-auto">
                 <table className="min-w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
                     <tr>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Date</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Bill Reference</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Method</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Reference</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Payment Date</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Bill Reference</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Payment Method</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Amount</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Payment Reference</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Attachments</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -1161,146 +1156,149 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
   };
 
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      <Sidebar
-        isCollapsed={isSidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        currentRole={"employee"}
-      />
+    <>
+      <div className="flex h-screen">
+        {/* Sidebar */}
+        <Sidebar
+          isCollapsed={isSidebarCollapsed}
+          toggleSidebar={toggleSidebar}
+          currentRole={"employee"}
+        />
 
-      {/* Main Content */}
-      <div
-        className={`flex-1 ${
-          isSidebarCollapsed ? "ml-16" : "ml-56"
-        } transition-all duration-300 overflow-x-auto`}
-      >
-        {/* Navbar */}
-        <HradminNavbar />
+        {/* Fixed Vendors Header */}
+        <div 
+          className={`fixed top-16 z-50 bg-white shadow-sm border-b border-gray-200 p-4 flex items-center justify-between transition-all duration-300 ${
+            isSidebarCollapsed ? "left-20 right-0" : "left-60 right-0"
+          }`}
+        >
+          {/* Left: Title + Search + Filter */}
+          <div className="flex items-center space-x-4">
+            <h1 className="text-xl font-semibold text-gray-900">Vendors</h1>
+            
+            <div className="flex items-center bg-gray-50 rounded-lg px-3 py-2 w-64">
+              <FaSearch className="w-4 h-4 text-gray-400 mr-2" />
+              <input
+                type="text"
+                placeholder="Search vendors..."
+                className="flex-1 outline-none text-gray-900 placeholder-gray-500 bg-transparent text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
 
-        {/* Main Content Area */}
-        <div className="mt-20 p-6">
-          <div className="mb-6">
-            <div className="flex justify-between items-center">
-              <h1 className="text-3xl font-bold text-gray-900">Vendors</h1>
-              
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center bg-white rounded-full shadow-sm px-4 py-3 w-80 transition-all duration-200 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-                  <FaSearch className="w-5 h-5 text-gray-600 mr-3" />
-                  <input
-                    type="text"
-                    placeholder="Search vendors..."
-                    className="flex-1 outline-none text-gray-900 placeholder-gray-600 bg-transparent focus:outline-none"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+            <select
+              value={selectedDateRange}
+              onChange={(e) => handleDateRangeChange(e.target.value)}
+              className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer text-sm"
+            >
+              <option value="thisMonth">This Month</option>
+              <option value="lastMonth">Previous Month</option>
+              <option value="last3Months">Last 3 Months</option>
+              <option value="last6Months">Last 6 Months</option>
+              <option value="thisYear">This Year</option>
+              <option value="lastYear">Last Year</option>
+              <option value="custom">Custom Range</option>
+            </select>
+            
+            {/* Custom Date Inputs */}
+            {showCustomDateInputs && (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-xs"
+                  placeholder="Start Date"
+                />
+                <span className="text-gray-500 text-xs">to</span>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-xs"
+                  placeholder="End Date"
+                />
+              </div>
+            )}
           </div>
 
-                <select
-                  value={selectedDateRange}
-                  onChange={(e) => handleDateRangeChange(e.target.value)}
-                  className="bg-white border border-gray-300 rounded-full px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer"
-                >
-                  <option value="thisMonth">This Month</option>
-                  <option value="lastMonth">Previous Month</option>
-                  <option value="last3Months">Last 3 Months</option>
-                  <option value="last6Months">Last 6 Months</option>
-                  <option value="thisYear">This Year</option>
-                  <option value="lastYear">Last Year</option>
-                  <option value="custom">Custom Range</option>
-                </select>
-                
-                {/* Custom Date Inputs */}
-                {showCustomDateInputs && (
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="date"
-                      value={customStartDate}
-                      onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="bg-white border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
-                      placeholder="Start Date"
-                    />
-                    <span className="text-gray-500 text-sm">to</span>
-                    <input
-                      type="date"
-                      value={customEndDate}
-                      onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="bg-white border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
-                      placeholder="End Date"
-                    />
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => {
-                    setSelectedBill(null);
-                    setShowAddForm('bill');
-                  }}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
-                  style={{ minWidth: 120 }}
-                >
-                  <FaPlus className="w-4 h-4" /> <span>New Bill</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingPO(null);
-                    setShowAddForm('po');
-                  }}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
-                  style={{ minWidth: 120 }}
-                >
-                  <FaPlus className="w-4 h-4" /> <span>New PO</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedPayment(null);
-                    setShowAddForm('payment');
-                  }}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
-                  style={{ minWidth: 120 }}
-                >
-                  <FaPlus className="w-4 h-4" /> <span>New Payment</span>
-                </button>
+          {/* Right: Action Buttons */}
+          <div className="flex items-center space-x-3">
               <button
-                onClick={handleAddClick}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
-                style={{ minWidth: 120 }}
+                onClick={() => {
+                  setSelectedBill(null);
+                  setShowAddForm('bill');
+                }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
               >
-                  <FaPlus className="w-4 h-4" /> <span>New Vendor</span>
+                <FaPlus className="w-3 h-3" /> <span>New Bill</span>
               </button>
-              </div>
+              <button
+                onClick={() => {
+                  setEditingPO(null);
+                  setShowAddForm('po');
+                }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
+              >
+                <FaPlus className="w-3 h-3" /> <span>New PO</span>
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedPayment(null);
+                  setShowAddForm('payment');
+                }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
+              >
+                <FaPlus className="w-3 h-3" /> <span>New Payment</span>
+              </button>
+            <button
+              onClick={handleAddClick}
+              className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
+            >
+                <FaPlus className="w-3 h-3" /> <span>New Vendor</span>
+            </button>
+            </div>
+        </div>
+
+        {/* Main Content */}
+        <div
+          className={`flex-1 ${
+            isSidebarCollapsed ? "ml-20" : "ml-60"
+          } transition-all duration-300`}
+        >
+          {/* Navbar */}
+          <HradminNavbar />
+
+          {/* Page Container */}
+          <div className="flex flex-col h-full pt-32">
+            {/* Main Scrollable Content */}
+            <div className="flex-1 overflow-y-auto pl-1 pr-6 pt-8">
+              {renderContent()}
             </div>
           </div>
-
-          {/* Main Content Area */}
-          {renderContent()}
         </div>
       </div>
-
-      {/* Vendor Preview Modal */}
-       {showVendorPreview && previewVendorData && (
-         <VendorPreview
-           vendorData={previewVendorData}
-           onClose={() => setShowVendorPreview(false)}
-           onEdit={(editedData) => {
-             setPreviewVendorData(editedData);
-           }}
-           onSave={(editedData) => {
-             // Update the vendor in the Redux store
-             const updatedVendors = vendors.map(vendor => 
-               vendor.vendorId === editedData.vendorId ? editedData : vendor
-             );
-             // You might want to dispatch an action to update the vendor in Redux
-             // dispatch(updateVendor(editedData));
-             setPreviewVendorData(editedData);
-             toast.success('Vendor updated successfully!');
-           }}
-         />
-       )}
-
       
+      {/* Vendor Preview Modal */}
+      {showVendorPreview && previewVendorData && (
+        <VendorPreview
+          vendorData={previewVendorData}
+          onClose={() => setShowVendorPreview(false)}
+          onEdit={(editedData) => {
+            setPreviewVendorData(editedData);
+          }}
+          onSave={(editedData) => {
+            // Update the vendor in the Redux store
+            const updatedVendors = vendors.map(vendor => 
+              vendor.vendorId === editedData.vendorId ? editedData : vendor
+            );
+            // You might want to dispatch an action to update the vendor in Redux
+            // dispatch(updateVendor(editedData));
+            setPreviewVendorData(editedData);
+            toast.success('Vendor updated successfully!');
+          }}
+        />
+      )}
 
       {/* Purchase Order Preview Modal */}
       {showPurchaseOrderPreview && selectedPurchaseOrder && (
@@ -1309,7 +1307,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
           onClose={() => setShowPurchaseOrderPreview(false)}
         />
       )}
-    </div>
+    </>
   );
 };
 

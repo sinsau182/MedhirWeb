@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { FaFileInvoiceDollar, FaReceipt, FaUsers, FaPlus, FaSearch, FaArrowLeft, FaEye, FaTimes, FaFileAlt } from 'react-icons/fa';
 import { AddInvoiceForm, AddReceiptForm, AddClientForm } from '../../components/Forms';
 import { toast } from 'sonner';
-import MainLayout from '@/components/MainLayout'; // Import MainLayout
+import Sidebar from "../../components/Sidebar";
+import HradminNavbar from "../../components/HradminNavbar";
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchReceipts } from '@/redux/slices/receiptSlice';
 import { fetchInvoices, createInvoice } from '@/redux/slices/invoiceSlice';
@@ -512,7 +513,9 @@ const Customers = () => {
   // ]);
   // Remove the static clients state since we're now using Redux
 
-  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
   
   // Function to get date range based on selection
   const getDateRange = (range) => {
@@ -716,79 +719,77 @@ const handleInvoiceSubmit = (data) => {
     return (
             <div className="flex gap-6">
         {/* Customer List - 40% width */}
-              <div className="w-2/5 bg-white rounded-lg shadow">
-                <div className="p-6">
-            {/* Header */}
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Customer List</h3>
-                  </div>
+        <div className="w-2/5 bg-white rounded-lg shadow">
+          {/* Table Header */}
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Customer List</h3>
+          </div>
+          
+          {/* Table Content */}
+          <table className="min-w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Customer Name</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company Name</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Net Receivables</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {customers
+                .filter(customer =>
+                  (customer.customerName && customer.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                  (customer.companyName && customer.companyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                  (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                  (customer.contactNumber && customer.contactNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+                )
+                .map((customer) => {
+                  // Calculate net receivables for this customer
+                  const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === customer.customerId);
+                  const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === customer.customerId);
                   
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full">
-                      <thead className="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Customer Name</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company Name</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Net Receivables</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
+                  const totalInvoiced = customerInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
+                  const totalReceived = customerReceipts.reduce((sum, receipt) => sum + (receipt.amountReceived || 0), 0);
+                  const netReceivables = totalInvoiced - totalReceived;
+                  
+                  return (
+                    <tr 
+                      key={customer.customerId} 
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => setSelectedCustomer(customer)}
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm font-medium text-gray-900">{customer.customerName}</span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm text-gray-700">{customer.companyName || 'N/A'}</span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`text-sm font-semibold ${
+                          netReceivables > 0 ? 'text-red-600' : netReceivables < 0 ? 'text-green-600' : 'text-gray-600'
+                        }`}>
+                          ₹{netReceivables.toLocaleString('en-IN')}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCustomerForPreview(customer);
+                            setShowCustomerPreview(true);
+                          }}
+                          className="text-gray-600 hover:text-blue-600 transition-colors"
+                          title="Preview Customer"
+                        >
+                          <FaEye className="w-4 h-4 mx-auto" />
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                  {customers
-                    .filter(customer =>
-                      (customer.customerName && customer.customerName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                      (customer.companyName && customer.companyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                      (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                      (customer.contactNumber && customer.contactNumber.toLowerCase().includes(searchTerm.toLowerCase()))
-                    )
-                    .map((customer) => {
-                      // Calculate net receivables for this customer
-                      const customerInvoices = invoices.filter(invoice => invoice.customer?.customerId === customer.customerId);
-                      const customerReceipts = receipts.filter(receipt => receipt.customer?.customerId === customer.customerId);
-                      
-                      const totalInvoiced = customerInvoices.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0);
-                      const totalReceived = customerReceipts.reduce((sum, receipt) => sum + (receipt.amountReceived || 0), 0);
-                      const netReceivables = totalInvoiced - totalReceived;
-                      
-                      return (
-                          <tr 
-                            key={customer.customerId} 
-                            className="hover:bg-gray-50 transition-colors cursor-pointer"
-                            onClick={() => setSelectedCustomer(customer)}
-                          >
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <span className="text-sm font-medium text-gray-900">{customer.customerName}</span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <span className="text-sm text-gray-700">{customer.companyName || 'N/A'}</span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <span className={`text-sm font-semibold ${
-                              netReceivables > 0 ? 'text-red-600' : netReceivables < 0 ? 'text-green-600' : 'text-gray-600'
-                              }`}>
-                              ₹{netReceivables.toLocaleString('en-IN')}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                setSelectedCustomerForPreview(customer);
-                                  setShowCustomerPreview(true);
-                                }}
-                                className="text-gray-600 hover:text-blue-600"
-                              >
-                                <FaEye className="w-5 h-5" />
-                              </button>
-                            </td>
-                      </tr>
-                      );
-                    })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
               
               {/* Right side - 60% width - Customer Details with Tabs */}
               <div className="w-3/5 bg-white shadow-sm border border-gray-200">
@@ -1223,156 +1224,190 @@ const handleInvoiceSubmit = (data) => {
   };
 
   return (
-    <MainLayout>
-      <div className="p-6 space-y-6">
-      <div className="mb-6">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">Customers</h1>
-            
+    <>
+      <div className="flex h-screen">
+        {/* Sidebar */}
+        <Sidebar
+          isCollapsed={isSidebarCollapsed}
+          toggleSidebar={toggleSidebar}
+          currentRole={"employee"}
+        />
+
+        {/* Fixed Customers Header */}
+        <div 
+          className={`fixed top-16 z-50 bg-white shadow-sm border-b border-gray-200 p-4 flex items-center justify-between transition-all duration-300 ${
+            isSidebarCollapsed ? "left-20 right-0" : "left-60 right-0"
+          }`}
+        >
+          {/* Left: Title + Search + Filter */}
           <div className="flex items-center space-x-4">
-              <div className="flex items-center bg-white rounded-full shadow-sm px-4 py-3 w-80 transition-all duration-200 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-                <FaSearch className="w-5 h-5 text-gray-600 mr-3" />
+            <h1 className="text-xl font-semibold text-gray-900">Customers</h1>
+            
+            <div className="flex items-center bg-gray-50 rounded-lg px-3 py-2 w-64">
+              <FaSearch className="w-4 h-4 text-gray-400 mr-2" />
               <input
                 type="text"
-                  placeholder="Search Customers"
-                  className="flex-1 outline-none text-gray-900 placeholder-gray-600 bg-transparent focus:outline-none"
+                placeholder="Search customers..."
+                className="flex-1 outline-none text-gray-900 placeholder-gray-500 bg-transparent text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-              
-              <select
-                value={selectedDateRange}
-                onChange={(e) => handleDateRangeChange(e.target.value)}
-                className="bg-white border border-gray-300 rounded-full px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer"
-              >
-                <option value="thisMonth">This Month</option>
-                <option value="lastMonth">Previous Month</option>
-                <option value="last3Months">Last 3 Months</option>
-                <option value="last6Months">Last 6 Months</option>
-                <option value="thisYear">This Year</option>
-                <option value="lastYear">Last Year</option>
-                <option value="custom">Custom Range</option>
-              </select>
-              
-              {/* Custom Date Inputs */}
-              {showCustomDateInputs && (
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="date"
-                    value={customStartDate}
-                    onChange={(e) => setCustomStartDate(e.target.value)}
-                    className="bg-white border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
-                    placeholder="Start Date"
-                  />
-                  <span className="text-gray-500 text-sm">to</span>
-                  <input
-                    type="date"
-                    value={customEndDate}
-                    onChange={(e) => setCustomEndDate(e.target.value)}
-                    className="bg-white border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
-                    placeholder="End Date"
-                  />
-                </div>
-              )}
-            </div>
+
+            <select
+              value={selectedDateRange}
+              onChange={(e) => handleDateRangeChange(e.target.value)}
+              className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer text-sm"
+            >
+              <option value="thisMonth">This Month</option>
+              <option value="lastMonth">Previous Month</option>
+              <option value="last3Months">Last 3 Months</option>
+              <option value="last6Months">Last 6 Months</option>
+              <option value="thisYear">This Year</option>
+              <option value="lastYear">Last Year</option>
+              <option value="custom">Custom Range</option>
+            </select>
             
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={() => {
-                  setSelectedInvoice(null);
-                  setShowAddForm('invoice');
-                }}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-semibold shadow-sm text-sm" style={{ minWidth: 120 }}
-              >
-                <FaPlus className="w-4 h-4" /> <span>New Invoice</span>
-              </button>
-              <button 
-                onClick={() => {
-                  setSelectedReceipt(null);
-                  setShowAddForm('receipt');
-                }}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-semibold shadow-sm text-sm" style={{ minWidth: 120 }}
-              >
-                <FaPlus className="w-4 h-4" /> <span>New Receipt</span>
-              </button>
-              <button onClick={handleAddClick} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-semibold shadow-sm text-sm" style={{ minWidth: 120 }}>
-                <FaPlus className="w-4 h-4" /> <span>New Customer</span>
-              </button>
+            {/* Custom Date Inputs */}
+            {showCustomDateInputs && (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-xs"
+                  placeholder="Start Date"
+                />
+                <span className="text-gray-500 text-xs">to</span>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-xs"
+                  placeholder="End Date"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Right: Action Buttons */}
+          <div className="flex items-center space-x-3">
+            <button 
+              onClick={() => {
+                setSelectedInvoice(null);
+                setShowAddForm('invoice');
+              }}
+              className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
+            >
+              <FaPlus className="w-3 h-3" /> <span>New Invoice</span>
+            </button>
+            <button 
+              onClick={() => {
+                setSelectedReceipt(null);
+                setShowAddForm('receipt');
+              }}
+              className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
+            >
+              <FaPlus className="w-3 h-3" /> <span>New Receipt</span>
+            </button>
+            <button 
+              onClick={handleAddClick} 
+              className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
+            >
+              <FaPlus className="w-3 h-3" /> <span>New Customer</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div
+          className={`flex-1 ${
+            isSidebarCollapsed ? "ml-20" : "ml-60"
+          } transition-all duration-300`}
+        >
+          {/* Navbar */}
+          <HradminNavbar />
+
+          {/* Page Container */}
+          <div className="flex flex-col h-full pt-32">
+            {/* Main Scrollable Content */}
+            <div className="flex-1 overflow-y-auto pl-1 pr-6 pt-8">
+              {renderContent()}
             </div>
           </div>
+        </div>
       </div>
-        {renderContent()}
-        {selectedInvoiceForPreview && (
-          <InvoicePreviewModal 
-            invoice={selectedInvoiceForPreview} 
-            receipts={receipts}
-            onClose={() => setSelectedInvoiceForPreview(null)} 
-          />
-        )}
-        {selectedReceiptForPreview && (
-          <ReceiptPreviewModal
-            receipt={selectedReceiptForPreview}
-            onClose={() => setSelectedReceiptForPreview(null)}
-          />
-        )}
-        
-        {/* Customer Preview Modal */}
-        {showCustomerPreview && selectedCustomerForPreview && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-              <div className="p-4 border-b flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-800">Customer Preview: {selectedCustomerForPreview.customerName}</h2>
-                    <button 
-                  onClick={() => setShowCustomerPreview(false)} 
-                  className="text-gray-500 hover:text-gray-800"
-                >
-                    <FaTimes />
-                  </button>
-                </div>
-              <div className="p-6">
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Basic Information</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Customer ID:</span>
-                        <span className="font-medium">{selectedCustomerForPreview.customerId}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Name:</span>
-                        <span className="font-medium">{selectedCustomerForPreview.customerName}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Company:</span>
-                        <span className="font-medium">{selectedCustomerForPreview.companyName || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Email:</span>
-                        <span className="font-medium">{selectedCustomerForPreview.email || 'N/A'}</span>
+
+      {/* Modals */}
+      {selectedInvoiceForPreview && (
+        <InvoicePreviewModal 
+          invoice={selectedInvoiceForPreview} 
+          receipts={receipts}
+          onClose={() => setSelectedInvoiceForPreview(null)} 
+        />
+      )}
+      {selectedReceiptForPreview && (
+        <ReceiptPreviewModal
+          receipt={selectedReceiptForPreview}
+          onClose={() => setSelectedReceiptForPreview(null)}
+        />
+      )}
+      
+      {/* Customer Preview Modal */}
+      {showCustomerPreview && selectedCustomerForPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800">Customer Preview: {selectedCustomerForPreview.customerName}</h2>
+              <button 
+                onClick={() => setShowCustomerPreview(false)} 
+                className="text-gray-500 hover:text-gray-800"
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Basic Information</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Customer ID:</span>
+                      <span className="font-medium">{selectedCustomerForPreview.customerId}</span>
                     </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Contact:</span>
-                        <span className="font-medium">{selectedCustomerForPreview.contactNumber}</span>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Name:</span>
+                      <span className="font-medium">{selectedCustomerForPreview.customerName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Company:</span>
+                      <span className="font-medium">{selectedCustomerForPreview.companyName || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Email:</span>
+                      <span className="font-medium">{selectedCustomerForPreview.email || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Contact:</span>
+                      <span className="font-medium">{selectedCustomerForPreview.contactNumber}</span>
+                    </div>
                   </div>
-                      </div>
-                      </div>
-                      <div>
-                    <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Address Information</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Address:</span>
-                        <span className="font-medium text-right max-w-xs">{selectedCustomerForPreview.address || 'N/A'}</span>
-                      </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Address Information</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Address:</span>
+                      <span className="text-right max-w-xs">{selectedCustomerForPreview.address || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
-    </MainLayout>
+        </div>
+      )}
+    </>
   );
 };
 
