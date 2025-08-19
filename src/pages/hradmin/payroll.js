@@ -635,7 +635,7 @@ function PayrollManagement() {
         setIsFetchingView(false);
       }
     })();
-  }, [dispatch, selectedCompanyId, selectedMonth, selectedYear]);
+  }, [dispatch, selectedCompanyId, selectedMonth, selectedYear, payroll]);
 
   // Initialize arrears values when payroll data is loaded
   useEffect(() => {
