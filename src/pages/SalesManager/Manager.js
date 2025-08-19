@@ -19,7 +19,7 @@ import { useSelector, useDispatch } from "react-redux";
 import ConvertLeadModal from "@/components/Sales/ConvertLeadModal";
 import LostLeadModal from "@/components/Sales/LostLeadModal";
 import JunkReasonModal from "@/components/Sales/JunkReasonModal";
-import LostJunkLeadsView from "@/components/Sales/LostJunkLeadsView";
+
 import AddLeadModal from "@/components/Sales/AddLeadModal";
 import AssignLeadModal from "@/components/Sales/AssignLeadModal";
 import SemiContactedModal from "@/components/Sales/SemiContactedModal";
@@ -891,7 +891,6 @@ const ManagerContent = ({ role }) => {
           <ViewToggle 
             viewMode={viewMode} 
             setViewMode={setViewMode}
-            onShowLostJunk={() => setViewMode('lost-junk')}
           />
         </div>
       </div>
@@ -952,9 +951,7 @@ const ManagerContent = ({ role }) => {
               </div>
             )}
             
-            {viewMode === "lost-junk" && (
-              <LostJunkLeadsView />
-            )}
+
           </>
         )}
       </div>

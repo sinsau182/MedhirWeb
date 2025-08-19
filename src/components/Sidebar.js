@@ -19,6 +19,9 @@ import {
   FaShieldAlt,
   FaChartBar,
   FaCrown,
+  FaTimes,
+  FaExclamationTriangle,
+  FaCheckCircle,
 } from "react-icons/fa";
 import {
   Briefcase,
@@ -134,6 +137,16 @@ const modularMenus = {
         label: "All Leads",
         icon: <FaUsers className="w-4 h-4" />,
         link: "/SalesManager/Manager",
+      },
+      {
+        label: "Lost & Junk Leads",
+        icon: <FaTimes className="w-4 h-4" />,
+        link: "/Sales/lostJunk",
+      },
+      {
+        label: "Converted Leads",
+        icon: <FaCheckCircle className="w-4 h-4" />,
+        link: "/Sales/closedConverted",
       },
       // {
       //   label: "Sales Settings",
