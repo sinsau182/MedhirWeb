@@ -13,6 +13,7 @@ import { fetchAllEmployeeAttendanceOneMonth } from "@/redux/slices/attendancesSl
 import { generatePayroll, getPayroll, sendPayslips, clearPayroll } from "@/redux/slices/payrollSlice";
 import { createOrUpdateEmployeeAdvance, fetchCompanyEmployeeAdvances, clearError, clearSuccess } from "@/redux/slices/employeeAdvanceSlice";
 import { updateArrearsPaid, updateArrearsDeducted, fetchCompanyArrears } from "@/redux/slices/arrearsSlice";
+import { fetchPayrollFreezeSettings } from "@/redux/slices/payrollSettingsSlice";
 
 function PayrollManagement() {
   const selectedCompanyId = sessionStorage.getItem("employeeCompanyId");
@@ -38,6 +39,8 @@ function PayrollManagement() {
     companyArrearsLoading,
     companyArrearsError
   } = useSelector((state) => state.arrears);
+  
+  const { payrollFreezeData } = useSelector((state) => state.payrollSettings);
   const [selectedSection, setSelectedSection] = useState("Salary Statement");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -105,9 +108,9 @@ function PayrollManagement() {
 
   // Helper functions for arrears editing
   const handleArrearsEdit = (employeeId) => {
-    // Only allow editing for current month
-    if (!isCurrentMonth()) {
-      toast.error("Arrears can only be edited for the current month");
+    // Only allow editing for current month and when not frozen
+    if (!isCurrentMonth() || isPayrollFrozen()) {
+      toast.error("Arrears can only be edited for the current month when payroll is active");
       return;
     }
     setEditingArrears(prev => ({ ...prev, [employeeId]: true }));
@@ -208,9 +211,9 @@ function PayrollManagement() {
 
   // Helper functions for arrears deducted editing
   const handleArrearsDeductedEdit = (employeeId) => {
-    // Only allow editing for current month
-    if (!isCurrentMonth()) {
-      toast.error("Arrears deducted can only be edited for the current month");
+    // Only allow editing for current month and when not frozen
+    if (!isCurrentMonth() || isPayrollFrozen()) {
+      toast.error("Arrears deducted can only be edited for the current month when payroll is active");
       return;
     }
     setEditingArrearsDeducted(prev => ({ ...prev, [employeeId]: true }));
@@ -311,9 +314,9 @@ function PayrollManagement() {
 
   // Helper functions for advance editing (positive values only)
   const handleAdvanceEdit = (employeeId, field) => {
-    // Only allow editing for current month
-    if (!isCurrentMonth()) {
-      toast.error("Advance fields can only be edited for the current month");
+    // Only allow editing for current month and when not frozen
+    if (!isCurrentMonth() || isPayrollFrozen()) {
+      toast.error("Advance fields can only be edited for the current month when payroll is active");
       return;
     }
     const key = `${employeeId}_${field}`;
@@ -412,12 +415,7 @@ function PayrollManagement() {
     }
   }, [companyArrearsError]);
 
-  // Show success message when arrears data is fetched
-  useEffect(() => {
-    if (companyArrears && companyArrears.length > 0 && !companyArrearsLoading) {
-      toast.success(`Loaded ${companyArrears.length} arrears records for ${selectedMonth} ${selectedYear}`);
-    }
-  }, [companyArrears, companyArrearsLoading, selectedMonth, selectedYear]);
+
 
   // Clear arrears errors when component unmounts
   useEffect(() => {
@@ -476,6 +474,40 @@ function PayrollManagement() {
     return selectedMonth === payrollMonth && selectedYear === payrollYear;
   };
 
+  // Check if payroll is currently frozen based on freeze settings
+  const isPayrollFrozen = () => {
+    if (!payrollFreezeData) return false;
+    
+    const currentDate = new Date();
+    const currentDay = currentDate.getDate();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    
+    const enablementDay = payrollFreezeData.payrollEnablementDate || 1;
+    const freezeAfterDays = payrollFreezeData.freezeAfterDays || 16;
+    const freezeDay = enablementDay + freezeAfterDays;
+    
+    // Check if current date is within the freeze period
+    if (currentDay >= enablementDay && currentDay < freezeDay) {
+      return false; // Payroll is active
+    }
+    
+    return true; // Payroll is frozen
+  };
+
+  // Check if current month is the previous month (for editing restrictions)
+  const isPreviousMonth = () => {
+    const currentDate = new Date();
+    const previousMonth = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() - 1,
+      1
+    );
+    const previousMonthName = previousMonth.toLocaleString("default", { month: "long" });
+    const previousMonthYear = previousMonth.getFullYear().toString();
+    return selectedMonth === previousMonthName && selectedYear === previousMonthYear;
+  };
+
   const handleMonthSelection = (month, year) => {
     // Convert short month name to full month name
     const monthMap = {
@@ -497,6 +529,20 @@ function PayrollManagement() {
     setSelectedMonth(fullMonthName);
     setSelectedYear(year);
     setIsCalendarOpen(false);
+    
+    // Check if the selected month is accessible based on freeze settings
+    if (payrollFreezeData) {
+      const currentDate = new Date();
+      const selectedDate = new Date(year, monthMap[fullMonthName] - 1, 1);
+      const monthsDiff = (currentDate.getFullYear() - selectedDate.getFullYear()) * 12 + (currentDate.getMonth() - selectedDate.getMonth());
+      
+      // If trying to access months beyond the current month, show warning
+      if (monthsDiff > 1) {
+        toast.warning("You can only access the current month and previous month for payroll management.");
+        return;
+      }
+    }
+    
     // Reset state when month changes
     setIsCalculatePayrollClicked(false);
     setHasAttemptedCalculate(false);
@@ -528,6 +574,12 @@ function PayrollManagement() {
   useEffect(() => {
     dispatch(fetchEmployees());
   }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchPayrollFreezeSettings());
+  }, [dispatch]);
+
+
 
   useEffect(() => {
     // Convert month name to month number
@@ -621,17 +673,13 @@ function PayrollManagement() {
     }
   }, [employees, companyAdvances]);
 
-  // Handle employee advance success and error messages
+  // Handle employee advance error messages
   useEffect(() => {
-    if (advanceSuccess) {
-      toast.success(advanceMessage);
-      dispatch(clearSuccess());
-    }
     if (advanceError) {
       toast.error(advanceError);
       dispatch(clearError());
     }
-  }, [advanceSuccess, advanceError, advanceMessage, dispatch]);
+  }, [advanceError, dispatch]);
 
   // Function to fetch company employee advances
   const fetchCompanyAdvances = useCallback(() => {
@@ -842,8 +890,7 @@ function PayrollManagement() {
                         ? `₹ ${
                             (payrollItem.professionalTax || 0) +
                             (payrollItem.employeePFThisMonth || 0) +
-                            (payrollItem.employerPFThisMonth || 0) +
-                            (payrollItem.otherDeductions || 0)
+                            (payrollItem.employerPFThisMonth || 0)
                           }`
                         : "₹ 0"}
                     </td>
@@ -903,9 +950,6 @@ function PayrollManagement() {
               </th>
               <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
                 Advance Adjusted
-              </th>
-              <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-red-100">
-                Other Deduction
               </th>
               <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-blue-100">
                 Net Deductions
@@ -988,18 +1032,12 @@ function PayrollManagement() {
                         ? `₹ ${payrollItem.advanceAdjusted || 0}`
                         : "₹ 0"}
                     </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
-                      {payrollItem
-                        ? `₹ ${payrollItem.otherDeductions || 0}`
-                        : "₹ 0"}
-                    </td>
                     <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-blue-50 font-semibold">
                       {payrollItem
                         ? `₹ ${
                             (payrollItem.employeePFThisMonth || 0) +
                             (payrollItem.employerPFThisMonth || 0) +
-                            (payrollItem.professionalTax || 0) +
-                            (payrollItem.otherDeductions || 0)
+                            (payrollItem.professionalTax || 0)
                           }`
                         : "₹ 0"}
                     </td>
@@ -1164,7 +1202,7 @@ function PayrollManagement() {
                                 : parseFloat(advanceValues[`${employee.employeeId}_thisMonth`]) || 0)
                             : (advanceData?.thisMonthAdvance || employee.thisMonthAdvance || 0)}
                         </span>
-                        {isCurrentMonth() && (
+                        {isCurrentMonth() && !isPayrollFrozen() && (
                           <button
                             onClick={() => handleAdvanceEdit(employee.employeeId, 'thisMonth')}
                             className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
@@ -1218,7 +1256,7 @@ function PayrollManagement() {
                                 : parseFloat(advanceValues[`${employee.employeeId}_deduct`]) || 0)
                             : (advanceData?.deductedThisMonth || employee.deductInThisMonth || 0)}
                         </span>
-                        {isCurrentMonth() && (
+                        {isCurrentMonth() && !isPayrollFrozen() && (
                           <button
                             onClick={() => handleAdvanceEdit(employee.employeeId, 'deduct')}
                             className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
@@ -1484,7 +1522,7 @@ function PayrollManagement() {
                           <span>₹{arrearsValues[employee.employeeId] !== undefined 
                             ? arrearsValues[employee.employeeId]
                             : (getEmployeeArrears(employee.employeeId)?.arrearsPaid || 0)}</span>
-                          {isCurrentMonth() && (
+                          {isCurrentMonth() && !isPayrollFrozen() && (
                             <button
                               onClick={() => handleArrearsEdit(employee.employeeId)}
                               className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
@@ -1539,7 +1577,7 @@ function PayrollManagement() {
                           <span>₹{arrearsDeductedValues[employee.employeeId] !== undefined 
                             ? arrearsDeductedValues[employee.employeeId] 
                             : (getEmployeeArrears(employee.employeeId)?.arrearsDeducted || 0)}</span>
-                          {isCurrentMonth() && (
+                          {isCurrentMonth() && !isPayrollFrozen() && (
                             <button
                               onClick={() => handleArrearsDeductedEdit(employee.employeeId)}
                               className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
@@ -1550,6 +1588,7 @@ function PayrollManagement() {
                               </svg>
                             </button>
                           )}
+
                                               </div>
                     )}
                   </td>
@@ -1618,7 +1657,7 @@ function PayrollManagement() {
               </h1>
               
               <button
-                disabled={!isLatestAvailableMonth() || isCalculatingPayroll}
+                disabled={!isLatestAvailableMonth() || isCalculatingPayroll || isPayrollFrozen()}
                 onClick={async () => {
                   if (isLatestAvailableMonth() && !isCalculatingPayroll) {
                     setHasAttemptedCalculate(true);
@@ -1659,7 +1698,7 @@ function PayrollManagement() {
                       await dispatch(generatePayroll(requestBody)).unwrap();
                       console.log("Generate payroll succeeded");
                       toast.success("Payroll calculation completed!");
-
+                      
                       // Then, fetch the generated payroll data (GET request)
                       const params = {
                         companyId: selectedCompanyId,
@@ -1675,7 +1714,7 @@ function PayrollManagement() {
                       setIsCalculatePayrollClicked(true);
                       setDataLastUpdated(new Date());
                       toast.success("Payroll data loaded successfully!");
-
+                      
                     } catch (error) {
                       // Always surface the error coming from getPayroll (view) for precise messaging
                       try {
@@ -1712,14 +1751,14 @@ function PayrollManagement() {
                   }
                 }}
                 className={`px-6 py-2 rounded-md font-medium text-sm transition-all duration-200 ${
-                  isLatestAvailableMonth() && !isCalculatingPayroll
+                  isLatestAvailableMonth() && !isCalculatingPayroll && !isPayrollFrozen()
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-400 text-gray-600 cursor-not-allowed opacity-50"
                 }`}
               >
                 {isCalculatingPayroll 
                   ? "Calculating..." 
-                  : isLatestAvailableMonth() && (isCalculatePayrollClicked || (payroll && Array.isArray(payroll) && payroll.length > 0))
+                  : isLatestAvailableMonth() && !isPayrollFrozen() && (isCalculatePayrollClicked || (payroll && Array.isArray(payroll) && payroll.length > 0))
                     ? "Recalculate Payroll"
                     : "Calculate Payroll"
                 }
@@ -1737,7 +1776,7 @@ function PayrollManagement() {
                 </button>
               )}
               
-              {isLatestAvailableMonth() && (isCalculatePayrollClicked || (payroll && Array.isArray(payroll) && payroll.length > 0)) && (
+              {isLatestAvailableMonth() && !isPayrollFrozen() && (isCalculatePayrollClicked || (payroll && Array.isArray(payroll) && payroll.length > 0)) && (
                 <button
                   onClick={() => {
                     if (showCheckboxes) {
@@ -1948,6 +1987,8 @@ function PayrollManagement() {
               <span className="font-medium">Note:</span> After calculating or recalculating payroll, please remember to send payslips to employees.
             </div>
           )}
+
+
 
           {/* Tabs - Only show when there's valid data or payroll has been calculated */}
           {!payrollErrorDetails && !isFetchingView && ((payroll && Array.isArray(payroll) && payroll.length > 0) || isCalculatePayrollClicked) && (

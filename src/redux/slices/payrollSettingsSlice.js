@@ -54,6 +54,31 @@ export const fetchPTAX = createAsyncThunk(
   }
 );
 
+// Async thunk for fetching Payroll Freeze Settings
+export const fetchPayrollFreezeSettings = createAsyncThunk(
+  "payrollSettings/fetchPayrollFreezeSettings",
+  async (_, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const company = sessionStorage.getItem("employeeCompanyId");
+      const response = await axios.get(
+        `${publicRuntimeConfig.apiURL}/api/settings/payroll/company/${company}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch Payroll Freeze settings");
+    }
+  }
+);
+
 // Async thunk for saving/updating TDS settings
 export const saveTDS = createAsyncThunk(
   "payrollSettings/saveTDS",
@@ -96,17 +121,9 @@ export const savePTAX = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token", null);
       const companyId = sessionStorage.getItem("employeeCompanyId");
-      const { isPtaxConfigured } = getState().payrollSettings;
-      
-      const url = isPtaxConfigured 
-        ? `${publicRuntimeConfig.apiURL}/professional-tax-settings/company/${companyId}`
-        : `${publicRuntimeConfig.apiURL}/professional-tax-settings`;
-
-      const method = isPtaxConfigured ? "put" : "post";
-
       const response = await axios({
-        method,
-        url,
+        method: "post",
+        url: `${publicRuntimeConfig.apiURL}/professional-tax-settings`,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -122,6 +139,47 @@ export const savePTAX = createAsyncThunk(
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || "Failed to save Professional Tax settings");
+    }
+  }
+);
+
+// Async thunk for saving/updating Payroll Freeze Settings
+export const savePayrollFreezeSettings = createAsyncThunk(
+  "payrollSettings/savePayrollFreezeSettings",
+  async (freezeData, { getState, rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const companyId = sessionStorage.getItem("employeeCompanyId");
+      const { isPayrollFreezeConfigured, payrollFreezeData } = getState().payrollSettings;
+      
+      let url, method;
+      
+      if (isPayrollFreezeConfigured && payrollFreezeData?.settingsId) {
+        // Update existing settings using the settingsId
+        url = `${publicRuntimeConfig.apiURL}/api/settings/payroll/update/${payrollFreezeData.settingsId}`;
+        method = "put";
+      } else {
+        // Create new settings
+        url = `${publicRuntimeConfig.apiURL}/api/settings/payroll`;
+        method = "post";
+      }
+
+      const response = await axios({
+        method,
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        data: {
+          payrollEnablementDate: parseInt(freezeData.payrollEnablementDay),
+          freezeAfterDays: parseInt(freezeData.freezeAfterDays),
+          companyId: companyId,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Failed to save Payroll Freeze settings");
     }
   }
 );
@@ -155,10 +213,12 @@ export const fetchPayrollSettings = createAsyncThunk(
 const initialState = {
   tdsData: null,
   ptaxData: null,
+  payrollFreezeData: null,
   loading: false,
   error: null,
   isTdsConfigured: false,
   isPtaxConfigured: false,
+  isPayrollFreezeConfigured: false,
   settings: null,
 };
 
@@ -176,6 +236,10 @@ const payrollSettingsSlice = createSlice({
     resetPtaxForm: (state) => {
       state.ptaxData = null;
       state.isPtaxConfigured = false;
+    },
+    resetPayrollFreezeForm: (state) => {
+      state.payrollFreezeData = null;
+      state.isPayrollFreezeConfigured = false;
     },
   },
   extraReducers: (builder) => {
@@ -210,6 +274,21 @@ const payrollSettingsSlice = createSlice({
         state.error = action.payload;
         state.isPtaxConfigured = false;
       })
+      // Payroll Freeze Settings reducers
+      .addCase(fetchPayrollFreezeSettings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPayrollFreezeSettings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.payrollFreezeData = action.payload;
+        state.isPayrollFreezeConfigured = !!action.payload;
+      })
+      .addCase(fetchPayrollFreezeSettings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.isPayrollFreezeConfigured = false;
+      })
       // Save TDS reducers
       .addCase(saveTDS.pending, (state) => {
         state.loading = true;
@@ -238,6 +317,20 @@ const payrollSettingsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      // Save Payroll Freeze Settings reducers
+      .addCase(savePayrollFreezeSettings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(savePayrollFreezeSettings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.payrollFreezeData = action.payload;
+        state.isPayrollFreezeConfigured = true;
+      })
+      .addCase(savePayrollFreezeSettings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       .addCase(fetchPayrollSettings.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -253,5 +346,5 @@ const payrollSettingsSlice = createSlice({
   },
 });
 
-export const { clearErrors, resetTdsForm, resetPtaxForm } = payrollSettingsSlice.actions;
+export const { clearErrors, resetTdsForm, resetPtaxForm, resetPayrollFreezeForm } = payrollSettingsSlice.actions;
 export default payrollSettingsSlice.reducer; 
