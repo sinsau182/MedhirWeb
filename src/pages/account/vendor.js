@@ -97,6 +97,11 @@ const handleDownloadFile = async (url, fileName = null) => {
      endDate: ''
    });
    const [previewVendorData, setPreviewVendorData] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDateRange, setSelectedDateRange] = useState('thisMonth');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [showCustomDateInputs, setShowCustomDateInputs] = useState(false);
     useEffect(() => {
       dispatch(fetchVendors());
       dispatch(fetchBills());
@@ -108,6 +113,63 @@ const handleDownloadFile = async (url, fileName = null) => {
     console.log(bills);
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  // Function to get date range based on selection
+  const getDateRange = (range) => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    
+    switch (range) {
+      case 'thisMonth':
+        return {
+          startDate: new Date(currentYear, currentMonth, 1),
+          endDate: new Date(currentYear, currentMonth + 1, 0)
+        };
+      case 'lastMonth':
+        return {
+          startDate: new Date(currentYear, currentMonth - 1, 1),
+          endDate: new Date(currentYear, currentMonth, 0)
+        };
+      case 'last3Months':
+        return {
+          startDate: new Date(currentYear, currentMonth - 3, 1),
+          endDate: new Date(currentYear, currentMonth + 1, 0)
+        };
+      case 'last6Months':
+        return {
+          startDate: new Date(currentYear, currentMonth - 6, 1),
+          endDate: new Date(currentYear, currentMonth + 1, 0)
+        };
+      case 'thisYear':
+        return {
+          startDate: new Date(currentYear, 0, 1),
+          endDate: new Date(currentYear, 11, 31)
+        };
+      case 'lastYear':
+        return {
+          startDate: new Date(currentYear - 1, 0, 1),
+          endDate: new Date(currentYear - 1, 11, 31)
+        };
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return {
+            startDate: new Date(customStartDate),
+            endDate: new Date(customEndDate)
+          };
+        }
+        // Fallback to current month if custom dates are not set
+        return {
+          startDate: new Date(currentYear, currentMonth, 1),
+          endDate: new Date(currentYear, currentMonth + 1, 0)
+        };
+      default:
+        return {
+          startDate: new Date(currentYear, currentMonth, 1),
+          endDate: new Date(currentYear, currentMonth + 1, 0)
+        };
+    }
   };
   const [activeTab, setActiveTab] = useState('statement'); // Default to statement tab
   const [showAddForm, setShowAddForm] = useState(null); // 'bill' | 'refund' | 'payment' | 'vendor' | null
@@ -126,21 +188,44 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
     }
   }, [showAddForm, activeTab, dispatch]);
 
+  // Update statement when custom dates change
+  useEffect(() => {
+    if (selectedDateRange === 'custom' && customStartDate && customEndDate) {
+      // This will trigger a re-render of the statement with new date range
+      // The getDateRange function will use the updated customStartDate and customEndDate
+    }
+  }, [customStartDate, customEndDate, selectedDateRange]);
+
 
   // Add button handler
   const handleAddClick = () => {
-    setSelectedVendor(null); // Clear selected vendor for new vendor
-    setShowAddForm('vendor');
+      setSelectedVendor(null); // Clear selected vendor for new vendor
+      setShowAddForm('vendor');
+  };
+
+  const handleDateRangeChange = (range) => {
+    setSelectedDateRange(range);
+    if (range === 'custom') {
+      setShowCustomDateInputs(true);
+      // Set default custom dates to current month
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      setCustomStartDate(new Date(currentYear, currentMonth, 1).toISOString().split('T')[0]);
+      setCustomEndDate(new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0]);
+    } else {
+      setShowCustomDateInputs(false);
+    }
   };
 
   console.log('Payments data:', payments);
   console.log('Payment with proof URL:', payments.find(p => p.paymentProofUrl));
-    // Back button handler for forms
+  // Back button handler for forms
   const handleBackFromForm = () => {
     setShowAddForm(null);
     setSelectedBill(null);
     setSelectedPayment(null);
-    setEditingPO(null);
+     setEditingPO(null);
     
     // Don't clear selectedVendor if we're in statement tab
     // This ensures the vendor remains selected when returning from forms
@@ -359,14 +444,11 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
     switch (showAddForm) {
       case 'bill':
         return (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
+          <div className="bg-white rounded-lg shadow-md pl-2 pr-4 pt-4 pb-4">
+            <div className="flex items-center mb-2">
               <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
-                <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
+                <FaArrowLeft className="w-4 h-4" /> <span>Back</span>
               </button>
-              <h2 className="text-xl font-bold text-gray-900">
-                {selectedBill ? 'Edit Bill' : 'Add New Bill'}
-              </h2>
             </div>
             <AddBillForm
               bill={selectedBill}
@@ -380,10 +462,10 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
         );
            case 'po':
           return (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <div className="flex items-center mb-4">
+            <div className="bg-white rounded-lg shadow-md p-4">
+              <div className="flex items-center mb-2">
                 <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
-                  <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
+                  <FaArrowLeft className="w-4 h-4" /> <span>Back</span>
                 </button>
                 <h2 className="text-xl font-bold text-gray-900">
                   {editingPO ? 'Edit Purchase Order' : 'Create Purchase Order'}
@@ -399,10 +481,10 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
           );
       case 'payment':
         return (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
+          <div className="bg-white rounded-lg shadow-md p-4">
+            <div className="flex items-center mb-2">
               <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
-                <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
+                <FaArrowLeft className="w-4 h-4" /> <span>Back</span>
               </button>
               <h2 className="text-xl font-bold text-gray-900">
                 {selectedPayment ? 'Edit Vendor Payment' : 'Add Vendor Payment'}
@@ -418,10 +500,10 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
         );
       case 'vendor':
         return (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center mb-4">
+          <div className="bg-white rounded-lg shadow-md p-4">
+            <div className="flex items-center mb-2">
               <button onClick={handleBackFromForm} className="mr-4 text-gray-600 hover:text-blue-600 flex items-center gap-2">
-                <FaArrowLeft className="w-5 h-5" /> <span>Back</span>
+                <FaArrowLeft className="w-4 h-4" /> <span>Back</span>
               </button>
               <h2 className="text-xl font-bold text-gray-900">
                 {selectedVendor ? 'Edit Vendor' : 'Add New Vendor'}
@@ -447,90 +529,79 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
       return renderAddForm();
     }
     
-    return (
+        return (
           <div className="flex gap-6">
             {/* Statement Table - 40% width */}
             <div className="w-2/5 bg-white rounded-lg shadow">
-              <div className="p-6">
-                {/* Header with Period inline */}
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">Vendor Statement</h3>
-                  
-                  {/* Date Selection */}
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm font-medium text-gray-700">Period:</label>
-                    <input
-                      type="date"
-                      className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      onChange={(e) => setFormData(prev => ({...prev, startDate: e.target.value}))}
-                    />
-                    <span className="text-gray-500 text-xs">to</span>
-                    <input
-                      type="date"
-                      className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      onChange={(e) => setFormData(prev => ({...prev, endDate: e.target.value}))}
-                    />
-                  </div>
-                </div>
-                
-                <div className="overflow-x-auto">
-                  <table className="min-w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company Name</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Net Payables</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {vendors.map((vendor) => {
-                        // Calculate net payables for this vendor
-                        const vendorBills = bills.filter(bill => bill.vendorId === vendor.vendorId);
-                        const vendorPayments = payments.filter(payment => payment.vendorId === vendor.vendorId);
-                        
-                        const totalBills = vendorBills.reduce((sum, bill) => sum + (bill.finalAmount || 0), 0);
-                        const totalPayments = vendorPayments.reduce((sum, payment) => sum + (payment.totalAmount || 0), 0);
-                        const netPayables = totalBills - totalPayments;
-                        
-                        return (
-                          <tr 
-                            key={vendor.id} 
-                            className="hover:bg-gray-50 transition-colors cursor-pointer"
-                            onClick={() => setSelectedVendor(vendor)}
-                          >
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <span className="text-sm font-medium text-gray-900">{vendor.vendorName}</span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <span className="text-sm text-gray-700">{vendor.companyName || 'N/A'}</span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <span className={`text-sm font-semibold ${
-                                netPayables > 0 ? 'text-red-600' : netPayables < 0 ? 'text-green-600' : 'text-gray-600'
-                              }`}>
-                                ₹{netPayables.toLocaleString('en-IN')}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap text-center">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPreviewVendorData(vendor);
-                                  setShowVendorPreview(true);
-                                }}
-                                className="text-gray-600 hover:text-blue-600"
-                              >
-                                <FaEye className="w-5 h-5" />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+              {/* Table Header */}
+              <div className="p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Vendor Statement</h3>
               </div>
+              
+              {/* Table Content */}
+              <table className="min-w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Vendor Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Company Name</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Net Payables</th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {vendors
+                    .filter(vendor =>
+                      (vendor.vendorName && vendor.vendorName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                      (vendor.companyName && vendor.companyName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                      (vendor.email && vendor.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                      (vendor.contactNumber && vendor.contactNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+                    )
+                    .map((vendor) => {
+                      // Calculate net payables for this vendor
+                      const vendorBills = bills.filter(bill => bill.vendorId === vendor.vendorId);
+                      const vendorPayments = payments.filter(payment => payment.vendorId === vendor.vendorId);
+                      
+                      const totalBills = vendorBills.reduce((sum, bill) => sum + (bill.finalAmount || 0), 0);
+                      const totalPayments = vendorPayments.reduce((sum, payment) => sum + (payment.totalAmount || 0), 0);
+                      const netPayables = totalBills - totalPayments;
+                      
+                      return (
+                        <tr 
+                          key={vendor.id} 
+                          className="hover:bg-gray-50 transition-colors cursor-pointer"
+                          onClick={() => setSelectedVendor(vendor)}
+                        >
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="text-sm font-medium text-gray-900">{vendor.vendorName}</span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="text-sm text-gray-700">{vendor.companyName || 'N/A'}</span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`text-sm font-semibold ${
+                              netPayables > 0 ? 'text-red-600' : netPayables < 0 ? 'text-green-600' : 'text-gray-600'
+                            }`}>
+                              ₹{netPayables.toLocaleString('en-IN')}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewVendorData(vendor);
+                                setShowVendorPreview(true);
+                              }}
+                              className="text-gray-600 hover:text-blue-600 transition-colors"
+                              title="Preview Vendor"
+                            >
+                              <FaEye className="w-4 h-4 mx-auto" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
             </div>
             
             {/* Right side - 60% width - Vendor Details with Tabs */}
@@ -588,80 +659,70 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                   {/* Tab Content */}
                   {statementActiveTab === 'bills' && (
                     <div>
-                      <div className="flex justify-between items-center mb-4">
+                      <div className="mb-4">
                         <h3 className="text-lg font-semibold text-gray-900">Vendor Bills</h3>
-                        <button
-                          onClick={() => {
-                            setSelectedBill(null);
-                            setShowAddForm('bill');
-                          }}
-                          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
-                        >
-                          <FaPlus className="w-4 h-4" />
-                          New Bill
-                        </button>
                       </div>
                       <div className="overflow-x-auto">
-                        <table className="min-w-full">
-                          <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Bill No.</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Bill Date</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Due Date</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Reference/PO No.</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
+                <table className="min-w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Bill No.</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Bill Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Due Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Total Amount</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Reference/PO No.</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Attachments</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
                             {(() => {
                               const vendorBills = bills.filter(bill => bill.vendorId === selectedVendor.vendorId);
                               return vendorBills.length > 0 ? vendorBills.map((bill) => (
-                                <tr 
-                                  key={bill.id} 
+                    <tr 
+                      key={bill.id} 
                                   className="hover:bg-gray-50 cursor-pointer transition-colors"
-                                  onClick={() => {
-                                    setSelectedBill(bill);
-                                    setShowAddForm('bill');
-                                  }}
-                                >
-                                  <td className="px-4 py-4 whitespace-nowrap">
-                                    <span className="text-sm font-medium text-blue-600">{bill.billNumber || 'N/A'}</span>
-                                  </td>
-                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.billDate}</td>
-                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.dueDate}</td>
-                                  <td className="px-4 py-4 whitespace-nowrap">
-                                    <span className="text-sm font-semibold text-gray-900">₹{(bill.finalAmount || 0).toLocaleString('en-IN')}</span>
-                                  </td>
-                                  <td className="px-4 py-4 whitespace-nowrap">
-                                    <span className={`text-sm ${bill.billReference ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
-                                      {bill.billReference || '-'}
-                                    </span>
-                                  </td>
-                                  <td className="px-4 py-4 whitespace-nowrap text-center">
-                                    <span 
-                                      className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
-                                        (bill.attachmentUrls && bill.attachmentUrls.length > 0) || 
-                                        bill.attachmentUrls === 'Yes' || 
-                                        bill.attachmentUrls === true
-                                          ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' 
-                                          : 'bg-gray-100 text-gray-500'
-                                      }`}
-                                      onClick={(e) => {
+                      onClick={() => {
+                        setSelectedBill(bill);
+                        setShowAddForm('bill');
+                      }}
+                    >
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className="text-sm font-medium text-blue-600">{bill.billNumber || 'N/A'}</span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.billDate}</td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.dueDate}</td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className="text-sm font-semibold text-gray-900">₹{(bill.finalAmount || 0).toLocaleString('en-IN')}</span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className={`text-sm ${bill.billReference ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+                          {bill.billReference || '-'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center">
+                        <span 
+                          className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                            (bill.attachmentUrls && bill.attachmentUrls.length > 0) || 
+                            bill.attachmentUrls === 'Yes' || 
+                            bill.attachmentUrls === true
+                              ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' 
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                          onClick={(e) => {
                                         e.stopPropagation();
-                                        if ((bill.attachmentUrls && bill.attachmentUrls.length > 0) || 
-                                            bill.attachmentUrls === 'Yes' || 
-                                            bill.attachmentUrls === true) {
-                                          handleAttachmentClick(bill);
-                                        }
-                                      }}
-                                    >
-                                      {(bill.attachmentUrls && bill.attachmentUrls.length > 0) || 
-                                       bill.attachmentUrls === 'Yes' || 
-                                       bill.attachmentUrls === true ? '📎' : '-'}
-                                    </span>
-                                  </td>
-                                </tr>
+                            if ((bill.attachmentUrls && bill.attachmentUrls.length > 0) || 
+                                bill.attachmentUrls === 'Yes' || 
+                                bill.attachmentUrls === true) {
+                              handleAttachmentClick(bill);
+                            }
+                          }}
+                        >
+                          {(bill.attachmentUrls && bill.attachmentUrls.length > 0) || 
+                           bill.attachmentUrls === 'Yes' || 
+                           bill.attachmentUrls === true ? '📎' : '-'}
+                        </span>
+                      </td>
+                    </tr>
                               )) : (
                                 <tr>
                                   <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
@@ -670,95 +731,85 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                                 </tr>
                               );
                             })()}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                </tbody>
+              </table>
+            </div>
+          </div>
                   )}
 
                   {statementActiveTab === 'purchaseOrders' && (
-                    <div>
-                      <div className="flex justify-between items-center mb-4">
+            <div>
+                      <div className="mb-4">
                         <h3 className="text-lg font-semibold text-gray-900">Purchase Orders</h3>
-                        <button
-                          onClick={() => {
-                            setEditingPO(null);
-                            setShowAddForm('po');
-                          }}
-                          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors font-semibold shadow-sm text-sm"
-                        >
-                          <FaPlus className="w-4 h-4" />
-                          New PO
-                        </button>
-                      </div>
+                    </div>
                       <div className="overflow-x-auto">
-                        <table className="min-w-full">
-                          <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">PO Number</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Order Date</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Delivery Date</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Amount</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Preview</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
+                  <table className="min-w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">PO Number</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Order Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Delivery Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Total Amount</th>
+                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Attachments</th>
+                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Preview</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
                             {(() => {
                               const vendorPOs = purchaseOrders.filter(po => po.vendorId === selectedVendor.vendorId);
                               return vendorPOs.length > 0 ? vendorPOs.map((po) => (
-                                <tr 
-                                  key={po.id} 
+                      <tr 
+                        key={po.id} 
                                   className="hover:bg-gray-50 cursor-pointer transition-colors"
                                   onClick={() => {
                                     setEditingPO(po);
                                     setShowAddForm('po');
                                   }}
-                                >
-                                  <td className="px-4 py-4 whitespace-nowrap">
-                                    <span className="text-sm font-medium text-blue-600">{po.purchaseOrderNumber}</span>
-                                  </td>
-                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDate}</td>
-                                  <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDeliveryDate}</td>
-                                  <td className="px-4 py-4 whitespace-nowrap">
-                                    <span className="text-sm font-semibold text-gray-900">₹{po.finalAmount}</span>
-                                  </td>
-                                  <td className="px-4 py-4 whitespace-nowrap text-center">
-                                    <span 
-                                      className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
-                                        (po.attachmentUrls && po.attachmentUrls.length > 0) || 
+                      >
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <span className="text-sm font-medium text-blue-600">{po.purchaseOrderNumber}</span>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDate}</td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{po.purchaseOrderDeliveryDate}</td>
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <span className="text-sm font-semibold text-gray-900">₹{po.finalAmount}</span>
+                        </td>
+                 <td className="px-4 py-4 whitespace-nowrap text-center">
+                          <span 
+                           className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                             (po.attachmentUrls && po.attachmentUrls.length > 0) || 
                                         po.attachmentUrls === 'Yes' || po.attachmentUrls === true
                                           ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' 
                                           : 'bg-gray-100 text-gray-500'
-                                      }`}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (po.attachmentUrls && Array.isArray(po.attachmentUrls) && po.attachmentUrls.length > 0) {
-                                          const firstAttachment = po.attachmentUrls[0];
-                                          window.open(firstAttachment, '_blank');
-                                        } else if (typeof po.attachmentUrls === 'string') {
-                                          window.open(po.attachmentUrls, '_blank');
-                                        }
-                                      }}
-                                    >
-                                      {(po.attachmentUrls && po.attachmentUrls.length > 0) || 
-                                       po.attachmentUrls === 'Yes' || 
-                                       po.attachmentUrls === true ? '📎' : '-'}
-                                    </span>
-                                  </td>
-                                  <td className="px-4 py-4 whitespace-nowrap text-center">
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handlePurchaseOrderPreview(po);
-                                      }}
-                                      className="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors"
-                                      title="Preview Purchase Order"
-                                    >
-                                      <FaEye className="w-4 h-4" />
-                                    </button>
-                                  </td>
-                                </tr>
+                                  }`}
+                            onClick={(e) => {
+   e.stopPropagation();
+   if (po.attachmentUrls && Array.isArray(po.attachmentUrls) && po.attachmentUrls.length > 0) {
+     const firstAttachment = po.attachmentUrls[0];
+     window.open(firstAttachment, '_blank');
+   } else if (typeof po.attachmentUrls === 'string') {
+     window.open(po.attachmentUrls, '_blank');
+   }
+ }}
+                                          >
+                                {(po.attachmentUrls && po.attachmentUrls.length > 0) || 
+                                   po.attachmentUrls === 'Yes' || 
+                                   po.attachmentUrls === true ? '📎' : '-'}
+                             </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePurchaseOrderPreview(po);
+                          }}
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors"
+                          title="Preview Purchase Order"
+                        >
+                          <FaEye className="w-4 h-4" />
+                        </button>
+                      </td>
+                      </tr>
                               )) : (
                                 <tr>
                                   <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
@@ -767,45 +818,35 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                                 </tr>
                               );
                             })()}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                  </tbody>
+                </table>
+              </div>
+            </div>
                   )}
 
                   {statementActiveTab === 'payments' && (
-                    <div>
-                      <div className="flex justify-between items-center mb-4">
+          <div>
+                      <div className="mb-4">
                         <h3 className="text-lg font-semibold text-gray-900">Vendor Payments</h3>
-                        <button
-                          onClick={() => {
-                            setSelectedPayment(null);
-                            setShowAddForm('payment');
-                          }}
-                          className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors font-semibold shadow-sm text-sm"
-                        >
-                          <FaPlus className="w-4 h-4" />
-                          New Payment
-                        </button>
-                      </div>
+                  </div>
                       <div className="overflow-x-auto">
-                        <table className="min-w-full">
-                          <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Date</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Bill Reference</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Method</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Amount</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Payment Reference</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Attachments</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
+                <table className="min-w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+                    <tr>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Payment Date</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Bill Reference</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Payment Method</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Amount</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Payment Reference</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Attachments</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
                             {(() => {
                               const vendorPayments = payments.filter(payment => payment.vendorId === selectedVendor.vendorId);
                               return vendorPayments.length > 0 ? vendorPayments.map((payment) => (
-                                <tr 
-                                  key={payment.id} 
+                    <tr 
+                      key={payment.id} 
                                   className="hover:bg-gray-50 cursor-pointer transition-colors"
                                   onClick={() => {
                                     setSelectedPayment(payment);
@@ -814,61 +855,61 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                                 >
                                   <td className="px-4 py-4 text-sm text-gray-700">{payment.paymentDate}</td>
                                   <td className="px-4 py-4">
-                                    <div className="flex flex-wrap gap-1">
-                                      {payment?.billPayments?.map((bill) => (
-                                        <span key={bill.billId} className="text-xs text-blue-600 font-medium">
-                                          {bill.billId}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </td>
+                         <div className="flex flex-wrap gap-1">
+                           {payment?.billPayments?.map((bill) => (
+                             <span key={bill.billId} className="text-xs text-blue-600 font-medium">
+                               {bill.billId}
+                             </span>
+                           ))}
+                         </div>
+                       </td>
                                   <td className="px-4 py-4">
-                                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                      payment.paymentMethod === 'Bank Transfer' 
-                                        ? 'bg-blue-100 text-blue-800' 
-                                        : payment.paymentMethod === 'Cheque'
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-gray-100 text-gray-800'
-                                    }`}>
-                                      {payment.paymentMethod}
-                                    </span>
-                                  </td>
+                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                          payment.paymentMethod === 'Bank Transfer' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : payment.paymentMethod === 'Cheque'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {payment.paymentMethod}
+                        </span>
+                      </td>
                                   <td className="px-4 py-4">
-                                    <span className="text-sm font-semibold text-gray-900">₹{payment.totalAmount}</span>
-                                  </td>
+                        <span className="text-sm font-semibold text-gray-900">₹{payment.totalAmount}</span>
+                      </td>
                                   <td className="px-4 py-4">
-                                    <span className="text-sm text-gray-600 font-mono truncate block">{payment.paymentTransactionId}</span>
-                                  </td>
+                        <span className="text-sm text-gray-600 font-mono truncate block">{payment.paymentTransactionId}</span>
+                      </td>
                                   <td className="px-4 py-4 text-center">
-                                    <span 
-                                      className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
-                                        payment.paymentProofUrl 
-                                          ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' 
-                                          : 'bg-gray-100 text-gray-500'
-                                      }`}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (payment.paymentProofUrl) {
-                                          handleViewFile(payment.paymentProofUrl, 'Payment Receipt');
-                                        }
-                                      }}
-                                    >
-                                      {payment.paymentProofUrl ? '📎' : '-'}
-                                    </span>
-                                  </td>
-                                </tr>
+                        <span 
+                          className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                            payment.paymentProofUrl 
+                              ? 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200' 
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (payment.paymentProofUrl) {
+                              handleViewFile(payment.paymentProofUrl, 'Payment Receipt');
+                            }
+                          }}
+                        >
+                          {payment.paymentProofUrl ? '📎' : '-'}
+                        </span>
+                      </td>
+                    </tr>
                               )) : (
                                 <tr>
                                   <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
                                     No payments found for this vendor
-                                  </td>
-                                </tr>
+                      </td>
+                    </tr>
                               );
                             })()}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
                   )}
 
                   {statementActiveTab === 'statement' && (
@@ -876,11 +917,14 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       {/* Statement Title */}
                       <div className="text-center mb-6">
                         <h2 className="text-xl font-bold text-gray-900 uppercase tracking-wide">Statement of Accounts</h2>
-                        {formData.startDate && formData.endDate ? (
-                          <p className="text-sm text-gray-600 mt-1">{formData.startDate} To {formData.endDate}</p>
-                        ) : (
-                          <p className="text-sm text-gray-600 mt-1">Select date range from left panel</p>
-                        )}
+                        <div className="mt-2 text-sm text-gray-600">
+                          {(() => {
+                            const dateRange = getDateRange(selectedDateRange);
+                            const startDate = dateRange.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            const endDate = dateRange.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            return `${startDate} - ${endDate}`;
+                          })()}
+                        </div>
                       </div>
 
                       {/* Recipient and Account Summary - Inline */}
@@ -960,47 +1004,56 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                             const vendorBills = bills.filter(bill => bill.vendorId === selectedVendor.vendorId);
                             const vendorPayments = payments.filter(payment => payment.vendorId === selectedVendor.vendorId);
                             
-                                // Create transaction history with proper chronological order
+                            // Get selected date range
+                            const dateRange = getDateRange(selectedDateRange);
+                            
+                            // Create transaction history with proper chronological order
                             const transactions = [];
                             let runningBalance = 0;
                             
                             // Add opening balance
                             transactions.push({
-                              date: formData.startDate || '01/01/2025',
+                              date: dateRange.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                               type: 'Opening Balance',
                               details: '***Opening Balance***',
                               amount: 0,
                               payment: 0,
-                                  balance: runningBalance,
-                                  timestamp: new Date(formData.startDate || '01/01/2025').getTime()
+                              balance: runningBalance,
+                              timestamp: dateRange.startDate.getTime()
                             });
                             
-                                // Add bills with creation timestamp
+                            // Add bills within date range
                             vendorBills.forEach(bill => {
+                              const billDate = new Date(bill.billDate || 'N/A');
+                              if (billDate >= dateRange.startDate && billDate <= dateRange.endDate) {
                               runningBalance += bill.finalAmount || 0;
                               transactions.push({
                                 date: bill.billDate || 'N/A',
                                 type: 'Bill',
-                                    details: `Bill No: ${bill.billNumber || 'N/A'}`,
+                                  details: `Bill No: ${bill.billNumber || 'N/A'}`,
                                 amount: bill.finalAmount || 0,
                                 payment: 0,
-                                    balance: runningBalance,
-                                    timestamp: new Date(bill.billDate || 'N/A').getTime()
+                                  balance: runningBalance,
+                                  timestamp: billDate.getTime()
                               });
+                              }
                             });
                             
-                                // Add payments with creation timestamp
+                            // Add payments within date range
                             vendorPayments.forEach(payment => {
+                              const paymentDate = new Date(payment.paymentDate || 'N/A');
+                              if (paymentDate >= dateRange.startDate && paymentDate <= dateRange.endDate) {
                               runningBalance -= payment.totalAmount || 0;
                               transactions.push({
                                 date: payment.paymentDate || 'N/A',
                                 type: 'Payment Made',
-                                    details: `Payment ID: ${payment.paymentTransactionId || 'N/A'}`,
+                                  details: `Payment ID: ${payment.paymentTransactionId || 'N/A'}`,
                                 amount: 0,
                                 payment: payment.totalAmount || 0,
-                                    balance: runningBalance,
-                                    timestamp: new Date(payment.paymentDate || 'N/A').getTime()
-                              });
+                                  balance: runningBalance,
+                                  timestamp: paymentDate.getTime()
+                                });
+                              }
                             });
                             
                                 // Sort transactions by actual chronological order (when they were created)
@@ -1103,76 +1156,149 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
   };
 
   return (
-    <div className="flex h-screen">
-      {/* Sidebar */}
-      <Sidebar
-        isCollapsed={isSidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        currentRole={"employee"}
-      />
+    <>
+      <div className="flex h-screen">
+        {/* Sidebar */}
+        <Sidebar
+          isCollapsed={isSidebarCollapsed}
+          toggleSidebar={toggleSidebar}
+          currentRole={"employee"}
+        />
 
-      {/* Main Content */}
-      <div
-        className={`flex-1 ${
-          isSidebarCollapsed ? "ml-16" : "ml-56"
-        } transition-all duration-300 overflow-x-auto`}
-      >
-        {/* Navbar */}
-        <HradminNavbar />
-
-        {/* Main Content Area */}
-        <div className="mt-20 p-6">
-          <div className="mb-6">
-            <div className="flex justify-between items-center">
-              <h1 className="text-3xl font-bold text-gray-900">Vendors</h1>
-              
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={handleAddClick}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm text-sm"
-                  style={{ minWidth: 120 }}
-                >
-                  {getAddButtonIcon()} <span>{getAddButtonLabel()}</span>
-                </button>
-                <div className="relative">
-                  <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search vendors..."
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
-                  />
-                </div>
-              </div>
+        {/* Fixed Vendors Header */}
+        <div 
+          className={`fixed top-16 z-50 bg-white shadow-sm border-b border-gray-200 p-4 flex items-center justify-between transition-all duration-300 ${
+            isSidebarCollapsed ? "left-20 right-0" : "left-60 right-0"
+          }`}
+        >
+          {/* Left: Title + Search + Filter */}
+          <div className="flex items-center space-x-4">
+            <h1 className="text-xl font-semibold text-gray-900">Vendors</h1>
+            
+            <div className="flex items-center bg-gray-50 rounded-lg px-3 py-2 w-64">
+              <FaSearch className="w-4 h-4 text-gray-400 mr-2" />
+              <input
+                type="text"
+                placeholder="Search vendors..."
+                className="flex-1 outline-none text-gray-900 placeholder-gray-500 bg-transparent text-sm"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
+
+            <select
+              value={selectedDateRange}
+              onChange={(e) => handleDateRangeChange(e.target.value)}
+              className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer text-sm"
+            >
+              <option value="thisMonth">This Month</option>
+              <option value="lastMonth">Previous Month</option>
+              <option value="last3Months">Last 3 Months</option>
+              <option value="last6Months">Last 6 Months</option>
+              <option value="thisYear">This Year</option>
+              <option value="lastYear">Last Year</option>
+              <option value="custom">Custom Range</option>
+            </select>
+            
+            {/* Custom Date Inputs */}
+            {showCustomDateInputs && (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-xs"
+                  placeholder="Start Date"
+                />
+                <span className="text-gray-500 text-xs">to</span>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-xs"
+                  placeholder="End Date"
+                />
+              </div>
+            )}
           </div>
 
-          {/* Main Content Area */}
-          {renderContent()}
+          {/* Right: Action Buttons */}
+          <div className="flex items-center space-x-3">
+              <button
+                onClick={() => {
+                  setSelectedBill(null);
+                  setShowAddForm('bill');
+                }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
+              >
+                <FaPlus className="w-3 h-3" /> <span>New Bill</span>
+              </button>
+              <button
+                onClick={() => {
+                  setEditingPO(null);
+                  setShowAddForm('po');
+                }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
+              >
+                <FaPlus className="w-3 h-3" /> <span>New PO</span>
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedPayment(null);
+                  setShowAddForm('payment');
+                }}
+                className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
+              >
+                <FaPlus className="w-3 h-3" /> <span>New Payment</span>
+              </button>
+            <button
+              onClick={handleAddClick}
+              className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
+            >
+                <FaPlus className="w-3 h-3" /> <span>New Vendor</span>
+            </button>
+            </div>
+        </div>
+
+        {/* Main Content */}
+        <div
+          className={`flex-1 ${
+            isSidebarCollapsed ? "ml-20" : "ml-60"
+          } transition-all duration-300`}
+        >
+          {/* Navbar */}
+          <HradminNavbar />
+
+          {/* Page Container */}
+          <div className="flex flex-col h-full pt-32">
+            {/* Main Scrollable Content */}
+            <div className="flex-1 overflow-y-auto pl-1 pr-6 pt-8">
+              {renderContent()}
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Vendor Preview Modal */}
-       {showVendorPreview && previewVendorData && (
-         <VendorPreview
-           vendorData={previewVendorData}
-           onClose={() => setShowVendorPreview(false)}
-           onEdit={(editedData) => {
-             setPreviewVendorData(editedData);
-           }}
-           onSave={(editedData) => {
-             // Update the vendor in the Redux store
-             const updatedVendors = vendors.map(vendor => 
-               vendor.vendorId === editedData.vendorId ? editedData : vendor
-             );
-             // You might want to dispatch an action to update the vendor in Redux
-             // dispatch(updateVendor(editedData));
-             setPreviewVendorData(editedData);
-             toast.success('Vendor updated successfully!');
-           }}
-         />
-       )}
-
       
+      {/* Vendor Preview Modal */}
+      {showVendorPreview && previewVendorData && (
+        <VendorPreview
+          vendorData={previewVendorData}
+          onClose={() => setShowVendorPreview(false)}
+          onEdit={(editedData) => {
+            setPreviewVendorData(editedData);
+          }}
+          onSave={(editedData) => {
+            // Update the vendor in the Redux store
+            const updatedVendors = vendors.map(vendor => 
+              vendor.vendorId === editedData.vendorId ? editedData : vendor
+            );
+            // You might want to dispatch an action to update the vendor in Redux
+            // dispatch(updateVendor(editedData));
+            setPreviewVendorData(editedData);
+            toast.success('Vendor updated successfully!');
+          }}
+        />
+      )}
 
       {/* Purchase Order Preview Modal */}
       {showPurchaseOrderPreview && selectedPurchaseOrder && (
@@ -1181,7 +1307,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
           onClose={() => setShowPurchaseOrderPreview(false)}
         />
       )}
-    </div>
+    </>
   );
 };
 
