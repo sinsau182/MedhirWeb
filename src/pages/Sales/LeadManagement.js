@@ -56,7 +56,7 @@ import Tooltip from "@/components/ui/ToolTip";
 import withAuth from "@/components/withAuth";
 import SearchBar from "@/components/Sales/SearchBar";
 import ViewToggle from "@/components/Sales/ViewToggle";
-import LostJunkLeadsView from "@/components/Sales/LostJunkLeadsView";
+
 import LeadsTable from "@/components/Sales/LeadsTable";
 
 const defaultLeadData = {
@@ -251,43 +251,6 @@ const DeletePipelineModal = ({ isOpen, onClose }) => {
     </div>
   );
 };
-
-// const LeadsTable = ({ leads }) => (
-//   <div className="bg-white rounded-lg shadow border border-gray-200 overflow-x-auto">
-//     <Table>
-//       <TableHeader>
-//         <TableRow>
-//           <TableHead>Name</TableHead>
-//           <TableHead>Contact</TableHead>
-//           <TableHead>Email</TableHead>
-//           <TableHead>Status</TableHead>
-//           <TableHead>Sales Rep</TableHead>
-//           <TableHead>Designer</TableHead>
-//         </TableRow>
-//       </TableHeader>
-//       <TableBody>
-//         {leads.map((lead) => (
-//           <TableRow key={lead.leadId}>
-//             <TableCell className="font-medium">{lead.name}</TableCell>
-//             <TableCell>{lead.contactNumber}</TableCell>
-//             <TableCell>{lead.email}</TableCell>
-//             <TableCell>{lead.status}</TableCell>
-//             <TableCell>
-//               {lead.salesRep || (
-//                 <span className="text-gray-400">Unassigned</span>
-//               )}
-//             </TableCell>
-//             <TableCell>
-//               {lead.designer || (
-//                 <span className="text-gray-400">Unassigned</span>
-//               )}
-//             </TableCell>
-//           </TableRow>
-//         ))}
-//       </TableBody>
-//     </Table>
-//   </div>
-// );
 
 const LeadManagementContent = ({ role }) => {
   const dispatch = useDispatch();
@@ -986,7 +949,6 @@ const LeadManagementContent = ({ role }) => {
           <ViewToggle 
             viewMode={viewMode} 
             setViewMode={setViewMode}
-            onShowLostJunk={() => setViewMode('lost-junk')}
           />
         </div>
       </div>
@@ -1038,9 +1000,7 @@ const LeadManagementContent = ({ role }) => {
             />
           </div>
         )}
-        {viewMode === "lost-junk" && (
-              <LostJunkLeadsView />
-        )}
+
         </>
         )}
       </div>

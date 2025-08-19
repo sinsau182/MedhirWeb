@@ -2,11 +2,64 @@ import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'next/router';
 import { FaTimes, FaTrash, FaTimesCircle, FaExclamationTriangle, FaCalendarAlt, FaRupeeSign } from 'react-icons/fa';
+import DateFilter from './filter';
 
-const LostJunkLeadsView = () => {
+const LostJunkLeadsView = ({ isManager, dateFilterProps = {} }) => {
   const router = useRouter();
   const { leads } = useSelector((state) => state.leads);
   const [activeTab, setActiveTab] = useState('lost'); // 'lost' or 'junk'
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  // Data fetching is now handled by the parent component (lostJunk.js)
+  // No need for useEffect here
+
+  const handleFilterChange = (newStartDate, newEndDate) => {
+    setStartDate(newStartDate);
+    setEndDate(newEndDate);
+  };
+
+  const handleResetFilter = () => {
+    setStartDate('');
+    setEndDate('');
+  };
+
+  // Filter leads based on date range if provided
+  const filterLeadsByDateRange = (leads) => {
+    const { startDate, endDate } = dateFilterProps;
+    
+    if (!startDate && !endDate) {
+      return leads; // No date filter applied
+    }
+
+    return leads.filter(lead => {
+      // For lost/junk leads, we can filter by createdAt or updatedAt since they don't have paymentDate
+      const leadDate = lead.createdAt || lead.updatedAt;
+      if (!leadDate) {
+        return false; // Exclude leads without date when filtering
+      }
+
+      const date = new Date(leadDate);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+
+      // If only start date is provided
+      if (start && !end) {
+        return date >= start;
+      }
+      
+      // If only end date is provided
+      if (!start && end) {
+        return date <= end;
+      }
+      
+      // If both dates are provided
+      if (start && end) {
+        return date >= start && date <= end;
+      }
+
+      return true;
+    });
+  };
 
   // Filter leads based on the grouped structure from fetchLeads
   const lostLeads = [];
@@ -35,6 +88,10 @@ const LostJunkLeadsView = () => {
     });
   }
 
+  // Apply date filtering
+  const filteredLostLeads = filterLeadsByDateRange(lostLeads);
+  const filteredJunkLeads = filterLeadsByDateRange(junkLeads);
+
   const handleLeadClick = (leadId) => {
     router.push(`/Sales/leads/${leadId}`);
   };
@@ -53,7 +110,8 @@ const LostJunkLeadsView = () => {
     <div className="h-full bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 justify-between">
+          <div className="flex items-center gap-3 justify-between">
           <div className="p-2 bg-gray-100 rounded-lg">
             <FaTrash className="w-5 h-5 text-gray-600" />
           </div>
@@ -62,6 +120,13 @@ const LostJunkLeadsView = () => {
             <p className="text-sm text-gray-600">View and manage lost and junk leads</p>
           </div>
         </div>
+          <DateFilter
+            onFilterChange={handleFilterChange}
+            onReset={handleResetFilter}
+            title="Lead Date Filter"
+            compact={true}
+          />
+          </div>
       </div>
 
       {/* Tabs */}
@@ -76,7 +141,7 @@ const LostJunkLeadsView = () => {
             }`}
           >
             <FaTimesCircle className="w-4 h-4" />
-            Lost Leads ({lostLeads.length})
+            Lost Leads ({filteredLostLeads.length})
           </button>
           <button
             onClick={() => setActiveTab('junk')}
@@ -87,7 +152,7 @@ const LostJunkLeadsView = () => {
             }`}
           >
             <FaExclamationTriangle className="w-4 h-4" />
-            Junk Leads ({junkLeads.length})
+            Junk Leads ({filteredJunkLeads.length})
           </button>
         </div>
       </div>
@@ -96,7 +161,7 @@ const LostJunkLeadsView = () => {
       <div className="p-6 h-full overflow-y-auto">
         {activeTab === 'lost' ? (
           <div>
-            {lostLeads.length === 0 ? (
+            {filteredLostLeads.length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FaTimesCircle className="w-10 h-10 text-gray-400" />
@@ -106,7 +171,7 @@ const LostJunkLeadsView = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {lostLeads.map((lead) => (
+                {filteredLostLeads.map((lead) => (
                   <div 
                     key={lead.leadId} 
                     className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200"
@@ -152,7 +217,7 @@ const LostJunkLeadsView = () => {
           </div>
         ) : (
           <div>
-            {junkLeads.length === 0 ? (
+            {filteredJunkLeads.length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FaExclamationTriangle className="w-10 h-10 text-gray-400" />
@@ -162,7 +227,7 @@ const LostJunkLeadsView = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {junkLeads.map((lead) => (
+                {filteredJunkLeads.map((lead) => (
                   <div 
                     key={lead.leadId} 
                     className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200"

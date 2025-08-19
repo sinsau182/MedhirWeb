@@ -84,6 +84,7 @@ const JunkReasonModal = ({ lead, onClose, onSuccess, position = { x: 0, y: 0 }, 
       const formData = new FormData();
       formData.append('formType', 'JUNK');
       formData.append('reasonForJunk', reason.trim());
+      formData.append('dateOfJunk', new Date().toISOString().split('T')[0]);
 
       // Send to the correct API endpoint
       await axios.patch(`${API_BASE_URL}/leads/${lead.leadId}/stage`, formData, {
