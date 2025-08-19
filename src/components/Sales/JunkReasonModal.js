@@ -226,4 +226,4 @@ const JunkReasonModal = ({ lead, onClose, onSuccess, position = { x: 0, y: 0 }, 
   return createPortal(modalContent, document.body);
 };
 
-export default JunkReasonModal; 
+export default JunkReasonModal;
