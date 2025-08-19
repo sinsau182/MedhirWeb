@@ -160,7 +160,7 @@ export const savePayrollFreezeSettings = createAsyncThunk(
         method = "put";
       } else {
         // Create new settings
-        url = `${publicRuntimeConfig.apiURL}/api/settings/payroll`;
+        url = `${publicRuntimeConfig.apiURL}/api/settings/payroll/create`;
         method = "post";
       }
 
