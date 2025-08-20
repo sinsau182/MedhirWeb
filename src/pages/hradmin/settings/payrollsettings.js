@@ -1080,7 +1080,7 @@ const PayrollSettings = () => {
                       placeholder="e.g., 12"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Percentage of employer's contribution to PF
+                      Percentage of employer&apos;s contribution to PF
                     </p>
                   </div>
                   <div>
@@ -1100,7 +1100,7 @@ const PayrollSettings = () => {
                       placeholder="e.g., 12"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Percentage of employee's contribution to PF
+                      Percentage of employee&apos;s contribution to PF
                     </p>
                   </div>
                   <div>

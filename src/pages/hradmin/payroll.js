@@ -646,7 +646,7 @@ function PayrollManagement() {
 
     // Cleanup timeout on unmount or dependency change
     return () => clearTimeout(timeoutId);
-  }, [dispatch, selectedCompanyId, selectedMonth, selectedYear]);
+  }, [dispatch, selectedCompanyId, selectedMonth, selectedYear, payroll]);
 
   // Initialize arrears values when payroll data is loaded
   useEffect(() => {

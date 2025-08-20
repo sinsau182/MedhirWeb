@@ -6,6 +6,7 @@ import DateFilter from './filter';
 import { useDispatch } from 'react-redux';
 import { fetchManagerEmployees } from '@/redux/slices/managerEmployeeSlice';
 import SearchBar from './SearchBar';
+import ViewToggle from './ViewToggle';
 
 const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, onResetFilter }) => {
   const router = useRouter();
@@ -16,6 +17,7 @@ const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, on
   const [filterText, setFilterText] = useState("");
   const dispatch = useDispatch();
   const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
+  const [viewMode, setViewMode] = useState('grid');
   useEffect(() => {
     dispatch(fetchManagerEmployees());
   }, [dispatch]);
@@ -289,6 +291,10 @@ const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, on
             title="Lead Date Filter"
             compact={true}
           />
+          <ViewToggle
+            viewMode={viewMode} 
+            setViewMode={setViewMode}
+          />
           </div>
           </div>
       </div>
@@ -334,51 +340,59 @@ const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, on
                 <p className="text-gray-500">There are currently no lost leads to display.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredLostLeads.filter((lead) =>
-                lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
-                lead.contactNumber?.includes(filterText) ||
-                lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
-              ).map((lead) => (
-                  <div 
-                    key={lead.leadId} 
-                    className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200"
-                    onClick={() => handleLeadClick(lead.leadId)}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                        <span className="text-gray-700 font-semibold text-sm">
-                          {lead.name?.charAt(0)?.toUpperCase() || 'L'}
-                        </span>
-                      </div>
-                      <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">Lost</span>
-                    </div>
-                    
-                    <h4 className="font-semibold text-gray-900 text-sm mb-2">{lead.name}</h4>
-                    
-                    <div className="space-y-2 mb-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-600">Budget:</span>
-                        <span className="font-medium text-gray-900">₹{lead.budget ? Number(lead.budget).toLocaleString('en-IN') : '0'}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-600">Date:</span>
-                        <span className="font-medium text-gray-900">{formatDate(lead.dateOfCreation)}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-50 rounded p-2 border border-gray-200">
-                      <div className="text-xs text-gray-700 mb-1">
-                        <span className="font-medium">Sales Rep:</span> {lead.salesRep || 'Not Assigned'}
-                      </div>
-                      {lead.priority && (
-                        <div className="text-xs text-gray-700">
-                          <span className="font-medium">Priority:</span> {lead.priority}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Client Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Budget
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Sales Rep
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Priority
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredLostLeads.filter((lead) =>
+                        lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+                        lead.contactNumber?.includes(filterText) ||
+                        lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+                      ).map((lead) => (
+                        <tr
+                          key={lead.leadId}
+                          onClick={() => handleLeadClick(lead.leadId)}
+                          className="hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {lead.name || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ₹{lead.budget ? Number(lead.budget).toLocaleString('en-IN') : '0'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatDate(lead.dateOfCreation)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {lead.salesRep || 'Not Assigned'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {lead.priority || 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>
@@ -393,51 +407,59 @@ const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, on
                 <p className="text-gray-500">There are currently no junk leads to display.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredJunkLeads.filter((lead) =>
-                lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
-                lead.contactNumber?.includes(filterText) ||
-                lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
-              ).map((lead) => (
-                  <div 
-                    key={lead.leadId} 
-                    className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200"
-                    onClick={() => handleLeadClick(lead.leadId)}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                        <span className="text-gray-700 font-semibold text-sm">
-                          {lead.name?.charAt(0)?.toUpperCase() || 'J'}
-                        </span>
-                      </div>
-                      <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">Junk</span>
-                    </div>
-                    
-                    <h4 className="font-semibold text-gray-900 text-sm mb-2">{lead.name}</h4>
-                    
-                    <div className="space-y-2 mb-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-600">Budget:</span>
-                        <span className="font-medium text-gray-900">₹{lead.budget ? Number(lead.budget).toLocaleString('en-IN') : '0'}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-600">Date:</span>
-                        <span className="font-medium text-gray-900">{formatDate(lead.dateOfCreation)}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-50 rounded p-2 border border-gray-200">
-                      <div className="text-xs text-gray-700 mb-1">
-                        <span className="font-medium">Sales Rep:</span> {lead.salesRep || 'Not Assigned'}
-                      </div>
-                      {lead.priority && (
-                        <div className="text-xs text-gray-700">
-                          <span className="font-medium">Priority:</span> {lead.priority}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Client Name
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Budget
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Sales Rep
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Priority
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredJunkLeads.filter((lead) =>
+                        lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+                        lead.contactNumber?.includes(filterText) ||
+                        lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+                      ).map((lead) => (
+                        <tr
+                          key={lead.leadId}
+                          onClick={() => handleLeadClick(lead.leadId)}
+                          className="hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {lead.name || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ₹{lead.budget ? Number(lead.budget).toLocaleString('en-IN') : '0'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {formatDate(lead.dateOfCreation)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {lead.salesRep || 'Not Assigned'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {lead.priority || 'N/A'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
           </div>

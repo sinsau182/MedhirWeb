@@ -169,7 +169,7 @@ const ManagerEmployees = () => {
                           </div>
                           <h3 className="text-xl font-semibold text-gray-800 mb-2">No Search Results</h3>
                           <p className="text-gray-600 text-center max-w-md mb-6">
-                            No team members found matching "{searchInput}". Try adjusting your search terms.
+                            No team members found matching &quot;{searchInput}&quot;. Try adjusting your search terms.
                           </p>
                           <button
                             onClick={() => setSearchInput("")}
