@@ -6,7 +6,6 @@ import DateFilter from './filter';
 import { useDispatch } from 'react-redux';
 import { fetchManagerEmployees } from '@/redux/slices/managerEmployeeSlice';
 import SearchBar from './SearchBar';
-import ViewToggle from './ViewToggle';
 
 const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, onResetFilter }) => {
   const router = useRouter();
@@ -17,7 +16,6 @@ const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, on
   const [filterText, setFilterText] = useState("");
   const dispatch = useDispatch();
   const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
-  const [viewMode, setViewMode] = useState('grid');
   useEffect(() => {
     dispatch(fetchManagerEmployees());
   }, [dispatch]);
@@ -290,10 +288,6 @@ const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, on
             onReset={handleResetFilter}
             title="Lead Date Filter"
             compact={true}
-          />
-          <ViewToggle
-            viewMode={viewMode} 
-            setViewMode={setViewMode}
           />
           </div>
           </div>
