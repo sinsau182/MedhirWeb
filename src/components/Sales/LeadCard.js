@@ -72,6 +72,12 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
       console.log("lead-actions");
       return;
     }
+    
+    // Don't navigate if any modal is open
+    if (showTeamModal || showFreezeModal || showJunkModal || showLostModal || showChoiceModal) {
+      return;
+    }
+    
     router.push(`/Sales/leads/${lead.leadId}`);
   };
 
@@ -124,10 +130,10 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
       >
         {children}
         {show && (
-          <div className="absolute left-1/2 -translate-x-1/2 -top-16 z-[9999] bg-white text-gray-800 px-3 py-2 rounded shadow-lg border text-xs whitespace-pre min-w-max">
+          <div className="absolute left-1/2 -translate-x-1/2 ml-3 -top-16 z-[9999] bg-white text-gray-800 px-1 rounded shadow-lg border text-xs whitespace-pre min-w-max">
             {text}
             {/* Arrow pointing down */}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white"></div>
+            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white z-[9999]"></div>
           </div>
         )}
       </span>

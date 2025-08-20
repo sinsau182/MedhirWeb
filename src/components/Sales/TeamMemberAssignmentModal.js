@@ -256,4 +256,4 @@ const TeamMemberAssignmentModal = ({
   return createPortal(modalContent, document.body);
  };
 
-export default TeamMemberAssignmentModal; 
+export default TeamMemberAssignmentModal;
