@@ -19,6 +19,13 @@ import {
 import getConfig from 'next/config';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
+// Mock Data for existing assets display - REMOVED since we now use Redux
+// const MOCK_ASSETS = [
+//     { id: 'ASSET-2024-0001', name: 'Dell Latitude 5420', category: 'IT Equipment', status: 'Assigned', location: 'Mumbai Head Office', assignedTo: 'Ankit Matwa' },
+//     { id: 'ASSET-2024-0002', name: 'Ergonomic Office Chair', category: 'Office Furniture', status: 'In Stock', location: 'Mumbai Head Office', assignedTo: null },
+//     { id: 'ASSET-2024-0003', name: 'HP LaserJet Pro MFP', category: 'IT Equipment', status: 'Under Maintenance', location: 'Bangalore Branch', assignedTo: null },
+// ];
+
 const MOCK_TEAMS = ['Marketing', 'Production', 'Sales', 'HR', 'Finance'];
 const MOCK_LAPTOP_COMPANIES = ['Dell', 'HP', 'Lenovo', 'Apple', 'Asus', 'Acer'];
 
