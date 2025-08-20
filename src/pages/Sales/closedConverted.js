@@ -419,7 +419,7 @@ const ClosedConvertedPage = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatDate(lead.paymentDate)}
                         </td>
-                      </tr>
+                      </tr> 
                     ))}
                   </tbody>
                 </table>
