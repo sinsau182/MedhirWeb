@@ -17,6 +17,7 @@ import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { fetchLeads } from "@/redux/slices/leadsSlice";
 import DateFilter from "@/components/Sales/filter";
 import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
+import SearchBar from "@/components/Sales/SearchBar";
 
 const ClosedConvertedPage = () => {
   const token = getItemFromSessionStorage("token");
@@ -34,7 +35,8 @@ const ClosedConvertedPage = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('all');
   const [unassignedOnly, setUnassignedOnly] = useState(false);
   const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
-
+  const [filterText, setFilterText] = useState("");
+  
   useEffect(() => {
     dispatch(fetchManagerEmployees());
   }, [dispatch]);
@@ -308,6 +310,7 @@ const ClosedConvertedPage = () => {
           </div>
           </>
           )}
+          <SearchBar filterText={filterText} setFilterText={setFilterText} />
           <DateFilter
             onFilterChange={handleFilterChange}
             onReset={handleResetFilter}
@@ -317,16 +320,6 @@ const ClosedConvertedPage = () => {
           </div>
           </div>
         </div>
-
-        {/* Date Filter */}
-        {/* <div className="flex justify-end px-6 py-4 bg-white border-b border-gray-200">
-          <DateFilter
-            onFilterChange={handleFilterChange}
-            onReset={handleResetFilter}
-            title="Lead Date Filter"
-            compact={true}
-          />
-        </div> */}
 
         {/* Header for All Converted Leads */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
@@ -372,7 +365,11 @@ const ClosedConvertedPage = () => {
             </div>
           ) : (
             <div className="grid gap-4">
-              {filteredLeads.map((lead) => (
+              {filteredLeads.filter((lead) =>
+                lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+                lead.contactNumber?.includes(filterText) ||
+                lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+              ).map((lead) => (
                 <div
                   key={lead.leadId}
                   onClick={() => handleLeadClick(lead.leadId)}

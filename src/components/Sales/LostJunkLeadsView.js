@@ -5,6 +5,7 @@ import { FaTimes, FaTrash, FaTimesCircle, FaExclamationTriangle, FaCalendarAlt, 
 import DateFilter from './filter';
 import { useDispatch } from 'react-redux';
 import { fetchManagerEmployees } from '@/redux/slices/managerEmployeeSlice';
+import SearchBar from './SearchBar';
 
 const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, onResetFilter }) => {
   const router = useRouter();
@@ -12,6 +13,7 @@ const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, on
   const [activeTab, setActiveTab] = useState('lost'); // 'lost' or 'junk'
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('all');
   const [unassignedOnly, setUnassignedOnly] = useState(false);
+  const [filterText, setFilterText] = useState("");
   const dispatch = useDispatch();
   const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
   useEffect(() => {
@@ -280,6 +282,7 @@ const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, on
           </div>
           </>
           )}
+          <SearchBar filterText={filterText} setFilterText={setFilterText} />
           <DateFilter
             onFilterChange={handleFilterChange}
             onReset={handleResetFilter}
@@ -332,7 +335,11 @@ const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, on
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredLostLeads.map((lead) => (
+                {filteredLostLeads.filter((lead) =>
+                lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+                lead.contactNumber?.includes(filterText) ||
+                lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+              ).map((lead) => (
                   <div 
                     key={lead.leadId} 
                     className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200"
@@ -387,7 +394,11 @@ const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, on
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredJunkLeads.map((lead) => (
+                {filteredJunkLeads.filter((lead) =>
+                lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+                lead.contactNumber?.includes(filterText) ||
+                lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+              ).map((lead) => (
                   <div 
                     key={lead.leadId} 
                     className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:border-gray-300 transition-all duration-200"
