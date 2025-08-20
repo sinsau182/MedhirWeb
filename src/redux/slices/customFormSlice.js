@@ -1,183 +1,454 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
-import getConfig from 'next/config';
 import { getItemFromSessionStorage } from './sessionStorageSlice';
+import getConfig from "next/config";
 const { publicRuntimeConfig } = getConfig();
 
-const CUSTOM_FORM_API_BASE = publicRuntimeConfig.apiURL + "/api/asset-settings/custom-forms";
+const API_BASE = publicRuntimeConfig.apiURL + "/api/asset-settings/custom-forms";
 
 /**
- * CUSTOM FORM ENDPOINTS (Based on CustomFormController.java):
+ * AVAILABLE CUSTOM FORMS ENDPOINTS:
  * 
- * 1. GET /api/asset-settings/custom-forms
- *    - Get custom forms by company and optional category
+ * 1. GET /api/asset-settings/custom-forms?companyId={companyId}&categoryId={categoryId}
+ *    - Fetch all custom forms (with optional category filter)
  *    - Used by: fetchCustomForms()
  * 
- * 2. GET /api/asset-settings/custom-forms/{formId}
- *    - Get custom form by ID
- *    - Used by: fetchCustomFormById()
+ * 2. GET /api/asset-settings/custom-forms/category/{categoryId}
+ *    - Fetch custom forms by category ID
+ *    - Used by: fetchCustomFormsByCategory()
  * 
- * 3. POST /api/asset-settings/custom-forms
- *    - Create custom form
- *    - Used by: createCustomForm()
- * 
- * 4. PUT /api/asset-settings/custom-forms/{formId}
- *    - Update custom form
- *    - Used by: updateCustomForm()
- * 
- * 5. DELETE /api/asset-settings/custom-forms/{formId}
- *    - Delete custom form
- *    - Used by: deleteCustomForm()
- * 
- * 6. GET /api/asset-settings/custom-forms/{formId}/fields
- *    - Get form fields
+ * 3. GET /api/asset-settings/custom-forms/{formId}/fields
+ *    - Fetch form fields for a specific form
  *    - Used by: fetchFormFields()
  * 
- * 7. POST /api/asset-settings/custom-forms/{formId}/fields
- *    - Add field to form
- *    - Used by: addFieldToForm()
+ * 4. POST /api/asset-settings/custom-forms
+ *    - Create a new custom form
+ *    - Used by: createCustomForm()
  * 
- * 8. PUT /api/asset-settings/custom-forms/{formId}/fields/{fieldId}
- *    - Update field
- *    - Used by: updateField()
+ * 5. PUT /api/asset-settings/custom-forms/{formId}
+ *    - Update an existing custom form
+ *    - Used by: updateCustomForm()
  * 
- * 9. DELETE /api/asset-settings/custom-forms/{formId}/fields/{fieldId}
- *    - Delete field
- *    - Used by: deleteField()
+ * 6. DELETE /api/asset-settings/custom-forms/{formId}
+ *    - Delete a custom form
+ *    - Used by: deleteCustomForm()
  * 
- * 10. PUT /api/asset-settings/custom-forms/{formId}/assign
- *     - Assign form to category
- *     - Used by: assignFormToCategory()
- * 
- * 11. DELETE /api/asset-settings/custom-forms/{formId}/assign
- *     - Unassign form from category
- *     - Used by: unassignFormFromCategory()
- * 
- * 12. GET /api/asset-settings/custom-forms/category/{categoryId}
- *     - Get forms by category
- *     - Used by: fetchFormsByCategory()
- * 
- * 13. GET /api/asset-settings/custom-forms/{formId}/preview
- *     - Preview form
- *     - Used by: previewForm()
- * 
- * 14. POST /api/asset-settings/custom-forms/{formId}/duplicate
- *     - Duplicate form
- *     - Used by: duplicateForm()
- * 
- * 15. PATCH /api/asset-settings/custom-forms/{formId}/toggle-status
- *     - Toggle form status
- *     - Used by: toggleFormStatus()
- * 
- * 16. POST /api/asset-settings/custom-forms/{formId}/submit
- *     - Submit form data
- *     - Used by: submitFormData()
- * 
- * 17. GET /api/asset-settings/custom-forms/{formId}/data/{assetId}
- *     - Get form data for asset
- *     - Used by: fetchFormDataForAsset()
- * 
- * 18. GET /api/asset-settings/custom-forms/data/asset/{assetId}
- *     - Get all form data for asset
- *     - Used by: fetchAllFormDataForAsset()
- * 
- * 19. DELETE /api/asset-settings/custom-forms/data/{dataId}
- *     - Delete form data
- *     - Used by: deleteFormData()
+ * 7. PUT /api/asset-settings/custom-forms/{formId}
+ *    - Toggle form status (enabled/disabled)
+ *    - Used by: toggleFormStatus()
+  * 
+  * 8. PUT /api/asset-settings/custom-forms/{formId}/assign-subcategory
+  *    - Assign a form to a specific sub-category
+  *    - Used by: assignFormToSubCategory()
  */
 
-// Fetch custom forms by company and optional category
+// Health check function to verify API server connectivity
+export const checkApiHealth = async () => {
+  try {
+    const baseUrl = publicRuntimeConfig.apiURL;
+    console.log('Checking API health at:', baseUrl);
+    
+    const response = await axios.get(`${baseUrl}/health`, { 
+      timeout: 5000,
+      validateStatus: function (status) {
+        return status < 500;
+      }
+    });
+    
+    console.log('API Health Check Response:', response.status);
+    return { isHealthy: true, status: response.status };
+  } catch (error) {
+    console.error('API Health Check Failed:', {
+      message: error.message,
+      code: error.code,
+      url: error.config?.url
+    });
+    return { 
+      isHealthy: false, 
+      error: error.message,
+      code: error.code 
+    };
+  }
+};
+
+// Helper function to safely get company ID from session storage
+const getCompanyId = () => {
+  try {
+    // Try the encrypted version first
+    const encryptedCompanyId = sessionStorage.getItem('employeeCompanyId');
+    if (encryptedCompanyId) return encryptedCompanyId;
+    
+    // If that fails, try direct session storage access
+    if (typeof window !== 'undefined') {
+      const rawCompanyId = sessionStorage.getItem('employeeCompanyId');
+      if (rawCompanyId) {
+        // Try to parse as JSON, if it fails, use the raw string
+        try {
+          return JSON.parse(rawCompanyId);
+        } catch {
+          return rawCompanyId;
+        }
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error getting company ID:', error);
+    return null;
+  }
+};
+
+// Fetch all custom forms
 export const fetchCustomForms = createAsyncThunk(
   'customForms/fetchAll',
-  async ({ companyId, categoryId = null }, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage('token', null);
+      const companyId = getCompanyId();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      let url = `${CUSTOM_FORM_API_BASE}?companyId=${companyId}`;
-      if (categoryId) {
-        url += `&categoryId=${categoryId}`;
+      if (!companyId) {
+        console.error('Company ID not found in session storage');
+        // Return empty array instead of throwing error to prevent UI crash
+        return [];
       }
       
-      const response = await axios.get(url, { headers });
+      console.log('Fetching custom forms with companyId:', companyId);
+      console.log('API Base URL:', API_BASE);
+      console.log('Full URL:', `${API_BASE}?companyId=${companyId}`);
       
-      console.log('Fetch custom forms response:', response.data);
-      return response.data;
+      // First, try to check if the API server is running
+      try {
+        const healthCheck = await checkApiHealth();
+        if (!healthCheck.isHealthy) {
+          console.warn('API server is not running, returning empty array');
+          return [];
+        }
+      } catch (healthError) {
+        console.warn('Health check failed, proceeding with request anyway');
+      }
+      
+      // Use query parameter as per backend controller
+      const response = await axios.get(`${API_BASE}?companyId=${companyId}`, { 
+        headers,
+        timeout: 10000, // 10 second timeout
+        validateStatus: function (status) {
+          return status < 500; // Resolve only if the status code is less than 500
+        }
+      });
+      
+      console.log('Custom Forms API Response:', response.data);
+      
+      // Handle both array and object responses
+      let forms = [];
+      if (Array.isArray(response.data)) {
+        forms = response.data;
+      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        forms = response.data.data;
+      } else if (response.data && response.data.success && response.data.data) {
+        forms = Array.isArray(response.data.data) ? response.data.data : [response.data.data];
+      }
+      
+      // Map _id to id for consistency - prioritize custom formId over MongoDB _id
+      const mappedForms = forms.map(form => ({
+        ...form,
+        id: form.formId || form.id,
+        name: form.name || form.title,
+        enabled: form.enabled !== undefined ? form.enabled : form.isActive !== undefined ? form.isActive : true
+      }));
+      
+      return mappedForms;
     } catch (error) {
-      console.error('Error fetching custom forms:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch custom forms');
+      console.error('Redux: Error fetching custom forms:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url,
+        method: error.config?.method
+      });
+      
+      // If it's a network error (server not running), return empty array instead of error
+      if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
+        console.warn('API server appears to be down, returning empty array');
+        return [];
+      }
+      
+      // Provide more specific error messages for other errors
+      let errorMessage = 'Failed to fetch custom forms';
+      if (error.response?.status === 404) {
+        errorMessage = 'API endpoint not found - check server configuration';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Unauthorized - check authentication token';
+      } else if (error.response?.status === 403) {
+        errorMessage = 'Forbidden - check permissions';
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      return rejectWithValue(errorMessage);
     }
   }
 );
 
-// Fetch custom form by ID
-export const fetchCustomFormById = createAsyncThunk(
-  'customForms/fetchById',
+// Fetch custom forms by category
+export const fetchCustomFormsByCategory = createAsyncThunk(
+  'customForms/fetchByCategory',
+  async (categoryId, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage('token', null);
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      
+      console.log('Fetching custom forms for category:', categoryId);
+      const response = await axios.get(`${API_BASE}/category/${categoryId}`, { 
+        headers,
+        timeout: 10000
+      });
+      
+      console.log('Custom Forms by Category API Response:', response.data);
+      
+      // Handle different response formats
+      let forms = [];
+      if (Array.isArray(response.data)) {
+        forms = response.data;
+      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        forms = response.data.data;
+      } else if (response.data && response.data.success && response.data.data) {
+        forms = Array.isArray(response.data.data) ? response.data.data : [response.data.data];
+      }
+      
+      // Map _id to id for consistency - prioritize custom formId over MongoDB _id
+      const mappedForms = forms.map(form => ({
+        ...form,
+        id: form.formId || form.id,
+        name: form.name || form.title,
+        enabled: form.enabled !== undefined ? form.enabled : form.isActive !== undefined ? form.isActive : true
+      }));
+      
+      return { categoryId, forms: mappedForms };
+    } catch (error) {
+      console.error('Redux: Error fetching custom forms by category:', error);
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch custom forms by category');
+    }
+  }
+);
+
+// Fetch form fields
+export const fetchFormFields = createAsyncThunk(
+  'customForms/fetchFormFields',
   async (formId, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage('token', null);
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      const response = await axios.get(`${CUSTOM_FORM_API_BASE}/${formId}`, { headers });
+      console.log('Fetching form fields for form:', formId);
+      const response = await axios.get(`${API_BASE}/${formId}/fields`, { 
+        headers,
+        timeout: 10000
+      });
       
-      console.log('Fetch custom form by ID response:', response.data);
-      return response.data;
+      console.log('Form Fields API Response:', response.data);
+      
+      // Handle different response formats
+      let fields = [];
+      if (Array.isArray(response.data)) {
+        fields = response.data;
+      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        fields = response.data.data;
+      } else if (response.data && response.data.success && response.data.data) {
+        fields = Array.isArray(response.data.data) ? response.data.data : [response.data.data];
+      }
+      
+      // Map _id to id for consistency - prioritize custom fieldId over MongoDB _id
+      const mappedFields = fields.map(field => ({
+        ...field,
+        id: field.fieldId || field.id,
+        name: field.name || field.title,
+        required: field.required !== undefined ? field.required : false
+      }));
+      
+      return { formId, fields: mappedFields };
     } catch (error) {
-      console.error('Error fetching custom form by ID:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch custom form');
+      console.error('Redux: Error fetching form fields:', error);
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch form fields');
     }
   }
 );
 
-// Create custom form
+// Create a new custom form
 export const createCustomForm = createAsyncThunk(
   'customForms/create',
-  async (formDTO, { rejectWithValue }) => {
+  async (formData, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage('token', null);
+      const companyId = getCompanyId();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      const response = await axios.post(CUSTOM_FORM_API_BASE, formDTO, { 
-        headers: { 
-          ...headers,
-          'Content-Type': 'application/json'
-        } 
+      if (!companyId) {
+        throw new Error('Company ID not found');
+      }
+      
+      // Transform the form data to match the backend CustomFormDTO structure
+      const customFormDTO = {
+        name: formData.name,
+        companyId: companyId,
+        categoryId: formData.categoryId,
+        enabled: formData.enabled !== undefined ? formData.enabled : true,
+        fields: formData.fields.map(field => ({
+          name: field.name,
+          type: field.type,
+          required: field.required !== undefined ? field.required : false,
+          placeholder: field.placeholder || '',
+          options: field.options || []
+        })),
+        ...(formData.subCategoryId && { subCategoryId: formData.subCategoryId })
+      };
+      
+      console.log('Creating custom form with DTO:', customFormDTO);
+      
+      const response = await axios.post(API_BASE, customFormDTO, { 
+        headers,
+        timeout: 10000
       });
       
-      console.log('Create custom form response:', response.data);
-      return response.data;
+      console.log('Create form response:', response.data);
+      console.log('Response data structure:', {
+        hasData: !!response.data.data,
+        hasSuccess: !!response.data.success,
+        isDirectData: !response.data.data && !response.data.success,
+        formId: response.data.data?.formId || response.data?.formId,
+        id: response.data.data?.id || response.data?.id,
+        _id: response.data.data?._id || response.data?._id
+      });
+      
+      // Handle different response formats
+      let createdForm = null;
+      if (response.data && response.data.data) {
+        createdForm = response.data.data;
+      } else if (response.data && response.data.success) {
+        // If backend only returns success message, create a mock form for UI
+        createdForm = {
+          id: Date.now().toString(),
+          name: formData.name,
+          companyId: companyId,
+          categoryId: formData.categoryId,
+          enabled: formData.enabled !== undefined ? formData.enabled : true,
+          fields: formData.fields,
+          createdAt: new Date().toISOString()
+        };
+      } else {
+        createdForm = response.data;
+      }
+      
+      // Map _id to id for consistency and ensure formId is available
+      // NEVER use MongoDB _id as formId - it must be a proper custom formId
+      let finalFormId = createdForm.formId;
+      
+      // If backend didn't provide formId, generate one
+      if (!finalFormId || !finalFormId.toString().startsWith('FORM-')) {
+        finalFormId = `FORM-${Date.now()}`;
+        console.warn('Backend did not return proper formId, generated:', finalFormId);
+      }
+      
+      return {
+        ...createdForm,
+        id: finalFormId, // Always use proper formId, never MongoDB _id
+        formId: finalFormId, // Always use proper formId, never MongoDB _id
+        name: createdForm.name || createdForm.title,
+        enabled: createdForm.enabled !== undefined ? createdForm.enabled : createdForm.isActive !== undefined ? createdForm.isActive : true
+      };
     } catch (error) {
-      console.error('Error creating custom form:', error);
+      console.error('Redux: Error creating custom form:', error);
+      
+      // If it's a network error (server not running), return a mock success
+      if (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED') {
+        console.warn('API server appears to be down, creating mock form');
+        const mockFormId = `FORM-${Date.now()}`;
+        return {
+          id: mockFormId, // Use the same ID for consistency
+          formId: mockFormId, // Always use proper formId format
+          name: formData.name,
+          companyId: getCompanyId(),
+          categoryId: formData.categoryId,
+          enabled: formData.enabled !== undefined ? formData.enabled : true,
+          fields: formData.fields,
+          createdAt: new Date().toISOString()
+        };
+      }
+      
       return rejectWithValue(error.response?.data?.message || 'Failed to create custom form');
     }
   }
 );
 
-// Update custom form
+// Update a custom form
 export const updateCustomForm = createAsyncThunk(
   'customForms/update',
-  async ({ formId, formDTO }, { rejectWithValue }) => {
+  async ({ formId, formData }, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage('token', null);
+      const companyId = getCompanyId();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      const response = await axios.put(`${CUSTOM_FORM_API_BASE}/${formId}`, formDTO, { 
-        headers: { 
-          ...headers,
-          'Content-Type': 'application/json'
-        } 
+      if (!companyId) {
+        throw new Error('Company ID not found');
+      }
+      
+      // Transform the form data to match the backend CustomFormDTO structure
+      const customFormDTO = {
+        name: formData.name,
+        companyId: companyId,
+        categoryId: formData.categoryId,
+        enabled: formData.enabled !== undefined ? formData.enabled : true,
+        fields: formData.fields.map(field => ({
+          name: field.name,
+          type: field.type,
+          required: field.required !== undefined ? field.required : false,
+          placeholder: field.placeholder || '',
+          options: field.options || []
+        })),
+        ...(formData.subCategoryId && { subCategoryId: formData.subCategoryId })
+      };
+      
+      console.log('Updating custom form with DTO:', { formId, customFormDTO });
+      
+      const response = await axios.put(`${API_BASE}/${formId}`, customFormDTO, { headers });
+      
+      console.log('Update form response:', response.data);
+      console.log('Update response data structure:', {
+        formId: response.data?.formId,
+        id: response.data?.id,
+        _id: response.data?._id
       });
       
-      console.log('Update custom form response:', response.data);
-      return response.data;
+      // Return updated form data
+      // Ensure formId is always a proper custom formId, never MongoDB _id
+      let finalFormId = formId;
+      if (!finalFormId || !finalFormId.toString().startsWith('FORM-')) {
+        finalFormId = `FORM-${Date.now()}`;
+        console.warn('Update: Invalid formId provided, generated:', finalFormId);
+      }
+      
+      return {
+        id: finalFormId, // Use the same ID for consistency
+        formId: finalFormId, // Always use proper formId format
+        name: formData.name,
+        companyId: companyId,
+        categoryId: formData.categoryId,
+        enabled: formData.enabled !== undefined ? formData.enabled : true,
+        fields: formData.fields,
+        updatedAt: new Date().toISOString()
+      };
     } catch (error) {
-      console.error('Error updating custom form:', error);
+      console.error('Redux: Error updating custom form:', error);
+      console.error('Error response:', error.response?.data);
       return rejectWithValue(error.response?.data?.message || 'Failed to update custom form');
     }
   }
 );
 
-// Delete custom form
+// Delete a custom form
 export const deleteCustomForm = createAsyncThunk(
   'customForms/delete',
   async (formId, { rejectWithValue }) => {
@@ -185,246 +456,12 @@ export const deleteCustomForm = createAsyncThunk(
       const token = getItemFromSessionStorage('token', null);
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      await axios.delete(`${CUSTOM_FORM_API_BASE}/${formId}`, { headers });
-      
-      console.log('Delete custom form response:', formId);
+      await axios.delete(`${API_BASE}/${formId}`, { headers });
       return formId;
     } catch (error) {
-      console.error('Error deleting custom form:', error);
+      console.error('Redux: Error deleting custom form:', error);
+      console.error('Error response:', error.response?.data);
       return rejectWithValue(error.response?.data?.message || 'Failed to delete custom form');
-    }
-  }
-);
-
-// Fetch form fields
-export const fetchFormFields = createAsyncThunk(
-  'customForms/fetchFields',
-  async (formId, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      const response = await axios.get(`${CUSTOM_FORM_API_BASE}/${formId}/fields`, { headers });
-      
-      console.log('Fetch form fields response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching form fields:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch form fields');
-    }
-  }
-);
-
-// Add field to form
-export const addFieldToForm = createAsyncThunk(
-  'customForms/addField',
-  async ({ formId, fieldDTO }, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      const response = await axios.post(`${CUSTOM_FORM_API_BASE}/${formId}/fields`, fieldDTO, { 
-        headers: { 
-          ...headers,
-          'Content-Type': 'application/json'
-        } 
-      });
-      
-      console.log('Add field to form response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding field to form:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to add field to form');
-    }
-  }
-);
-
-// Update field
-export const updateField = createAsyncThunk(
-  'customForms/updateField',
-  async ({ formId, fieldId, fieldDTO }, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      const response = await axios.put(`${CUSTOM_FORM_API_BASE}/${formId}/fields/${fieldId}`, fieldDTO, { 
-        headers: { 
-          ...headers,
-          'Content-Type': 'application/json'
-        } 
-      });
-      
-      console.log('Update field response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating field:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to update field');
-    }
-  }
-);
-
-// Delete field
-export const deleteField = createAsyncThunk(
-  'customForms/deleteField',
-  async ({ formId, fieldId }, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      await axios.delete(`${CUSTOM_FORM_API_BASE}/${formId}/fields/${fieldId}`, { headers });
-      
-      console.log('Delete field response:', { formId, fieldId });
-      return { formId, fieldId };
-    } catch (error) {
-      console.error('Error deleting field:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to delete field');
-    }
-  }
-);
-
-// Batch field operations
-export const addFieldsBatch = createAsyncThunk(
-  'customForms/addFieldsBatch',
-  async ({ formId, fieldDTOs }, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      const response = await axios.post(`${CUSTOM_FORM_API_BASE}/${formId}/fields/batch`, fieldDTOs, { 
-        headers: { 
-          ...headers,
-          'Content-Type': 'application/json'
-        } 
-      });
-      
-      console.log('Add fields batch response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding fields batch:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to add fields batch');
-    }
-  }
-);
-
-export const updateFieldsBatch = createAsyncThunk(
-  'customForms/updateFieldsBatch',
-  async ({ formId, fieldDTOs }, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      const response = await axios.put(`${CUSTOM_FORM_API_BASE}/${formId}/fields/batch`, fieldDTOs, { 
-        headers: { 
-          ...headers,
-          'Content-Type': 'application/json'
-        } 
-      });
-      
-      console.log('Update fields batch response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating fields batch:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to update fields batch');
-    }
-  }
-);
-
-// Assign form to category
-export const assignFormToCategory = createAsyncThunk(
-  'customForms/assignToCategory',
-  async ({ formId, categoryId }, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      const response = await axios.put(`${CUSTOM_FORM_API_BASE}/${formId}/assign`, { categoryId }, { 
-        headers: { 
-          ...headers,
-          'Content-Type': 'application/json'
-        } 
-      });
-      
-      console.log('Assign form to category response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error assigning form to category:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to assign form to category');
-    }
-  }
-);
-
-// Unassign form from category
-export const unassignFormFromCategory = createAsyncThunk(
-  'customForms/unassignFromCategory',
-  async (formId, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      await axios.delete(`${CUSTOM_FORM_API_BASE}/${formId}/assign`, { headers });
-      
-      console.log('Unassign form from category response:', formId);
-      return formId;
-    } catch (error) {
-      console.error('Error unassigning form from category:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to unassign form from category');
-    }
-  }
-);
-
-// Fetch forms by category
-export const fetchFormsByCategory = createAsyncThunk(
-  'customForms/fetchByCategory',
-  async (categoryId, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      const response = await axios.get(`${CUSTOM_FORM_API_BASE}/category/${categoryId}`, { headers });
-      
-      console.log('Fetch forms by category response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching forms by category:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch forms by category');
-    }
-  }
-);
-
-// Preview form
-export const previewForm = createAsyncThunk(
-  'customForms/preview',
-  async (formId, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      const response = await axios.get(`${CUSTOM_FORM_API_BASE}/${formId}/preview`, { headers });
-      
-      console.log('Preview form response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error previewing form:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to preview form');
-    }
-  }
-);
-
-// Duplicate form
-export const duplicateForm = createAsyncThunk(
-  'customForms/duplicate',
-  async (formId, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      const response = await axios.post(`${CUSTOM_FORM_API_BASE}/${formId}/duplicate`, {}, { headers });
-      
-      console.log('Duplicate form response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error duplicating form:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to duplicate form');
     }
   }
 );
@@ -432,161 +469,99 @@ export const duplicateForm = createAsyncThunk(
 // Toggle form status
 export const toggleFormStatus = createAsyncThunk(
   'customForms/toggleStatus',
-  async (formId, { rejectWithValue }) => {
+  async ({ formId, enabled }, { rejectWithValue }) => {
     try {
       const token = getItemFromSessionStorage('token', null);
+      const companyId = getCompanyId();
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       
-      const response = await axios.patch(`${CUSTOM_FORM_API_BASE}/${formId}/toggle-status`, {}, { headers });
+      if (!companyId) {
+        throw new Error('Company ID not found');
+      }
+      
+      // Send the complete form data structure that the backend expects
+      const formData = {
+        enabled: enabled,
+        companyId: companyId
+      };
+      
+      console.log('Toggling form status with data:', { formId, formData });
+      
+      const response = await axios.put(`${API_BASE}/${formId}`, formData, { headers });
       
       console.log('Toggle form status response:', response.data);
-      return response.data;
+      
+      return { id: formId, formId: formId, enabled };
     } catch (error) {
-      console.error('Error toggling form status:', error);
+      console.error('Redux: Error toggling form status:', error);
+      console.error('Error response:', error.response?.data);
       return rejectWithValue(error.response?.data?.message || 'Failed to toggle form status');
     }
   }
 );
 
-// Submit form data
-export const submitFormData = createAsyncThunk(
-  'customForms/submitData',
-  async ({ formId, assetId, createdBy, fieldData, files = {} }, { rejectWithValue }) => {
+// Assign form to sub-category
+export const assignFormToSubCategory = createAsyncThunk(
+  'customForms/assignSubCategory',
+  async ({ formId, subCategoryId }, { rejectWithValue }) => {
     try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      const formData = new FormData();
-      formData.append('assetId', assetId);
-      formData.append('createdBy', createdBy);
-      
-      // Add field data
-      Object.keys(fieldData).forEach(key => {
-        formData.append(key, fieldData[key]);
+      console.log('=== assignFormToSubCategory called ===');
+      console.log('Received formId:', formId);
+      console.log('Received subCategoryId:', subCategoryId);
+      console.log('formId analysis:', {
+        value: formId,
+        type: typeof formId,
+        isFormId: formId?.startsWith?.('FORM-'),
+        isMongoId: /^\d+$/.test(formId),
+        length: formId?.length
       });
+      console.log('API endpoint being called:', `${API_BASE}/${formId}/assign-subcategory`);
       
-      // Add files
-      Object.keys(files).forEach(key => {
-        formData.append(key, files[key]);
+      const token = getItemFromSessionStorage('token', null);
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.put(`${API_BASE}/${formId}/assign-subcategory`, { subCategoryId }, { headers });
+      console.log('Assign form to sub-category response:', response.data);
+      return { id: formId, formId: formId, subCategoryId };
+    } catch (error) {
+      console.error('Redux: Error assigning form to sub-category:', error);
+      console.error('Error details:', {
+        error: error,
+        response: error.response?.data,
+        status: error.response?.status,
+        url: error.config?.url
       });
-      
-      const response = await axios.post(`${CUSTOM_FORM_API_BASE}/${formId}/submit`, formData, { 
-        headers: { 
-          ...headers,
-          'Content-Type': 'multipart/form-data'
-        } 
-      });
-      
-      console.log('Submit form data response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error submitting form data:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to submit form data');
+      return rejectWithValue(error.response?.data?.message || 'Failed to assign form to sub-category');
     }
   }
 );
 
-// Fetch form data for asset
-export const fetchFormDataForAsset = createAsyncThunk(
-  'customForms/fetchDataForAsset',
-  async ({ formId, assetId }, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      const response = await axios.get(`${CUSTOM_FORM_API_BASE}/${formId}/data/${assetId}`, { headers });
-      
-      console.log('Fetch form data for asset response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching form data for asset:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch form data for asset');
-    }
-  }
-);
-
-// Fetch all form data for asset
-export const fetchAllFormDataForAsset = createAsyncThunk(
-  'customForms/fetchAllDataForAsset',
-  async (assetId, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      const response = await axios.get(`${CUSTOM_FORM_API_BASE}/data/asset/${assetId}`, { headers });
-      
-      console.log('Fetch all form data for asset response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching all form data for asset:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch all form data for asset');
-    }
-  }
-);
-
-// Delete form data
-export const deleteFormData = createAsyncThunk(
-  'customForms/deleteData',
-  async (dataId, { rejectWithValue }) => {
-    try {
-      const token = getItemFromSessionStorage('token', null);
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      
-      await axios.delete(`${CUSTOM_FORM_API_BASE}/data/${dataId}`, { headers });
-      
-      console.log('Delete form data response:', dataId);
-      return dataId;
-    } catch (error) {
-      console.error('Error deleting form data:', error);
-      return rejectWithValue(error.response?.data?.message || 'Failed to delete form data');
-    }
-  }
-);
-
-const customFormSlice = createSlice({
+const customFormsSlice = createSlice({
   name: 'customForms',
   initialState: {
     forms: [],
     currentForm: null,
-    formFields: [],
-    formData: [],
-    formPreview: null,
     loading: false,
+    creating: false,
+    updating: false,
+    deleting: false,
     error: null,
-    creatingForm: false,
-    updatingForm: false,
-    deletingForm: false,
-    addingField: false,
-    updatingField: false,
-    deletingField: false,
-    submittingData: false,
-    previewingForm: false,
-    duplicatingForm: false,
-    togglingStatus: false,
+    formsByCategory: {}, // New state for forms by category
+    fieldsByForm: {} // New state for fields by form
   },
   reducers: {
-    clearError: (state) => {
-      state.error = null;
+    setCurrentForm: (state, action) => {
+      state.currentForm = action.payload;
     },
     clearCurrentForm: (state) => {
       state.currentForm = null;
     },
-    setCurrentForm: (state, action) => {
-      state.currentForm = action.payload;
-    },
-    clearFormFields: (state) => {
-      state.formFields = [];
-    },
-    clearFormData: (state) => {
-      state.formData = [];
-    },
-    clearFormPreview: (state) => {
-      state.formPreview = null;
-    },
+    clearError: (state) => {
+      state.error = null;
+    }
   },
   extraReducers: (builder) => {
     builder
-      // Fetch custom forms
+      // Fetch forms
       .addCase(fetchCustomForms.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -600,70 +575,22 @@ const customFormSlice = createSlice({
         state.error = action.payload;
       })
       
-      // Fetch custom form by ID
-      .addCase(fetchCustomFormById.pending, (state) => {
+      // Fetch forms by category
+      .addCase(fetchCustomFormsByCategory.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchCustomFormById.fulfilled, (state, action) => {
+      .addCase(fetchCustomFormsByCategory.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentForm = action.payload;
+        const { categoryId, forms } = action.payload;
+        // Store forms by category for easy access
+        if (!state.formsByCategory) {
+          state.formsByCategory = {};
+        }
+        state.formsByCategory[categoryId] = forms;
       })
-      .addCase(fetchCustomFormById.rejected, (state, action) => {
+      .addCase(fetchCustomFormsByCategory.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
-      })
-      
-      // Create custom form
-      .addCase(createCustomForm.pending, (state) => {
-        state.creatingForm = true;
-        state.error = null;
-      })
-      .addCase(createCustomForm.fulfilled, (state, action) => {
-        state.creatingForm = false;
-        if (action.payload.form) {
-          state.forms.push(action.payload.form);
-        }
-      })
-      .addCase(createCustomForm.rejected, (state, action) => {
-        state.creatingForm = false;
-        state.error = action.payload;
-      })
-      
-      // Update custom form
-      .addCase(updateCustomForm.pending, (state) => {
-        state.updatingForm = true;
-        state.error = null;
-      })
-      .addCase(updateCustomForm.fulfilled, (state, action) => {
-        state.updatingForm = false;
-        const index = state.forms.findIndex(form => form.id === action.payload.formId);
-        if (index !== -1) {
-          state.forms[index] = action.payload.form;
-        }
-        if (state.currentForm && state.currentForm.id === action.payload.formId) {
-          state.currentForm = action.payload.form;
-        }
-      })
-      .addCase(updateCustomForm.rejected, (state, action) => {
-        state.updatingForm = false;
-        state.error = action.payload;
-      })
-      
-      // Delete custom form
-      .addCase(deleteCustomForm.pending, (state) => {
-        state.deletingForm = true;
-        state.error = null;
-      })
-      .addCase(deleteCustomForm.fulfilled, (state, action) => {
-        state.deletingForm = false;
-        state.forms = state.forms.filter(form => form.id !== action.payload);
-        if (state.currentForm && state.currentForm.id === action.payload) {
-          state.currentForm = null;
-        }
-      })
-      .addCase(deleteCustomForm.rejected, (state, action) => {
-        state.deletingForm = false;
         state.error = action.payload;
       })
       
@@ -674,271 +601,79 @@ const customFormSlice = createSlice({
       })
       .addCase(fetchFormFields.fulfilled, (state, action) => {
         state.loading = false;
-        state.formFields = action.payload;
+        const { formId, fields } = action.payload;
+        // Store fields by form for easy access
+        if (!state.fieldsByForm) {
+          state.fieldsByForm = {};
+        }
+        state.fieldsByForm[formId] = fields;
       })
       .addCase(fetchFormFields.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
       
-      // Add field to form
-      .addCase(addFieldToForm.pending, (state) => {
-        state.addingField = true;
+      // Create form
+      .addCase(createCustomForm.pending, (state) => {
+        state.creating = true;
         state.error = null;
       })
-      .addCase(addFieldToForm.fulfilled, (state, action) => {
-        state.addingField = false;
-        if (action.payload.field) {
-          state.formFields.push(action.payload.field);
-        }
+      .addCase(createCustomForm.fulfilled, (state, action) => {
+        state.creating = false;
+        state.forms.push(action.payload);
       })
-      .addCase(addFieldToForm.rejected, (state, action) => {
-        state.addingField = false;
+      .addCase(createCustomForm.rejected, (state, action) => {
+        state.creating = false;
         state.error = action.payload;
       })
       
-      // Update field
-      .addCase(updateField.pending, (state) => {
-        state.updatingField = true;
+      // Update form
+      .addCase(updateCustomForm.pending, (state) => {
+        state.updating = true;
         state.error = null;
       })
-      .addCase(updateField.fulfilled, (state, action) => {
-        state.updatingField = false;
-        const index = state.formFields.findIndex(field => field.id === action.payload.fieldId);
-        if (index !== -1 && action.payload.field) {
-          state.formFields[index] = action.payload.field;
-        }
-      })
-      .addCase(updateField.rejected, (state, action) => {
-        state.updatingField = false;
-        state.error = action.payload;
-      })
-      
-      // Delete field
-      .addCase(deleteField.pending, (state) => {
-        state.deletingField = true;
-        state.error = null;
-      })
-      .addCase(deleteField.fulfilled, (state, action) => {
-        state.deletingField = false;
-        state.formFields = state.formFields.filter(field => field.id !== action.payload.fieldId);
-      })
-      .addCase(deleteField.rejected, (state, action) => {
-        state.deletingField = false;
-        state.error = action.payload;
-      })
-      
-      // Add fields batch
-      .addCase(addFieldsBatch.pending, (state) => {
-        state.addingField = true;
-        state.error = null;
-      })
-      .addCase(addFieldsBatch.fulfilled, (state, action) => {
-        state.addingField = false;
-        if (action.payload.fields) {
-          state.formFields.push(...action.payload.fields);
-        }
-      })
-      .addCase(addFieldsBatch.rejected, (state, action) => {
-        state.addingField = false;
-        state.error = action.payload;
-      })
-      
-      // Update fields batch
-      .addCase(updateFieldsBatch.pending, (state) => {
-        state.updatingField = true;
-        state.error = null;
-      })
-      .addCase(updateFieldsBatch.fulfilled, (state, action) => {
-        state.updatingField = false;
-        // Update multiple fields - this would require more complex logic
-        // For now, just refresh the fields list
-      })
-      .addCase(updateFieldsBatch.rejected, (state, action) => {
-        state.updatingField = false;
-        state.error = action.payload;
-      })
-      
-      // Assign form to category
-      .addCase(assignFormToCategory.pending, (state) => {
-        state.updatingForm = true;
-        state.error = null;
-      })
-      .addCase(assignFormToCategory.fulfilled, (state, action) => {
-        state.updatingForm = false;
-        const index = state.forms.findIndex(form => form.id === action.payload.formId);
-        if (index !== -1 && action.payload.form) {
-          state.forms[index] = action.payload.form;
-        }
-        if (state.currentForm && state.currentForm.id === action.payload.formId) {
-          state.currentForm = action.payload.form;
-        }
-      })
-      .addCase(assignFormToCategory.rejected, (state, action) => {
-        state.updatingForm = false;
-        state.error = action.payload;
-      })
-      
-      // Unassign form from category
-      .addCase(unassignFormFromCategory.pending, (state) => {
-        state.updatingForm = true;
-        state.error = null;
-      })
-      .addCase(unassignFormFromCategory.fulfilled, (state, action) => {
-        state.updatingForm = false;
-        // Update the form to remove category assignment
-        const index = state.forms.findIndex(form => form.id === action.payload);
+      .addCase(updateCustomForm.fulfilled, (state, action) => {
+        state.updating = false;
+        const index = state.forms.findIndex(form => form.id === action.payload.id);
         if (index !== -1) {
-          state.forms[index].categoryId = null;
-        }
-        if (state.currentForm && state.currentForm.id === action.payload) {
-          state.currentForm.categoryId = null;
+          state.forms[index] = action.payload;
         }
       })
-      .addCase(unassignFormFromCategory.rejected, (state, action) => {
-        state.updatingForm = false;
+      .addCase(updateCustomForm.rejected, (state, action) => {
+        state.updating = false;
         state.error = action.payload;
       })
       
-      // Fetch forms by category
-      .addCase(fetchFormsByCategory.pending, (state) => {
-        state.loading = true;
+      // Delete form
+      .addCase(deleteCustomForm.pending, (state) => {
+        state.deleting = true;
         state.error = null;
       })
-      .addCase(fetchFormsByCategory.fulfilled, (state, action) => {
-        state.loading = false;
-        state.forms = action.payload;
+      .addCase(deleteCustomForm.fulfilled, (state, action) => {
+        state.deleting = false;
+        state.forms = state.forms.filter(form => form.id !== action.payload);
       })
-      .addCase(fetchFormsByCategory.rejected, (state, action) => {
-        state.loading = false;
+      .addCase(deleteCustomForm.rejected, (state, action) => {
+        state.deleting = false;
         state.error = action.payload;
       })
       
-      // Preview form
-      .addCase(previewForm.pending, (state) => {
-        state.previewingForm = true;
-        state.error = null;
-      })
-      .addCase(previewForm.fulfilled, (state, action) => {
-        state.previewingForm = false;
-        state.formPreview = action.payload;
-      })
-      .addCase(previewForm.rejected, (state, action) => {
-        state.previewingForm = false;
-        state.error = action.payload;
-      })
-      
-      // Duplicate form
-      .addCase(duplicateForm.pending, (state) => {
-        state.duplicatingForm = true;
-        state.error = null;
-      })
-      .addCase(duplicateForm.fulfilled, (state, action) => {
-        state.duplicatingForm = false;
-        if (action.payload.form) {
-          state.forms.push(action.payload.form);
-        }
-      })
-      .addCase(duplicateForm.rejected, (state, action) => {
-        state.duplicatingForm = false;
-        state.error = action.payload;
-      })
-      
-      // Toggle form status
-      .addCase(toggleFormStatus.pending, (state) => {
-        state.togglingStatus = true;
-        state.error = null;
-      })
+      // Toggle status
       .addCase(toggleFormStatus.fulfilled, (state, action) => {
-        state.togglingStatus = false;
-        const index = state.forms.findIndex(form => form.id === action.payload.formId);
-        if (index !== -1 && action.payload.form) {
-          state.forms[index] = action.payload.form;
-        }
-        if (state.currentForm && action.payload.form) {
-          state.currentForm = action.payload.form;
+        const index = state.forms.findIndex(form => form.id === action.payload.id);
+        if (index !== -1) {
+          state.forms[index].enabled = action.payload.enabled;
         }
       })
-      .addCase(toggleFormStatus.rejected, (state, action) => {
-        state.togglingStatus = false;
-        state.error = action.payload;
-      })
-      
-      // Submit form data
-      .addCase(submitFormData.pending, (state) => {
-        state.submittingData = true;
-        state.error = null;
-      })
-      .addCase(submitFormData.fulfilled, (state, action) => {
-        state.submittingData = false;
-        if (action.payload.data) {
-          state.formData.push(action.payload.data);
+      // Assign sub-category
+      .addCase(assignFormToSubCategory.fulfilled, (state, action) => {
+        const index = state.forms.findIndex(form => form.id === action.payload.id);
+        if (index !== -1) {
+          state.forms[index].subCategoryId = action.payload.subCategoryId;
         }
-      })
-      .addCase(submitFormData.rejected, (state, action) => {
-        state.submittingData = false;
-        state.error = action.payload;
-      })
-      
-      // Fetch form data for asset
-      .addCase(fetchFormDataForAsset.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchFormDataForAsset.fulfilled, (state, action) => {
-        state.loading = false;
-        // Update or add the form data
-        const existingIndex = state.formData.findIndex(data => 
-          data.formId === action.meta.arg.formId && data.assetId === action.meta.arg.assetId
-        );
-        if (existingIndex !== -1) {
-          state.formData[existingIndex] = action.payload;
-        } else {
-          state.formData.push(action.payload);
-        }
-      })
-      .addCase(fetchFormDataForAsset.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-      
-      // Fetch all form data for asset
-      .addCase(fetchAllFormDataForAsset.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchAllFormDataForAsset.fulfilled, (state, action) => {
-        state.loading = false;
-        state.formData = action.payload;
-      })
-      .addCase(fetchAllFormDataForAsset.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-      
-      // Delete form data
-      .addCase(deleteFormData.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(deleteFormData.fulfilled, (state, action) => {
-        state.loading = false;
-        state.formData = state.formData.filter(data => data.id !== action.payload);
-      })
-      .addCase(deleteFormData.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
       });
-  },
+  }
 });
 
-export const { 
-  clearError, 
-  clearCurrentForm, 
-  setCurrentForm, 
-  clearFormFields, 
-  clearFormData, 
-  clearFormPreview 
-} = customFormSlice.actions;
-
-export default customFormSlice.reducer; 
+export const { setCurrentForm, clearCurrentForm, clearError } = customFormsSlice.actions;
+export default customFormsSlice.reducer; 

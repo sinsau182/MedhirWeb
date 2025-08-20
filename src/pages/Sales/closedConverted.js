@@ -9,12 +9,14 @@ import {
   FaPhone,
   FaEnvelope,
   FaBuilding,
+  FaFilter,
 } from "react-icons/fa";
 import MainLayout from "@/components/MainLayout";
 import { jwtDecode } from "jwt-decode";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { fetchLeads } from "@/redux/slices/leadsSlice";
 import DateFilter from "@/components/Sales/filter";
+import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
 
 const ClosedConvertedPage = () => {
   const token = getItemFromSessionStorage("token");
@@ -29,6 +31,13 @@ const ClosedConvertedPage = () => {
   const [endDate, setEndDate] = useState("");
   const dispatch = useDispatch();
   const employeeId = sessionStorage.getItem("employeeId");
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState('all');
+  const [unassignedOnly, setUnassignedOnly] = useState(false);
+  const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
+  
+  useEffect(() => {
+    dispatch(fetchManagerEmployees());
+  }, [dispatch]);
 
   useEffect(() => {
     if (isManager) {
@@ -178,12 +187,87 @@ const ClosedConvertedPage = () => {
             </div>
             </div>
             
+            <div className="flex items-center gap-4">
+                  {/* Enhanced Filters Section */}
+                  <div className="flex items-center gap-4 bg-white rounded-lg shadow-sm border border-gray-100 px-4 py-1">
+            {/* Filter Icon with better styling */}
+            <div className="flex items-center justify-center w-8 h-8 bg-blue-50 rounded-lg">
+              <FaFilter className="text-blue-600 text-sm" />
+            </div>
+            
+            {/* Enhanced Dropdown */}
+            <div className="relative">
+              <select
+                className="appearance-none bg-white border border-gray-200 rounded-lg text-sm px-4 py-1 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-300 min-w-[180px]"
+                value={selectedEmployeeId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedEmployeeId(val);
+                  // If selecting specific employee, turn off unassigned
+                  if (val !== "all") setUnassignedOnly(false);
+                }}
+              >
+                <option value="all">All Team Members</option>
+                {Array.isArray(managerEmployees) && managerEmployees.map(emp => (
+                  <option key={emp.employeeId || emp.id} value={emp.employeeId || emp.id}>
+                    {emp.name || emp.employeeName || emp.email}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+            
+            {/* Enhanced Checkbox */}
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer hover:text-gray-900 transition-colors duration-200">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={unassignedOnly}
+                  onChange={(e) => {
+                    setUnassignedOnly(e.target.checked);
+                    if (e.target.checked) setSelectedEmployeeId("all");
+                  }}
+                  className="sr-only"
+                />
+                <div className={`w-5 h-5 border-2 rounded-md flex items-center justify-center transition-all duration-200 ${
+                  unassignedOnly 
+                    ? 'bg-blue-600 border-blue-600' 
+                    : 'bg-white border-gray-300 hover:border-blue-400'
+                }`}>
+                  {unassignedOnly && (
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <span className="font-medium">Unassigned only</span>
+            </label>
+            
+                        {/* Enhanced Clear Button - Only show when filters are active */}
+            {(selectedEmployeeId !== "all" || unassignedOnly) && (
+              <button
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600 font-medium transition-colors duration-200 px-3 py-1 rounded-md hover:bg-blue-50"
+                onClick={() => { setSelectedEmployeeId("all"); setUnassignedOnly(false); }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear
+              </button>
+            )}
+          </div>
           <DateFilter
             onFilterChange={handleFilterChange}
             onReset={handleResetFilter}
             title="Lead Date Filter"
             compact={true}
           />
+          </div>
           </div>
         </div>
 
