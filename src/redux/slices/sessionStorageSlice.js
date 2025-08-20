@@ -43,14 +43,7 @@ const getItemFromSessionStorage = (key, defaultValue = null) => {
     }
     
     // For backward compatibility with non-encrypted items
-    // Try to parse as JSON first, if it fails, return the raw value
-    try {
-      return JSON.parse(encryptedItem);
-    } catch (jsonError) {
-      // If JSON parsing fails, return the raw value
-      // This handles cases where plain text values are stored
-      return encryptedItem;
-    }
+    return JSON.parse(encryptedItem);
   } catch (error) {
     console.error(`Error getting item ${key} from sessionStorage:`, error);
     return defaultValue;
