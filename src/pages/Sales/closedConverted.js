@@ -394,7 +394,7 @@ const ClosedConvertedPage = () => {
                           <FaCalendarAlt className="w-4 h-4 text-gray-400" />
                           <span className="text-gray-600">Converted:</span>
                           <span className="font-medium">
-                            {formatDate(lead.paymentDate || lead.updatedAt)}
+                            {formatDate(lead.paymentDate)}
                           </span>
                         </div>
 
