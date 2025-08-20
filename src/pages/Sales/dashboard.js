@@ -72,8 +72,8 @@ const MOCK_DATA = {
   // Targets & Results mock
   currency: 'INR',
   targets: [
-    { metric: 'revenue', target: 1200000, unit: 'currency' },
-    { metric: 'deals_won', target: 25, unit: 'count' },
+    { metric: 'revenue', target: 4500000, unit: 'currency' },
+    { metric: 'deals_won', target: 5, unit: 'count' },
   ],
   results: {
     revenue: 980000,
@@ -594,8 +594,8 @@ function MainDashboard() {
       },
       currency: 'INR',
       targets: [
-        { metric: 'revenue', target: 1200000, unit: 'currency' },
-        { metric: 'deals_won', target: 25, unit: 'count' },
+        { metric: 'revenue', target: 4500000, unit: 'currency' },
+        { metric: 'deals_won', target: 5, unit: 'count' },
       ],
       results: {
         revenue: employeeData.revenueWon || 0,

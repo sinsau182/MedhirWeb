@@ -203,6 +203,8 @@ const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, on
           </div>
         </div>
         <div className="flex items-center gap-4">
+          {isManager && (
+            <>
                   {/* Enhanced Filters Section */}
                   <div className="flex items-center gap-4 bg-white rounded-lg shadow-sm border border-gray-100 px-4 py-1">
             {/* Filter Icon with better styling */}
@@ -276,6 +278,8 @@ const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, on
               </button>
             )}
           </div>
+          </>
+          )}
           <DateFilter
             onFilterChange={handleFilterChange}
             onReset={handleResetFilter}

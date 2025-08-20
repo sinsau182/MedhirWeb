@@ -34,7 +34,7 @@ const ClosedConvertedPage = () => {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('all');
   const [unassignedOnly, setUnassignedOnly] = useState(false);
   const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
-  
+
   useEffect(() => {
     dispatch(fetchManagerEmployees());
   }, [dispatch]);
@@ -132,7 +132,50 @@ const ClosedConvertedPage = () => {
   // Apply date filtering to converted leads
   const convertedLeads = filterLeadsByDateRange(allConvertedLeads);
 
-  console.log("Filtered converted leads:", convertedLeads);
+    // Apply employee filtering
+    const filterLeadsByEmployee = (leads) => {
+        console.log('Employee filtering with:', { selectedEmployeeId, unassignedOnly });
+        console.log('Total leads to filter by employee:', leads.length);
+        
+        if (selectedEmployeeId === 'all' && !unassignedOnly) {
+          console.log('No employee filter applied - returning all leads');
+          return leads; // No employee filter applied
+        }
+    
+        const filteredLeads = leads.filter(lead => {
+          console.log('Checking lead:', lead.name || lead.leadId, {
+            salesRep: lead.salesRep,
+            salesRepId: lead.salesRepId,
+            assignedTo: lead.assignedTo,
+            employeeId: lead.employeeId,
+            selectedEmployeeId,
+            unassignedOnly
+          });
+    
+          if (unassignedOnly) {
+            // Show only unassigned leads - check multiple possible field names
+            const isUnassigned = !lead.salesRep && !lead.salesRepId && !lead.assignedTo && !lead.employeeId;
+            console.log('Unassigned filter result:', isUnassigned);
+            return isUnassigned;
+          } else if (selectedEmployeeId !== 'all') {
+            // Show leads assigned to specific employee - check multiple possible field names
+            const isAssigned = (lead.salesRep === selectedEmployeeId) || 
+                              (lead.salesRepId === selectedEmployeeId) || 
+                              (lead.assignedTo === selectedEmployeeId) || 
+                              (lead.employeeId === selectedEmployeeId);
+            console.log('Employee assignment filter result:', isAssigned);
+            return isAssigned;
+          }
+          return true;
+        });
+    
+        console.log('Employee filtered leads count:', filteredLeads.length);
+        return filteredLeads;
+      };
+
+  const filteredLeads = filterLeadsByEmployee(convertedLeads);
+
+  console.log("Filtered converted leads:", filteredLeads);
 
   const handleFilterChange = (newStartDate, newEndDate) => {
     setStartDate(newStartDate);
@@ -188,6 +231,8 @@ const ClosedConvertedPage = () => {
             </div>
             
             <div className="flex items-center gap-4">
+                {isManager && (
+                  <>
                   {/* Enhanced Filters Section */}
                   <div className="flex items-center gap-4 bg-white rounded-lg shadow-sm border border-gray-100 px-4 py-1">
             {/* Filter Icon with better styling */}
@@ -261,6 +306,8 @@ const ClosedConvertedPage = () => {
               </button>
             )}
           </div>
+          </>
+          )}
           <DateFilter
             onFilterChange={handleFilterChange}
             onReset={handleResetFilter}
@@ -286,7 +333,7 @@ const ClosedConvertedPage = () => {
           <div className="flex items-center gap-2">
             <FaCheckCircle className="w-4 h-4 text-green-600" />
             <span className="text-sm font-medium text-gray-700">
-              All Converted Leads ({convertedLeads.length})
+              All Converted Leads ({filteredLeads.length})
             </span>
           </div>
         </div>
@@ -313,7 +360,7 @@ const ClosedConvertedPage = () => {
                 {error}
               </p>
             </div>
-          ) : convertedLeads.length === 0 ? (
+          ) : filteredLeads.length === 0 ? (
             <div className="text-center py-16">
               <FaCheckCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -325,7 +372,7 @@ const ClosedConvertedPage = () => {
             </div>
           ) : (
             <div className="grid gap-4">
-              {convertedLeads.map((lead) => (
+              {filteredLeads.map((lead) => (
                 <div
                   key={lead.leadId}
                   onClick={() => handleLeadClick(lead.leadId)}

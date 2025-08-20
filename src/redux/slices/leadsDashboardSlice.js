@@ -6,6 +6,12 @@ const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
 import { jwtDecode } from "jwt-decode";
 
+// Get first date of current month + 1 day
+const currentDate = new Date();
+const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 2).toISOString().split('T')[0];
+// Get last date of current month + 1 day
+const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1).toISOString().split('T')[0];
+
 export const fetchDashboard = createAsyncThunk(
     'dashboard/fetchDashboard',
     async (params, { rejectWithValue }) => {
@@ -16,7 +22,7 @@ export const fetchDashboard = createAsyncThunk(
             const roles = decodedToken.roles;
 
             if (roles.includes("MANAGER")) {
-                const response = await axios.get(`${API_BASE_URL}/leads/dashboard/${companyId}`, {
+                const response = await axios.get(`${API_BASE_URL}/leads/dashboard/${companyId}?startDate=${startDate}&endDate=${endDate}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
