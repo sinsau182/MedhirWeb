@@ -304,7 +304,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
               <CustomTooltip text={`${lead.assignSalesPersonEmpId || lead.salesRep || '--'}\nSales Person\nClick to assign`}>
                 <button
                   onClick={(e) => handleTeamMemberClick('sales', e)}
-                  className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm hover:bg-blue-200 hover:scale-110 transition-all duration-200"
+                  className="lead-actions w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm hover:bg-blue-200 hover:scale-110 transition-all duration-200"
                 >
                   {getInitial(lead.assignSalesPersonEmpId, lead.salesRep)}
                 </button>
@@ -312,7 +312,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
               <CustomTooltip text={`${lead.assignDesignerEmpId || lead.designer || '--'}\nDesigner\nClick to assign`}>
                 <button
                   onClick={(e) => handleTeamMemberClick('designer', e)}
-                  className="w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm hover:bg-green-200 hover:scale-110 transition-all duration-200"
+                  className="lead-actions w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-xs cursor-pointer border border-white shadow-sm hover:bg-green-200 hover:scale-110 transition-all duration-200"
                 >
                   {getInitial(lead.assignDesignerEmpId, lead.designer)}
                 </button>
@@ -335,7 +335,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
           type="button"
           title="Schedule Activity"
           onClick={() => onScheduleActivity && onScheduleActivity(lead)}
-          className="hover:bg-blue-50 rounded-full p-1 transition-colors text-gray-400 hover:text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-300"
+          className="lead-actions hover:bg-blue-50 rounded-full p-1 transition-colors text-gray-400 hover:text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-300"
         >
           <FaRegClock size={14} />
         </button>
@@ -347,7 +347,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
               type="button"
               onClick={handleFreezeLead}
               disabled={lead.isFreeze}
-              className={`rounded-full p-1 transition-colors focus:outline-none focus:ring-1 disabled:cursor-not-allowed ${
+              className={`lead-actions rounded-full p-1 transition-colors focus:outline-none focus:ring-1 disabled:cursor-not-allowed ${
                 lead.isFreeze 
                   ? 'text-purple-600 bg-purple-100 ring-purple-300' 
                   : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50 focus:ring-purple-300'
@@ -362,7 +362,7 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
           type="button"
           title="Mark as Lost or Junk"
           onClick={handleTrashAction}
-          className="hover:bg-red-50 rounded-full p-1 transition-colors text-gray-400 hover:text-red-600 focus:outline-none focus:ring-1 focus:ring-red-300"
+          className="lead-actions hover:bg-red-50 rounded-full p-1 transition-colors text-gray-400 hover:text-red-600 focus:outline-none focus:ring-1 focus:ring-red-300"
         >
           <FaTrash size={14} />
         </button>
