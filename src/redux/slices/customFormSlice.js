@@ -666,50 +666,7 @@ const customFormsSlice = createSlice({
         state.error = action.payload;
       })
       
-      // Create form
-      .addCase(createCustomForm.pending, (state) => {
-        state.creating = true;
-        state.error = null;
-      })
-      .addCase(createCustomForm.fulfilled, (state, action) => {
-        state.creating = false;
-        state.forms.push(action.payload);
-      })
-      .addCase(createCustomForm.rejected, (state, action) => {
-        state.creating = false;
-        state.error = action.payload;
-      })
-      
-      // Update form
-      .addCase(updateCustomForm.pending, (state) => {
-        state.updating = true;
-        state.error = null;
-      })
-      .addCase(updateCustomForm.fulfilled, (state, action) => {
-        state.updating = false;
-        const index = state.forms.findIndex(form => form.id === action.payload.id);
-        if (index !== -1) {
-          state.forms[index] = action.payload;
-        }
-      })
-      .addCase(updateCustomForm.rejected, (state, action) => {
-        state.updating = false;
-        state.error = action.payload;
-      })
-      
-      // Delete form
-      .addCase(deleteCustomForm.pending, (state) => {
-        state.deleting = true;
-        state.error = null;
-      })
-      .addCase(deleteCustomForm.fulfilled, (state, action) => {
-        state.deleting = false;
-        state.forms = state.forms.filter(form => form.id !== action.payload);
-      })
-      .addCase(deleteCustomForm.rejected, (state, action) => {
-        state.deleting = false;
-        state.error = action.payload;
-      })
+
       
       // Toggle status
       .addCase(toggleFormStatus.fulfilled, (state, action) => {
