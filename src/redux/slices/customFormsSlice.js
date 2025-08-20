@@ -390,6 +390,10 @@ export const updateCustomForm = createAsyncThunk(
       };
       
       console.log('Updating custom form with DTO:', { formId, customFormDTO });
+      console.log('Original formData:', formData);
+      console.log('Transformed DTO:', customFormDTO);
+      console.log('API endpoint:', `${API_BASE}/${formId}`);
+      console.log('Headers:', headers);
       
       const response = await axios.put(`${API_BASE}/${formId}`, customFormDTO, { headers });
       
