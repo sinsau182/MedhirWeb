@@ -177,7 +177,7 @@ const modularMenus = {
     icon: <FaBoxes className="w-5 h-5" />,
     items: [
       {
-        label: "Dashboard",
+        label: "Home",
         icon: <ChartColumnIncreasing className="w-4 h-4" />,
         link: "/asset-management",
       },
@@ -351,13 +351,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
             modules.push({ key, ...filteredModule });
           } else if (key === "MOD_ASSETS") {
             // Filter out Settings menu if user doesn't have admin role
-            const filteredModule = {
-              ...module,
-              items: module.items.filter(item => 
-                item.label !== "Settings" || hasAdminRole()
-              )
-            };
-            modules.push({ key, ...filteredModule });
+            modules.push({ key, ...module });
           } else {
             modules.push({ key, ...module });
           }
@@ -410,13 +404,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
             modules.push({ key: moduleId, ...filteredModule });
           } else if (moduleId === "MOD_ASSETS") {
             // Filter out Settings menu if user doesn't have admin role
-            const filteredModule = {
-              ...modularMenus[moduleId],
-              items: modularMenus[moduleId].items.filter(item => 
-                item.label !== "Settings" || hasAdminRole()
-              )
-            };
-            modules.push({ key: moduleId, ...filteredModule });
+            modules.push({ key: moduleId, ...modularMenus[moduleId] });
           } else {
             modules.push({ key: moduleId, ...modularMenus[moduleId] });
           }
