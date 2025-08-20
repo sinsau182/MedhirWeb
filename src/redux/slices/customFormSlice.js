@@ -594,6 +594,59 @@ const customFormsSlice = createSlice({
         state.error = action.payload;
       })
       
+      // Create custom form
+      .addCase(createCustomForm.pending, (state) => {
+        state.creatingForm = true;
+        state.error = null;
+      })
+      .addCase(createCustomForm.fulfilled, (state, action) => {
+        state.creatingForm = false;
+        if (action.payload) {
+          state.forms.push(action.payload);
+        }
+      })
+      .addCase(createCustomForm.rejected, (state, action) => {
+        state.creatingForm = false;
+        state.error = action.payload;
+      })
+      
+      // Update custom form
+      .addCase(updateCustomForm.pending, (state) => {
+        state.updatingForm = true;
+        state.error = null;
+      })
+      .addCase(updateCustomForm.fulfilled, (state, action) => {
+        state.updatingForm = false;
+        const index = state.forms.findIndex(form => form.id === action.payload.formId);
+        if (index !== -1) {
+          state.forms[index] = action.payload.form;
+        }
+        if (state.currentForm && state.currentForm.id === action.payload.formId) {
+          state.currentForm = action.payload.form;
+        }
+      })
+      .addCase(updateCustomForm.rejected, (state, action) => {
+        state.updatingForm = false;
+        state.error = action.payload;
+      })
+      
+      // Delete custom form
+      .addCase(deleteCustomForm.pending, (state) => {
+        state.deletingForm = true;
+        state.error = null;
+      })
+      .addCase(deleteCustomForm.fulfilled, (state, action) => {
+        state.deletingForm = false;
+        state.forms = state.forms.filter(form => form.id !== action.payload);
+        if (state.currentForm && state.currentForm.id === action.payload) {
+          state.currentForm = null;
+        }
+      })
+      .addCase(deleteCustomForm.rejected, (state, action) => {
+        state.deletingForm = false;
+        state.error = action.payload;
+      })
+      
       // Fetch form fields
       .addCase(fetchFormFields.pending, (state) => {
         state.loading = true;

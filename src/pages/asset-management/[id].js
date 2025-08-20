@@ -209,7 +209,7 @@ const AssetDetailPage = () => {
     const [uploadingDoc, setUploadingDoc] = useState(false);
     const [editingOverview, setEditingOverview] = useState(false);
     const [overviewDraft, setOverviewDraft] = useState({
-        serialNumber: '',
+        categoryId: '',
         statusLabelId: '',
         purchaseDate: '',
         purchaseCost: '',
@@ -340,6 +340,24 @@ const AssetDetailPage = () => {
         if (!Array.isArray(statuses)) return 'Loading...';
         const status = statuses.find(s => (s.statusLabelId || s.id) === statusLabelId);
         return status ? status.name : 'Unknown Status';
+    };
+
+    const getSubcategoryName = (subcategoryId) => {
+        if (!subcategoryId) return 'No Subcategory';
+        if (!Array.isArray(categories) || categories.length === 0) return 'Loading...';
+        
+        // Find the category that contains this subcategory
+        for (const category of categories) {
+            if (category.subCategories && Array.isArray(category.subCategories)) {
+                const subcategory = category.subCategories.find(sub => 
+                    (sub.subCategoryId || sub.id) === subcategoryId
+                );
+                if (subcategory) {
+                    return subcategory.name;
+                }
+            }
+        }
+        return 'Unknown Subcategory';
     };
 
     const getDepartmentName = (departmentId) => {
@@ -969,7 +987,7 @@ const AssetDetailPage = () => {
     const startOverviewEditing = () => {
         if (!asset) return;
         setOverviewDraft({
-            serialNumber: asset.serialNumber || '',
+            categoryId: asset.categoryId || '',
             statusLabelId: asset.statusLabelId || '',
             purchaseDate: asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().slice(0, 10) : '',
             purchaseCost: asset.purchaseCost ?? '',
@@ -986,7 +1004,6 @@ const AssetDetailPage = () => {
         try {
             setSavingOverview(true);
             const payload = {};
-            if (overviewDraft.serialNumber !== (asset.serialNumber || '')) payload.serialNumber = overviewDraft.serialNumber || null;
             if (overviewDraft.statusLabelId !== (asset.statusLabelId || '')) payload.statusLabelId = overviewDraft.statusLabelId || null;
             if (overviewDraft.purchaseDate !== (asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().slice(0, 10) : '')) payload.purchaseDate = overviewDraft.purchaseDate || null;
             if (String(overviewDraft.purchaseCost) !== String(asset.purchaseCost ?? '')) payload.purchaseCost = overviewDraft.purchaseCost === '' ? null : Number(overviewDraft.purchaseCost);
@@ -1086,9 +1103,24 @@ const AssetDetailPage = () => {
     const handleUploadInvoice = async (file) => {
         if (!asset) return;
         try {
-            const tokenRaw = getItemFromSessionStorage('token', null);
-            const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
+            // Get encrypted token from session storage and decrypt it
+            const encryptedToken = getItemFromSessionStorage('token', null);
+            let token = null;
+            
+            // Handle different token formats and decryption
+            if (typeof encryptedToken === 'string') {
+                // If it's already a string, it might be the decrypted token
+                token = encryptedToken;
+            } else if (encryptedToken && typeof encryptedToken === 'object') {
+                // If it's an object, extract the token property
+                token = encryptedToken.token || encryptedToken.accessToken || encryptedToken.value;
+            }
+            
+            if (!token) {
+                throw new Error('No valid token found in session storage');
+            }
+
+            const headers = { Authorization: `Bearer ${token}` };
 
             const formData = new FormData();
             formData.append('assetId', asset.assetId);
@@ -1096,14 +1128,31 @@ const AssetDetailPage = () => {
 
             const uploadUrl = `${publicRuntimeConfig.apiURL}/api/assets/upload-doc`;
             const resp = await fetch(uploadUrl, { method: 'POST', headers, body: formData });
+            
             if (!resp.ok) {
                 const err = await resp.json().catch(() => ({}));
                 throw new Error(err.message || `Attachment upload failed (${resp.status})`);
             }
-            toast.success('Attachment uploaded');
+            
+            // Get the response data to extract the uploaded image ID
+            const uploadResult = await resp.json().catch(() => ({}));
+            console.log('Upload response:', uploadResult);
+            
+            // Extract the uploaded image ID from the response
+            const uploadedImageId = uploadResult.imageId || uploadResult.fileId || uploadResult.documentId || uploadResult.id;
+            
+            if (uploadedImageId) {
+                console.log('Uploaded image ID received:', uploadedImageId);
+                toast.success(`Attachment uploaded successfully! Image ID: ${uploadedImageId}`);
+                return uploadedImageId; // Return the image ID for further use
+            } else {
+                toast.success('Attachment uploaded successfully!');
+                return null;
+            }
         } catch (e) {
             const message = e?.message || 'Failed to upload attachment';
             toast.error(message);
+            throw e; // Re-throw to be handled by caller
         }
     };
 
@@ -1115,14 +1164,22 @@ const AssetDetailPage = () => {
         }
         try {
             setUploadingDoc(true);
-            await handleUploadInvoice(documentFile);
+            const uploadedImageId = await handleUploadInvoice(documentFile);
             
-            // Update the asset with the new document information
+            // Update the asset with the new document information including the image ID
             const newDocument = {
+                id: uploadedImageId, // Store the backend-generated image ID
                 name: documentFile.name,
                 type: documentFile.type || 'File',
                 uploadDate: new Date().toISOString(),
-                fileUrl: null // Will be set by backend if available
+                fileUrl: null, // Will be set by backend if available
+                // Store additional metadata
+                metadata: {
+                    originalFileName: documentFile.name,
+                    fileSize: documentFile.size,
+                    mimeType: documentFile.type,
+                    uploadedAt: new Date().toISOString()
+                }
             };
             
             // Add to existing documents array
@@ -1134,10 +1191,19 @@ const AssetDetailPage = () => {
                     assetId: id, 
                     assetData: { documents: updatedDocuments } 
                 })).unwrap();
-                toast.success('Document uploaded and asset updated successfully!');
+                
+                if (uploadedImageId) {
+                    toast.success(`Document uploaded and asset updated successfully! Image ID: ${uploadedImageId}`);
+                } else {
+                    toast.success('Document uploaded and asset updated successfully!');
+                }
             } catch (updateError) {
                 console.warn('Failed to update asset with document info:', updateError);
-                toast.success('Document uploaded successfully!');
+                if (uploadedImageId) {
+                    toast.success(`Document uploaded successfully! Image ID: ${uploadedImageId} (Asset update pending)`);
+                } else {
+                    toast.success('Document uploaded successfully!');
+                }
             }
             
             setIsDocumentModalOpen(false);
@@ -1146,7 +1212,8 @@ const AssetDetailPage = () => {
             // Refresh asset data to show the new document
             dispatch(fetchAssetByAssetId(id));
         } catch (error) {
-            // toast shown inside handleUploadInvoice
+            // Error is already handled by handleUploadInvoice
+            console.error('Document upload failed:', error);
         } finally {
             setUploadingDoc(false);
         }
@@ -1498,7 +1565,7 @@ const AssetDetailPage = () => {
                                             </div>
                                             <div className="flex justify-between items-center gap-4">
                                                 <span className="text-gray-600">Subcategory:</span>
-                                                <span className="font-medium">{getSubcategoryName(asset)}</span>
+                                                <span className="font-medium">{getSubcategoryName(asset.subcategoryId)}</span>
                                             </div>
                                             <div className="flex justify-between items-center gap-4">
                                                 <span className="text-gray-600">Status:</span>
