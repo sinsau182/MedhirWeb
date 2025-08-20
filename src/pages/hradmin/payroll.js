@@ -735,11 +735,11 @@ function PayrollManagement() {
                 <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-gray-100">
                   <input
                     type="checkbox"
-                    checked={selectedEmployees.length === employees.length}
+                    checked={selectedEmployees.length === (payroll && Array.isArray(payroll) ? payroll.length : 0)}
                     onChange={(e) => {
                       if (e.target.checked) {
                         setSelectedEmployees(
-                          employees.map((emp) => emp.employeeId)
+                          payroll && Array.isArray(payroll) ? payroll.map((item) => item.employeeId) : []
                         );
                       } else {
                         setSelectedEmployees([]);
@@ -795,122 +795,116 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {employees
-              .filter(
-                (employee) =>
-                  employee.name
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase()) ||
-                  employee.employeeId
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase())
-              )
-              .map((employee, index) => {
-                // Find corresponding payroll data for this employee
-                const payrollItem =
-                  payroll && Array.isArray(payroll)
-                    ? payroll.find(
-                        (item) => item.employeeId === employee.employeeId
-                      )
-                    : null;
+            {payroll && Array.isArray(payroll) && payroll.length > 0 ? (
+              payroll
+                .filter((payrollItem) => {
+                  if (!searchQuery) return true;
+                  // Find the employee name for this payroll item
+                  const employee = employees.find(emp => emp.employeeId === payrollItem.employeeId);
+                  return (
+                    employee?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    payrollItem.employeeId.toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+                })
+                .map((payrollItem, index) => {
+                  // Find corresponding employee data for this payroll item
+                  const employee = employees.find(emp => emp.employeeId === payrollItem.employeeId);
 
-                return (
-                  <tr key={index} className="hover:bg-blue-50 transition-colors duration-150">
-                    {showCheckboxes && (
-                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
-                        <input
-                          type="checkbox"
-                          checked={selectedEmployees.includes(
-                            employee.employeeId
-                          )}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedEmployees([
-                                ...selectedEmployees,
-                                employee.employeeId,
-                              ]);
-                            } else {
-                              setSelectedEmployees(
-                                selectedEmployees.filter(
-                                  (id) => id !== employee.employeeId
-                                )
-                              );
-                            }
-                          }}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
+                  return (
+                    <tr key={index} className="hover:bg-blue-50 transition-colors duration-150">
+                      {showCheckboxes && (
+                        <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
+                          <input
+                            type="checkbox"
+                            checked={selectedEmployees.includes(
+                              payrollItem.employeeId
+                            )}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedEmployees([
+                                  ...selectedEmployees,
+                                  payrollItem.employeeId,
+                                ]);
+                              } else {
+                                setSelectedEmployees(
+                                  selectedEmployees.filter(
+                                    (id) => id !== payrollItem.employeeId
+                                  )
+                                );
+                              }
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </td>
+                      )}
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
+                        {payrollItem.employeeId}
                       </td>
-                    )}
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
-                      {employee.employeeId}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
-                      {employee.name}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
-                      {payrollItem
-                        ? `₹ ${payrollItem.monthlyCTC || 0}`
-                        : `₹ ${employee.salaryDetails?.monthlyCtc || 0}`}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
-                      {payrollItem ? payrollItem.paidDays || 0 : "0"}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
-                      {payrollItem
-                        ? `₹ ${payrollItem.thisMonthSalary || 0}`
-                        : "₹ 0"}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
-                      {payrollItem
-                        ? `₹ ${payrollItem.basicThisMonth || 0}`
-                        : "₹ 0"}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
-                      {payrollItem
-                        ? `₹ ${payrollItem.hraThisMonth || 0}`
-                        : "₹ 0"}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
-                      {payrollItem
-                        ? `₹ ${payrollItem.otherAllowancesThisMonth || 0}`
-                        : "₹ 0"}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
-                      {payrollItem
-                        ? `₹ ${payrollItem.fuelReimbursementThisMonth || 0}`
-                        : "₹ 0"}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
-                      {payrollItem
-                        ? `₹ ${payrollItem.phoneReimbursementThisMonth || 0}`
-                        : "₹ 0"}
-                    </td>
-                    
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
-                      {payrollItem
-                        ? `₹ ${payrollItem.employeePFThisMonth || 0}`
-                        : "₹ 0"}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
-                      {payrollItem
-                        ? `₹ ${payrollItem.employerPFThisMonth || 0}`
-                        : "₹ 0"}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
-                      {payrollItem
-                        ? `₹ ${
-                            (payrollItem.professionalTax || 0) +
-                            (payrollItem.employeePFThisMonth || 0) +
-                            (payrollItem.employerPFThisMonth || 0)
-                          }`
-                        : "₹ 0"}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-blue-50 font-semibold">
-                      {payrollItem ? `₹ ${payrollItem.netPay || 0}` : "₹ 0"}
-                    </td>
-                  </tr>
-                );
-              })}
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
+                        {employee?.name || 'N/A'}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
+                        ₹{payrollItem.monthlyCTC || 0}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
+                        {payrollItem.paidDays || 0}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
+                        ₹{payrollItem.thisMonthSalary || 0}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
+                        ₹{payrollItem.basicThisMonth || 0}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
+                        ₹{payrollItem.hraThisMonth || 0}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
+                        ₹{payrollItem.otherAllowancesThisMonth || 0}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
+                        ₹{payrollItem.fuelReimbursementThisMonth || 0}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
+                        ₹{payrollItem.phoneReimbursementThisMonth || 0}
+                      </td>
+                      
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
+                        ₹{payrollItem.employeePFThisMonth || 0}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
+                        ₹{payrollItem.employerPFThisMonth || 0}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
+                        ₹{payrollItem.otherDeductions || 0}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
+                        ₹{payrollItem.netPay || 0}
+                      </td>
+                    </tr>
+                  );
+                })
+            ) : (
+              <tr>
+                <td colSpan={showCheckboxes ? 15 : 14} className="py-12 text-center">
+                  {isFetchingView ? (
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mr-3"></div>
+                      <span className="text-gray-600 font-medium">Loading payroll data...</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="text-gray-300 mb-4">
+                        <svg className="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <p className="text-gray-500 text-xl font-semibold mb-2">No employee found</p>
+                      <p className="text-gray-400 text-sm">No payroll data available for the selected period</p>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -927,11 +921,11 @@ function PayrollManagement() {
                 <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-gray-100">
                   <input
                     type="checkbox"
-                    checked={selectedEmployees.length === employees.length}
+                    checked={selectedEmployees.length === (payroll && Array.isArray(payroll) ? payroll.length : 0)}
                     onChange={(e) => {
                       if (e.target.checked) {
                         setSelectedEmployees(
-                          employees.map((emp) => emp.employeeId)
+                          payroll && Array.isArray(payroll) ? payroll.map((item) => item.employeeId) : []
                         );
                       } else {
                         setSelectedEmployees([]);
@@ -968,93 +962,94 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {employees
-              .filter(
-                (employee) =>
-                  employee.name
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase()) ||
-                  employee.employeeId
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase())
-              )
-              .map((employee, index) => {
-                // Find corresponding payroll data for this employee
-                const payrollItem =
-                  payroll && Array.isArray(payroll)
-                    ? payroll.find(
-                        (item) => item.employeeId === employee.employeeId
-                      )
-                    : null;
+            {payroll && Array.isArray(payroll) && payroll.length > 0 ? (
+              payroll
+                .filter((payrollItem) => {
+                  if (!searchQuery) return true;
+                  // Find the employee name for this payroll item
+                  const employee = employees.find(emp => emp.employeeId === payrollItem.employeeId);
+                  return (
+                    employee?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    payrollItem.employeeId.toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+                })
+                .map((payrollItem, index) => {
+                  // Find corresponding employee data for this payroll item
+                  const employee = employees.find(emp => emp.employeeId === payrollItem.employeeId);
 
-                return (
-                  <tr key={index} className="hover:bg-red-50 transition-colors duration-150">
-                    {showCheckboxes && (
-                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
-                        <input
-                          type="checkbox"
-                          checked={selectedEmployees.includes(
-                            employee.employeeId
-                          )}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedEmployees([
-                                ...selectedEmployees,
-                                employee.employeeId,
-                              ]);
-                            } else {
-                              setSelectedEmployees(
-                                selectedEmployees.filter(
-                                  (id) => id !== employee.employeeId
-                                )
-                              );
-                            }
-                          }}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
+                  return (
+                    <tr key={index} className="hover:bg-red-50 transition-colors duration-150">
+                      {showCheckboxes && (
+                        <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
+                          <input
+                            type="checkbox"
+                            checked={selectedEmployees.includes(
+                              payrollItem.employeeId
+                            )}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedEmployees([
+                                  ...selectedEmployees,
+                                  payrollItem.employeeId,
+                                ]);
+                              } else {
+                                setSelectedEmployees(
+                                  selectedEmployees.filter(
+                                    (id) => id !== payrollItem.employeeId
+                                  )
+                                );
+                              }
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </td>
+                      )}
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
+                        {payrollItem.employeeId}
                       </td>
-                    )}
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
-                      {employee.employeeId}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
-                      {employee.name}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
-                      {employee.departmentName}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
-                      {payrollItem
-                        ? `₹ ${payrollItem.employeePFThisMonth || 0}`
-                        : "₹ 0"}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
-                      {payrollItem
-                        ? `₹ ${payrollItem.employerPFThisMonth || 0}`
-                        : "₹ 0"}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
-                      {payrollItem
-                        ? `₹ ${payrollItem.professionalTax || 0}`
-                        : "₹ 0"}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
-                      {payrollItem
-                        ? `₹ ${payrollItem.advanceAdjusted || 0}`
-                        : "₹ 0"}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-blue-50 font-semibold">
-                      {payrollItem
-                        ? `₹ ${
-                            (payrollItem.employeePFThisMonth || 0) +
-                            (payrollItem.employerPFThisMonth || 0) +
-                            (payrollItem.professionalTax || 0)
-                          }`
-                        : "₹ 0"}
-                    </td>
-                  </tr>
-                );
-              })}
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
+                        {employee?.name || 'N/A'}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
+                        {employee?.departmentName || 'N/A'}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
+                        ₹{payrollItem.employeePFThisMonth || 0}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
+                        ₹{payrollItem.employerPFThisMonth || 0}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
+                        ₹{payrollItem.professionalTax || 0}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
+                        ₹{payrollItem.advanceAdjusted || 0}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-blue-50 font-semibold">
+                        ₹{(
+                          (payrollItem.employeePFThisMonth || 0) +
+                          (payrollItem.employerPFThisMonth || 0) +
+                          (payrollItem.professionalTax || 0)
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+            ) : (
+              <tr>
+                <td colSpan={showCheckboxes ? 10 : 9} className="py-12 text-center">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="text-gray-300 mb-4">
+                      <svg className="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 text-xl font-semibold mb-2">No employee found</p>
+                    <p className="text-gray-400 text-sm">No payroll data available for the selected period</p>
+                  </div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -1084,11 +1079,11 @@ function PayrollManagement() {
                 <th className="py-3 px-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border border-gray-300 bg-gray-100">
                   <input
                     type="checkbox"
-                    checked={selectedEmployees.length === employees.length}
+                    checked={selectedEmployees.length === (payroll && Array.isArray(payroll) ? payroll.length : 0)}
                     onChange={(e) => {
                       if (e.target.checked) {
                         setSelectedEmployees(
-                          employees.map((emp) => emp.employeeId)
+                          payroll && Array.isArray(payroll) ? payroll.map((item) => item.employeeId) : []
                         );
                       } else {
                         setSelectedEmployees([]);
@@ -1121,125 +1116,134 @@ function PayrollManagement() {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
-            {employees
-              .filter((employee) =>
-                employee.name.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-              .map((employee, index) => {
-                // Find corresponding advance data for this employee
-                const advanceData = companyAdvances?.find(
-                  (advance) => advance.employeeId === employee.employeeId
-                );
-                
-                return (
-                  <tr key={index} className="hover:bg-yellow-50 transition-colors duration-150">
-                  {showCheckboxes && (
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
-                      <input
-                        type="checkbox"
-                        checked={selectedEmployees.includes(
-                          employee.employeeId
-                        )}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedEmployees([
-                              ...selectedEmployees,
-                              employee.employeeId,
-                            ]);
-                          } else {
-                            setSelectedEmployees(
-                              selectedEmployees.filter(
-                                (id) => id !== employee.employeeId
-                              )
-                            );
-                          }
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </td>
-                  )}
-                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
-                    {employee.employeeId}
-                  </td>
-                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
-                    {employee.name}
-                  </td>
-                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
-                    {employee.departmentName}
-                  </td>
-                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
-                    ₹{advanceData?.oldAdvance || employee.oldAdvance || 0}
-                  </td>
-                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50">
-                    {editingAdvance[`${employee.employeeId}_thisMonth`] ? (
-                      <div className="flex items-center gap-1">
+                    <tbody className="divide-y divide-gray-200">
+            {payroll && Array.isArray(payroll) && payroll.length > 0 ? (
+              payroll
+                .filter((payrollItem) => {
+                  if (!searchQuery) return true;
+                  // Find the employee name for this payroll item
+                  const employee = employees.find(emp => emp.employeeId === payrollItem.employeeId);
+                  return (
+                    employee?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    payrollItem.employeeId.toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+                })
+                .map((payrollItem, index) => {
+                  // Find corresponding employee data for this payroll item
+                  const employee = employees.find(emp => emp.employeeId === payrollItem.employeeId);
+                  // Find corresponding advance data for this employee
+                  const advanceData = companyAdvances?.find(
+                    (advance) => advance.employeeId === payrollItem.employeeId
+                  );
+                  
+                  return (
+                    <tr key={index} className="hover:bg-yellow-50 transition-colors duration-150">
+                    {showCheckboxes && (
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
                         <input
-                          type="number"
-                          value={advanceValues[`${employee.employeeId}_thisMonth`] ?? ''}
-                          onChange={(e) => handleAdvanceChange(employee.employeeId, 'thisMonth', e.target.value)}
-                          className="w-32 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          min="0"
-                          step="0.01"
-                          placeholder="Enter amount"
-                          autoFocus
-                        />
-                        <button
-                          onClick={() => handleAdvanceSave(employee.employeeId, 'thisMonth')}
-                          disabled={advanceLoading}
-                          className="text-green-600 hover:text-green-800 p-1 hover:bg-green-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Save"
-                        >
-                          {advanceLoading ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                          ) : (
-                            <Check className="h-4 w-4" />
+                          type="checkbox"
+                          checked={selectedEmployees.includes(
+                            payrollItem.employeeId
                           )}
-                        </button>
-                        <button
-                          onClick={() => handleAdvanceCancel(employee.employeeId, 'thisMonth')}
-                          className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded transition-colors"
-                          title="Cancel"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between group">
-                        <span>
-                          ₹{advanceValues[`${employee.employeeId}_thisMonth`] !== undefined 
-                            ? (typeof advanceValues[`${employee.employeeId}_thisMonth`] === 'number' 
-                                ? advanceValues[`${employee.employeeId}_thisMonth`] 
-                                : parseFloat(advanceValues[`${employee.employeeId}_thisMonth`]) || 0)
-                            : (advanceData?.thisMonthAdvance || employee.thisMonthAdvance || 0)}
-                        </span>
-                        {isCurrentMonth() && !isPayrollFrozen() && (
-                          <button
-                            onClick={() => handleAdvanceEdit(employee.employeeId, 'thisMonth')}
-                            className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
-                            title="Edit This Month Advance"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedEmployees([
+                                ...selectedEmployees,
+                                payrollItem.employeeId,
+                              ]);
+                            } else {
+                              setSelectedEmployees(
+                                selectedEmployees.filter(
+                                  (id) => id !== payrollItem.employeeId
+                                )
+                              );
+                            }
+                          }}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
                     )}
-                  </td>
-                  <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50">
-                    {editingAdvance[`${employee.employeeId}_deduct`] ? (
-                      <div className="flex items-center gap-1">
-                        <input
-                          type="number"
-                          value={advanceValues[`${employee.employeeId}_deduct`] ?? ''}
-                          onChange={(e) => handleAdvanceChange(employee.employeeId, 'deduct', e.target.value)}
-                          className="w-32 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          min="0"
-                          step="0.01"
-                          placeholder="Enter amount"
-                          autoFocus
-                        />
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
+                      {payrollItem.employeeId}
+                    </td>
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
+                      {employee?.name || 'N/A'}
+                    </td>
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
+                      {employee?.departmentName || 'N/A'}
+                    </td>
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
+                      ₹{advanceData?.oldAdvance || employee?.oldAdvance || 0}
+                    </td>
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50">
+                      {editingAdvance[`${payrollItem.employeeId}_thisMonth`] ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={advanceValues[`${payrollItem.employeeId}_thisMonth`] ?? ''}
+                            onChange={(e) => handleAdvanceChange(payrollItem.employeeId, 'thisMonth', e.target.value)}
+                            className="w-32 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            min="0"
+                            step="0.01"
+                            placeholder="Enter amount"
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => handleAdvanceSave(payrollItem.employeeId, 'thisMonth')}
+                            disabled={advanceLoading}
+                            className="text-green-600 hover:text-green-800 p-1 hover:bg-green-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Save"
+                          >
+                            {advanceLoading ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                            ) : (
+                              <Check className="h-4 w-4" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleAdvanceCancel(payrollItem.employeeId, 'thisMonth')}
+                            className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded transition-colors"
+                            title="Cancel"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between group">
+                          <span>
+                            ₹{advanceValues[`${payrollItem.employeeId}_thisMonth`] !== undefined 
+                              ? (typeof advanceValues[`${payrollItem.employeeId}_thisMonth`] === 'number' 
+                                  ? advanceValues[`${payrollItem.employeeId}_thisMonth`] 
+                                  : parseFloat(advanceValues[`${payrollItem.employeeId}_thisMonth`]) || 0)
+                              : (advanceData?.thisMonthAdvance || employee?.thisMonthAdvance || 0)}
+                          </span>
+                          {isCurrentMonth() && !isPayrollFrozen() && (
+                            <button
+                              onClick={() => handleAdvanceEdit(payrollItem.employeeId, 'thisMonth')}
+                              className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
+                              title="Edit This Month Advance"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-yellow-50">
+                      {editingAdvance[`${payrollItem.employeeId}_deduct`] ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            value={advanceValues[`${payrollItem.employeeId}_deduct`] ?? ''}
+                            onChange={(e) => handleAdvanceChange(payrollItem.employeeId, 'deduct', e.target.value)}
+                            className="w-32 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            min="0"
+                            step="0.01"
+                            placeholder="Enter amount"
+                            autoFocus
+                          />
                         <button
-                          onClick={() => handleAdvanceSave(employee.employeeId, 'deduct')}
+                          onClick={() => handleAdvanceSave(payrollItem.employeeId, 'deduct')}
                           disabled={advanceLoading}
                           className="text-green-600 hover:text-green-800 p-1 hover:bg-green-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Save"
@@ -1251,7 +1255,7 @@ function PayrollManagement() {
                           )}
                         </button>
                         <button
-                          onClick={() => handleAdvanceCancel(employee.employeeId, 'deduct')}
+                          onClick={() => handleAdvanceCancel(payrollItem.employeeId, 'deduct')}
                           className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded transition-colors"
                           title="Cancel"
                         >
@@ -1261,15 +1265,15 @@ function PayrollManagement() {
                     ) : (
                       <div className="flex items-center justify-between group">
                         <span>
-                          ₹{advanceValues[`${employee.employeeId}_deduct`] !== undefined 
-                            ? (typeof advanceValues[`${employee.employeeId}_deduct`] === 'number' 
-                                ? advanceValues[`${employee.employeeId}_deduct`] 
-                                : parseFloat(advanceValues[`${employee.employeeId}_deduct`]) || 0)
-                            : (advanceData?.deductedThisMonth || employee.deductInThisMonth || 0)}
+                          ₹{advanceValues[`${payrollItem.employeeId}_deduct`] !== undefined 
+                            ? (typeof advanceValues[`${payrollItem.employeeId}_deduct`] === 'number' 
+                                ? advanceValues[`${payrollItem.employeeId}_deduct`] 
+                                : parseFloat(advanceValues[`${payrollItem.employeeId}_deduct`]) || 0)
+                              : (advanceData?.deductedThisMonth || employee?.deductInThisMonth || 0)}
                         </span>
                         {isCurrentMonth() && !isPayrollFrozen() && (
                           <button
-                            onClick={() => handleAdvanceEdit(employee.employeeId, 'deduct')}
+                            onClick={() => handleAdvanceEdit(payrollItem.employeeId, 'deduct')}
                             className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
                             title="Edit Deduct This Month"
                           >
@@ -1281,13 +1285,28 @@ function PayrollManagement() {
                   </td>
                   <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50 font-semibold">
                     <span className={advanceData?.balanceForNextMonth < 0 ? 'text-red-600' : ''}>
-                      ₹{advanceData?.balanceForNextMonth || employee.balanceForNextMonth || 0}
+                      ₹{advanceData?.balanceForNextMonth || employee?.balanceForNextMonth || 0}
                     </span>
                   </td>
                 </tr>
-                );
-              })}
-            </tbody>
+                  );
+                })
+            ) : (
+              <tr>
+                <td colSpan={showCheckboxes ? 9 : 8} className="py-12 text-center">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="text-gray-300 mb-4">
+                      <svg className="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 text-xl font-semibold mb-2">No employee found</p>
+                    <p className="text-gray-400 text-sm">No payroll data available for the selected period</p>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
           </table>
                 </div>
       )}
@@ -1464,148 +1483,163 @@ function PayrollManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {employees
-              .filter((employee) =>
-                employee.name.toLowerCase().includes(searchQuery.toLowerCase())
-              )
-              .map((employee, index) => {
+            {payroll && Array.isArray(payroll) && payroll.length > 0 ? (
+              payroll
+                .filter((payrollItem) => {
+                  if (!searchQuery) return true;
+                  // Find the employee name for this payroll item
+                  const employee = employees.find(emp => emp.employeeId === payrollItem.employeeId);
+                  return (
+                    employee?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    payrollItem.employeeId.toLowerCase().includes(searchQuery.toLowerCase())
+                  );
+                })
+                .map((payrollItem, index) => {
+                  // Find corresponding employee data for this payroll item
+                  const employee = employees.find(emp => emp.employeeId === payrollItem.employeeId);
 
-                
-                // Find corresponding payroll data for this employee
-                const payrollItem =
-                  payroll && Array.isArray(payroll)
-                    ? payroll.find(
-                        (item) => item.employeeId === employee.employeeId
-                      )
-                    : null;
+                  console.log(arrearsValues)
 
-                    console.log(arrearsValues)
-
-                return (
-                  <tr key={index} className="hover:bg-blue-50 transition-colors duration-150">
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
-                      {employee.employeeId}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
-                      {employee.name}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
-                      {employee.departmentName}
-                    </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
-                      {editingArrears[employee.employeeId] ? (
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            value={arrearsValues[employee.employeeId] || ''}
-                            onChange={(e) => handleArrearsChange(employee.employeeId, e.target.value)}
-                            className="w-32 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            placeholder="Enter amount"
-                            min="0"
-                            step="0.01"
-                          />
-                          <button
-                            onClick={() => handleArrearsSave(employee.employeeId)}
-                            disabled={arrearsLoading}
-                            className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Save"
-                          >
-                            {arrearsLoading ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                            ) : (
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleArrearsCancel(employee.employeeId)}
-                            className="p-1 text-red-600 hover:text-red-800"
-                            title="Cancel"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between group">
-                          <span>₹{arrearsValues[employee.employeeId] !== undefined 
-                            ? arrearsValues[employee.employeeId]
-                            : (getEmployeeArrears(employee.employeeId)?.arrearsPaid || 0)}</span>
-                          {isCurrentMonth() && !isPayrollFrozen() && (
+                  return (
+                    <tr key={index} className="hover:bg-blue-50 transition-colors duration-150">
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
+                        {payrollItem.employeeId}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50 font-medium">
+                        {employee?.name || 'N/A'}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-gray-50">
+                        {employee?.departmentName || 'N/A'}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-green-50">
+                        {editingArrears[payrollItem.employeeId] ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={arrearsValues[payrollItem.employeeId] || ''}
+                              onChange={(e) => handleArrearsChange(payrollItem.employeeId, e.target.value)}
+                              className="w-32 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              placeholder="Enter amount"
+                              min="0"
+                              step="0.01"
+                            />
                             <button
-                              onClick={() => handleArrearsEdit(employee.employeeId)}
-                              className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
-                              title="Edit arrears paid"
+                              onClick={() => handleArrearsSave(payrollItem.employeeId)}
+                              disabled={arrearsLoading}
+                              className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Save"
+                            >
+                              {arrearsLoading ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                              ) : (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleArrearsCancel(payrollItem.employeeId)}
+                              className="p-1 text-red-600 hover:text-red-800"
+                              title="Cancel"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                               </svg>
                             </button>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between group">
+                            <span>₹{arrearsValues[payrollItem.employeeId] !== undefined 
+                              ? arrearsValues[payrollItem.employeeId]
+                              : (getEmployeeArrears(payrollItem.employeeId)?.arrearsPaid || 0)}</span>
+                            {isCurrentMonth() && !isPayrollFrozen() && (
+                              <button
+                                onClick={() => handleArrearsEdit(payrollItem.employeeId)}
+                                className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
+                                title="Edit arrears paid"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
+                        {editingArrearsDeducted[payrollItem.employeeId] ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={arrearsDeductedValues[payrollItem.employeeId] || ''}
+                              onChange={(e) => handleArrearsDeductedChange(payrollItem.employeeId, e.target.value)}
+                              className="w-32 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-blue-500"
+                              placeholder="Enter amount"
+                              min="0"
+                              step="0.01"
+                            />
+                            <button
+                              onClick={() => handleArrearsDeductedSave(payrollItem.employeeId)}
+                              disabled={arrearsLoading}
+                              className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Save"
+                            >
+                              {arrearsLoading ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                              ) : (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleArrearsDeductedCancel(payrollItem.employeeId)}
+                              className="text-red-600 hover:text-red-800 p-1"
+                              title="Cancel"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between group">
+                            <span>₹{arrearsDeductedValues[payrollItem.employeeId] !== undefined 
+                              ? arrearsDeductedValues[payrollItem.employeeId] 
+                              : (getEmployeeArrears(payrollItem.employeeId)?.arrearsDeducted || 0)}</span>
+                            {isCurrentMonth() && !isPayrollFrozen() && (
+                              <button
+                                onClick={() => handleArrearsDeductedEdit(payrollItem.employeeId)}
+                                className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
+                                title="Edit arrears deducted"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.6 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                              </button>
+                            )}
+
+                                                </div>
                       )}
                     </td>
-                    <td className="py-2 px-3 text-xs text-gray-600 border border-gray-300 bg-red-50">
-                      {editingArrearsDeducted[employee.employeeId] ? (
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            value={arrearsDeductedValues[employee.employeeId] || ''}
-                            onChange={(e) => handleArrearsDeductedChange(employee.employeeId, e.target.value)}
-                            className="w-32 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-blue-500"
-                            placeholder="Enter amount"
-                            min="0"
-                            step="0.01"
-                          />
-                          <button
-                            onClick={() => handleArrearsDeductedSave(employee.employeeId)}
-                            disabled={arrearsLoading}
-                            className="p-1 text-green-600 hover:text-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Save"
-                          >
-                            {arrearsLoading ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
-                            ) : (
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleArrearsDeductedCancel(employee.employeeId)}
-                            className="p-1 text-red-600 hover:text-red-800"
-                            title="Cancel"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between group">
-                          <span>₹{arrearsDeductedValues[employee.employeeId] !== undefined 
-                            ? arrearsDeductedValues[employee.employeeId] 
-                            : (getEmployeeArrears(employee.employeeId)?.arrearsDeducted || 0)}</span>
-                          {isCurrentMonth() && !isPayrollFrozen() && (
-                            <button
-                              onClick={() => handleArrearsDeductedEdit(employee.employeeId)}
-                              className="opacity-0 group-hover:opacity-100 text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded transition-all"
-                              title="Edit arrears deducted"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.6 21.036H3v-3.572L16.732 3.732z" />
-                              </svg>
-                            </button>
-                          )}
-
-                                              </div>
-                    )}
-                  </td>
-                </tr>
-                );
-              })}
+                  </tr>
+                  );
+                })
+            ) : (
+              <tr>
+                <td colSpan={5} className="py-12 text-center">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="text-gray-300 mb-4">
+                      <svg className="h-20 w-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-500 text-xl font-semibold mb-2">No employee found</p>
+                    <p className="text-gray-400 text-sm">No payroll data available for the selected period</p>
+                  </div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -1663,7 +1697,7 @@ function PayrollManagement() {
                 &lt;
               </button>
               
-              <h1 className="text-xl font-semibold text-gray-800">
+              <h1 className="text-2xl font-bold text-gray-800">
                 Payroll Management
               </h1>
               
