@@ -582,6 +582,11 @@ function PayrollManagement() {
 
 
   useEffect(() => {
+    // Only fetch payroll data if we have a valid company ID and month/year
+    if (!selectedCompanyId || !selectedMonth || !selectedYear) {
+      return;
+    }
+
     // Convert month name to month number
     const monthMap = {
       January: 1,
@@ -604,37 +609,43 @@ function PayrollManagement() {
       month: monthMap[selectedMonth],
     };
 
-    // First clear any stale error and fetch; hide UI until resolved
-    setPayrollErrorDetails(null);
-    setIsFetchingView(true);
-    (async () => {
-      try {
-        await dispatch(getPayroll(params)).unwrap();
-        setPayrollErrorDetails(null);
-        // If payroll data exists, automatically set as calculated
-        if (payroll && Array.isArray(payroll) && payroll.length > 0) {
-          setIsCalculatePayrollClicked(true);
-          setDataLastUpdated(new Date());
+    // Add a small delay to prevent rapid successive calls
+    const timeoutId = setTimeout(() => {
+      // First clear any stale error and fetch; hide UI until resolved
+      setPayrollErrorDetails(null);
+      setIsFetchingView(true);
+      (async () => {
+        try {
+          await dispatch(getPayroll(params)).unwrap();
+          setPayrollErrorDetails(null);
+          // If payroll data exists, automatically set as calculated
+          if (payroll && Array.isArray(payroll) && payroll.length > 0) {
+            setIsCalculatePayrollClicked(true);
+            setDataLastUpdated(new Date());
+          }
+        } catch (error) {
+          setPayrollErrorDetails(error);
+          dispatch(clearPayroll()); // Clear payroll state when there's an error
+          // Reset calculation state when there's an error
+          setIsCalculatePayrollClicked(false);
+          setDataLastUpdated(null);
+          setEditingArrears({});
+          setArrearsValues({});
+          setOriginalArrearsValues({});
+          setEditingArrearsDeducted({});
+          setArrearsDeductedValues({});
+          setOriginalArrearsDeductedValues({});
+          setEditingAdvance({});
+          setAdvanceValues({});
+          setOriginalAdvanceValues({});
+        } finally {
+          setIsFetchingView(false);
         }
-      } catch (error) {
-        setPayrollErrorDetails(error);
-        dispatch(clearPayroll()); // Clear payroll state when there's an error
-        // Reset calculation state when there's an error
-        setIsCalculatePayrollClicked(false);
-        setDataLastUpdated(null);
-        setEditingArrears({});
-        setArrearsValues({});
-        setOriginalArrearsValues({});
-        setEditingArrearsDeducted({});
-        setArrearsDeductedValues({});
-        setOriginalArrearsDeductedValues({});
-        setEditingAdvance({});
-        setAdvanceValues({});
-        setOriginalAdvanceValues({});
-      } finally {
-        setIsFetchingView(false);
-      }
-    })();
+      })();
+    }, 300); // 300ms delay
+
+    // Cleanup timeout on unmount or dependency change
+    return () => clearTimeout(timeoutId);
   }, [dispatch, selectedCompanyId, selectedMonth, selectedYear]);
 
   // Initialize arrears values when payroll data is loaded
@@ -1716,7 +1727,9 @@ function PayrollManagement() {
                       toast.success("Payroll data loaded successfully!");
                       
                     } catch (error) {
-                      // Always surface the error coming from getPayroll (view) for precise messaging
+                      console.error("Payroll generation failed:", error);
+                      // Only call getPayroll if generatePayroll actually failed
+                      // This prevents duplicate API calls
                       try {
                         const monthMap = {
                           January: 1,
@@ -1737,16 +1750,15 @@ function PayrollManagement() {
                           year: parseInt(selectedYear),
                           month: monthMap[selectedMonth],
                         };
-                        setIsFetchingView(true);
+                        // Only fetch if we need to show error details
                         await dispatch(getPayroll(params)).unwrap();
                         setPayrollErrorDetails(null);
                       } catch (viewError) {
                         setPayrollErrorDetails(viewError);
-                      } finally {
-                        setIsFetchingView(false);
                       }
                     } finally {
                       setIsCalculatingPayroll(false);
+                      setIsFetchingView(false);
                     }
                   }
                 }}
