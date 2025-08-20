@@ -75,24 +75,6 @@ const modularMenus = {
         link: "/hradmin/payroll",
       },
       {
-        label: "Asset Management",
-        icon: <FaBoxes className="w-4 h-4" />,
-        hasSubmenu: true,
-        menuKey: "hr-asset",
-        subItems: [
-          {
-            label: "Home",
-            icon: <FaBuilding className="w-4 h-4" />,
-            link: "/asset-management",
-          },
-          {
-            label: "Settings",
-            icon: <Settings className="w-4 h-4" />,
-            link: "/asset-management/settings",
-          },
-        ],
-      },
-      {
         label: "Settings",
         icon: <Settings className="w-4 h-4" />,
         hasSubmenu: true,
@@ -189,6 +171,24 @@ const modularMenus = {
       },
     ],
   },
+
+  MOD_ASSETS: {
+    label: "Asset Management",
+    icon: <FaBoxes className="w-5 h-5" />,
+    items: [
+      {
+        label: "Dashboard",
+        icon: <ChartColumnIncreasing className="w-4 h-4" />,
+        link: "/asset-management",
+      },
+      {
+        label: "Settings",
+        icon: <Settings className="w-4 h-4" />,
+        link: "/asset-management/settings",
+      },
+    ],
+  },
+
 
   // Employee Module
   EMPLOYEE: {
@@ -349,6 +349,15 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
               )
             };
             modules.push({ key, ...filteredModule });
+          } else if (key === "MOD_ASSETS") {
+            // Filter out Settings menu if user doesn't have admin role
+            const filteredModule = {
+              ...module,
+              items: module.items.filter(item => 
+                item.label !== "Settings" || hasAdminRole()
+              )
+            };
+            modules.push({ key, ...filteredModule });
           } else {
             modules.push({ key, ...module });
           }
@@ -396,6 +405,15 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
               ...modularMenus[moduleId],
               items: modularMenus[moduleId].items.filter(item => 
                 item.label !== "Account Settings" || hasAdminRole()
+              )
+            };
+            modules.push({ key: moduleId, ...filteredModule });
+          } else if (moduleId === "MOD_ASSETS") {
+            // Filter out Settings menu if user doesn't have admin role
+            const filteredModule = {
+              ...modularMenus[moduleId],
+              items: modularMenus[moduleId].items.filter(item => 
+                item.label !== "Settings" || hasAdminRole()
               )
             };
             modules.push({ key: moduleId, ...filteredModule });
@@ -453,6 +471,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
         if (decodedToken) {
           setUserRoles(decodedToken.roles || []);
           setUserModules(decodedToken.module_ids || []);
+          console.log(decodedToken.module_ids);
         }
       } catch (error) {
         console.error('Error decoding token:', error);

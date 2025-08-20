@@ -2913,9 +2913,7 @@ const AssetSettingsPage = () => {
                 console.log('Subcategory object:', subCategory);
                 
                 // Get company ID from session storage
-                const companyId = sessionStorage.getItem("employeeCompanyId") || 
-                                 sessionStorage.getItem("companyId") || 
-                                 sessionStorage.getItem("company");
+                const companyId = sessionStorage.getItem("employeeCompanyId")
                 
                 if (!companyId) {
                     toast.error("Company ID not found in session");
@@ -2923,8 +2921,7 @@ const AssetSettingsPage = () => {
                 }
                 
                 // Make direct API call to get better error information
-                const tokenRaw = getItemFromSessionStorage('token', null);
-                const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+                const token = getItemFromSessionStorage("token", null)
                 const headers = token ? { Authorization: `Bearer ${token}` } : {};
                 
                 const deleteUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/sub-categories/${subCategory.subCategoryId}`;
@@ -3528,9 +3525,7 @@ const AssetSettingsPage = () => {
         
         try {
             // Get company ID from session storage
-            const companyId = sessionStorage.getItem("employeeCompanyId") || 
-                             sessionStorage.getItem("companyId") || 
-                             sessionStorage.getItem("company");
+            const companyId = sessionStorage.getItem("employeeCompanyId")
             
             if (!companyId) {
                 toast.error("Company ID not found in session");
@@ -3550,8 +3545,7 @@ const AssetSettingsPage = () => {
             }
             
             // Make direct API call to add location
-            const tokenRaw = getItemFromSessionStorage('token', null);
-            const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+            const token = getItemFromSessionStorage("token", null)
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
             
             const addUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/locations`;
@@ -3606,9 +3600,7 @@ const AssetSettingsPage = () => {
     const handleBatchUpdateLocations = async (locationsData) => {
         try {
             // Get company ID from session storage
-            const companyId = sessionStorage.getItem("employeeCompanyId") || 
-                             sessionStorage.getItem("companyId") || 
-                             sessionStorage.getItem("company");
+            const companyId = sessionStorage.getItem("employeeCompanyId")
             
             if (!companyId) {
                 toast.error("Company ID not found in session");
@@ -3624,8 +3616,7 @@ const AssetSettingsPage = () => {
             }));
             
             // Make direct API call to batch update locations
-            const tokenRaw = getItemFromSessionStorage('token', null);
-            const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+            const token = getItemFromSessionStorage("token", null)
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
             
             const batchUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/locations/batch`;
@@ -3667,10 +3658,7 @@ const AssetSettingsPage = () => {
             if (location) {
                 try {
                     // Get company ID from session storage
-                    const companyId = sessionStorage.getItem("employeeCompanyId") || 
-                                     sessionStorage.getItem("companyId") || 
-                                     sessionStorage.getItem("company");
-                    
+                    const companyId = sessionStorage.getItem("employeeCompanyId")
                     if (!companyId) {
                         toast.error("Company ID not found in session");
                         return;
@@ -3689,8 +3677,7 @@ const AssetSettingsPage = () => {
                     }
                     
                     // Make direct API call to update location
-                    const tokenRaw = getItemFromSessionStorage('token', null);
-                    const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+                    const token = getItemFromSessionStorage("token", null)
                     const headers = token ? { Authorization: `Bearer ${token}` } : {};
                     
                     const updateUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/locations/${location.locationId || location.id}`;
@@ -3806,9 +3793,7 @@ const AssetSettingsPage = () => {
         
         try {
             // Get company ID from session storage
-            const companyId = sessionStorage.getItem("employeeCompanyId") || 
-                             sessionStorage.getItem("companyId") || 
-                             sessionStorage.getItem("company");
+            const companyId = sessionStorage.getItem("employeeCompanyId")
             
             if (!companyId) {
                 toast.error("Company ID not found in session");
@@ -3827,8 +3812,7 @@ const AssetSettingsPage = () => {
             };
             
             // Make direct API call to add status label
-            const tokenRaw = getItemFromSessionStorage('token', null);
-            const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+            const token = getItemFromSessionStorage("token", null)
             const headers = token ? { Authorization: `Bearer ${token}` } : {};
             
             const addUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/status-labels`;
@@ -3906,9 +3890,7 @@ const AssetSettingsPage = () => {
     const handleBatchUpdateStatuses = async (statusesData) => {
         try {
             // Get company ID from session storage
-            const companyId = sessionStorage.getItem("employeeCompanyId") || 
-                             sessionStorage.getItem("companyId") || 
-                             sessionStorage.getItem("company");
+            const companyId = sessionStorage.getItem("employeeCompanyId")
             
             if (!companyId) {
                 toast.error("Company ID not found in session");
@@ -3931,8 +3913,7 @@ const AssetSettingsPage = () => {
             let successCount = 0;
             for (const statusData of batchPayload) {
                 try {
-                    const tokenRaw = getItemFromSessionStorage('token', null);
-                    const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+                    const token = getItemFromSessionStorage("token", null)
                     const headers = token ? { Authorization: `Bearer ${token}` } : {};
                     
                     const updateUrl = `${publicRuntimeConfig.apiURL}/api/asset-settings/status-labels/${statusData.statusLabelId}`;
@@ -4011,10 +3992,7 @@ const AssetSettingsPage = () => {
                 
                 try {
                     // Get company ID from session storage
-                    const companyId = sessionStorage.getItem("employeeCompanyId") || 
-                                     sessionStorage.getItem("companyId") || 
-                                     sessionStorage.getItem("company");
-                    
+                    const companyId = sessionStorage.getItem("employeeCompanyId")
                     console.log('Company ID from session:', companyId);
                     
                     if (!companyId) {
@@ -4038,8 +4016,7 @@ const AssetSettingsPage = () => {
                     
                     // Try direct API call first
                     try {
-                        const tokenRaw = getItemFromSessionStorage('token', null);
-                        const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
+                        const token = getItemFromSessionStorage("token", null)
                         const headers = token ? { Authorization: `Bearer ${token}` } : {};
                         
                         // Use the correct API endpoint based on the documentation

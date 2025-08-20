@@ -75,7 +75,7 @@ export const checkApiHealth = async () => {
 const getCompanyId = () => {
   try {
     // Try the encrypted version first
-    const encryptedCompanyId = getItemFromSessionStorage('employeeCompanyId', null);
+    const encryptedCompanyId = sessionStorage.getItem('employeeCompanyId');
     if (encryptedCompanyId) return encryptedCompanyId;
     
     // If that fails, try direct session storage access
