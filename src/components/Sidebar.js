@@ -41,6 +41,8 @@ import {
   TrendingUp,
   Database,
   Layers,
+  List,
+  Building,
 } from "lucide-react";
 import Link from "next/link";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
@@ -178,7 +180,7 @@ const modularMenus = {
     items: [
       {
         label: "Home",
-        icon: <ChartColumnIncreasing className="w-4 h-4" />,
+        icon: <FaBuilding className="w-4 h-4" />,
         link: "/asset-management",
       },
       {
