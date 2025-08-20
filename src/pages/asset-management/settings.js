@@ -1178,10 +1178,23 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
         // Validate category selection
         if (!selectedCategory) {
             setError('Please select a category');
-            hasErrors = true;
+            return;
         }
 
-        // Validate fields
+        // Additional validation for category
+        if (!selectedCategory || selectedCategory.trim() === '') {
+            setError('Category is required and cannot be empty');
+            return;
+        }
+
+        // Log the selected category for debugging
+        console.log('Selected category validation:', {
+            selectedCategory,
+            trimmed: selectedCategory?.trim(),
+            isEmpty: !selectedCategory || selectedCategory.trim() === '',
+            type: typeof selectedCategory
+        });
+
         if (fields.length === 0) {
             setError('At least one field is required');
             hasErrors = true;
@@ -1196,12 +1209,39 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
             }
             if (field.type === 'dropdown' && field.options.length === 0) {
                 setError('Dropdown fields must have at least one option');
-                hasErrors = true;
-                break;
+                return;
+            }
+            
+            // Additional validation for dropdown options
+            if (field.type === 'dropdown' && field.options.length > 0) {
+                const invalidOptions = field.options.filter(opt => !opt.value || !opt.value.trim());
+                if (invalidOptions.length > 0) {
+                    setError(`Dropdown field "${field.name}" has empty options`);
+                    return;
+                }
+                
+                // Check for duplicate option values
+                const optionValues = field.options.map(opt => opt.value.trim());
+                const uniqueOptionValues = new Set(optionValues);
+                if (optionValues.length !== uniqueOptionValues.size) {
+                    setError(`Dropdown field "${field.name}" has duplicate option values`);
+                    return;
+                }
             }
         }
-        
-        if (hasErrors) {
+
+        // Additional validation for field names
+        const fieldNames = fields.map(f => f.name.trim()).filter(Boolean);
+        const uniqueFieldNames = new Set(fieldNames);
+        if (fieldNames.length !== uniqueFieldNames.size) {
+            setError('Field names must be unique');
+            return;
+        }
+
+        // Check for empty or invalid field names
+        const invalidFields = fields.filter(f => !f.name || !f.name.trim() || f.name.trim().length === 0);
+        if (invalidFields.length > 0) {
+            setError(`Invalid field names found: ${invalidFields.map(f => f.name || 'unnamed').join(', ')}`);
             return;
         }
 
@@ -1236,19 +1276,15 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                 ...(selectedSubCategory ? { subCategoryId: selectedSubCategory } : {})
             };
             
-            console.log('Final formData object:', formData);
-            console.log('formData.subCategoryId:', formData.subCategoryId);
-            console.log('formData structure:', {
-                hasName: !!formData.name,
-                hasCategoryId: !!formData.categoryId,
-                hasSubCategoryId: !!formData.subCategoryId,
-                subCategoryIdValue: formData.subCategoryId,
-                subCategoryIdType: typeof formData.subCategoryId,
-                fieldsCount: formData.fields?.length || 0
-            });
+            // Debug logging to understand what's being sent
+            console.log('Form data being sent to API:', JSON.stringify(formData, null, 2));
+            console.log('Fields structure:', JSON.stringify(fields, null, 2));
+            console.log('Selected category:', selectedCategory);
+            console.log('Selected sub-category:', selectedSubCategory);
             
             let savedFormId = editingFormId;
             if (editingFormId) {
+                console.log('Updating existing form with ID:', editingFormId);
                 const updated = await dispatch(updateCustomForm({ 
                     formId: editingFormId, 
                     formData 
@@ -1266,6 +1302,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                 });
                 toast.success("Form updated successfully!");
             } else {
+                console.log('Creating new form');
                 const created = await dispatch(createCustomForm(formData)).unwrap();
                 // For new forms, try to get formId, but if not available, generate one
                 if (created?.formId) {
@@ -1324,8 +1361,30 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
             
         } catch (error) {
             console.error('Error saving form:', error);
-            setError('Failed to save form. Please try again.');
-            toast.error("Failed to save form");
+            
+            // Extract more specific error information
+            let errorMessage = 'Failed to save form. Please try again.';
+            
+            if (error?.message) {
+                errorMessage = error.message;
+            } else if (error?.error) {
+                errorMessage = error.error;
+            } else if (typeof error === 'string') {
+                errorMessage = error;
+            }
+            
+            // Log detailed error information
+            console.error('Detailed error info:', {
+                error,
+                message: error?.message,
+                errorData: error?.error,
+                response: error?.response,
+                status: error?.response?.status,
+                data: error?.response?.data
+            });
+            
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setLoading(false);
         }

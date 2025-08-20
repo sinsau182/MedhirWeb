@@ -1596,69 +1596,7 @@ const AssetDetailPage = () => {
                                         <button onClick={startSpecsEditing} className="px-3 py-1 text-sm border rounded-md text-gray-700 hover:bg-gray-50 flex items-center gap-2"><FaEdit /> Edit Specifications</button>
                                     )}
                                 </div>
-                                {getCategoryName(asset.categoryId) === 'IT Equipment' && (
-                                  <>
-                                    <h3 className="text-lg font-semibold text-gray-800">Specifications</h3>
-                                    <div className="space-y-3 mt-2">
-                                      <div className="flex justify-between items-center gap-4">
-                                        <span className="text-gray-600">Brand:</span>
-                                        {editingSpecs ? (
-                                          <input className="p-2 border rounded-md min-w-[200px]" value={specsDraft.customFields?.laptopCompany || ''} onChange={(e) => setSpecsDraft(v => ({ ...v, customFields: { ...v.customFields, laptopCompany: e.target.value } }))} />
-                                        ) : (
-                                          <span className="font-medium">{asset.customFields?.laptopCompany || 'N/A'}</span>
-                                        )}
-                                      </div>
-                                      <div className="flex justify-between items-center gap-4">
-                                        <span className="text-gray-600">Processor:</span>
-                                        {editingSpecs ? (
-                                          <input className="p-2 border rounded-md min-w-[200px]" value={specsDraft.customFields?.processor || ''} onChange={(e) => setSpecsDraft(v => ({ ...v, customFields: { ...v.customFields, processor: e.target.value } }))} />
-                                        ) : (
-                                          <span className="font-medium">{asset.customFields?.processor || 'N/A'}</span>
-                                        )}
-                                      </div>
-                                      <div className="flex justify-between items-center gap-4">
-                                        <span className="text-gray-600">RAM:</span>
-                                        {editingSpecs ? (
-                                          <input className="p-2 border rounded-md min-w-[200px]" value={specsDraft.customFields?.ram || ''} onChange={(e) => setSpecsDraft(v => ({ ...v, customFields: { ...v.customFields, ram: e.target.value } }))} />
-                                        ) : (
-                                          <span className="font-medium">{asset.customFields?.ram || 'N/A'}</span>
-                                        )}
-                                      </div>
-                                      <div className="flex justify-between items-center gap-4">
-                                        <span className="text-gray-600">Storage:</span>
-                                        {editingSpecs ? (
-                                          <input className="p-2 border rounded-md min-w-[200px]" value={specsDraft.customFields?.memory || ''} onChange={(e) => setSpecsDraft(v => ({ ...v, customFields: { ...v.customFields, memory: e.target.value } }))} />
-                                        ) : (
-                                          <span className="font-medium">{asset.customFields?.memory || 'N/A'}</span>
-                                        )}
-                                      </div>
-                                      <div className="flex justify-between items-center gap-4">
-                                        <span className="text-gray-600">Graphics Card:</span>
-                                        {editingSpecs ? (
-                                          <input className="p-2 border rounded-md min-w-[200px]" value={specsDraft.customFields?.graphicsCard || ''} onChange={(e) => setSpecsDraft(v => ({ ...v, customFields: { ...v.customFields, graphicsCard: e.target.value } }))} />
-                                        ) : (
-                                          <span className="font-medium">{asset.customFields?.graphicsCard || 'N/A'}</span>
-                                        )}
-                                      </div>
-                                      <div className="flex justify-between items-center gap-4">
-                                        <span className="text-gray-600">Team:</span>
-                                        {editingSpecs ? (
-                                          <input className="p-2 border rounded-md min-w-[200px]" value={specsDraft.customFields?.team || ''} onChange={(e) => setSpecsDraft(v => ({ ...v, customFields: { ...v.customFields, team: e.target.value } }))} />
-                                        ) : (
-                                          <span className="font-medium">{asset.customFields?.team || 'N/A'}</span>
-                                        )}
-                                      </div>
-                                      <div className="flex justify-between items-start gap-4">
-                                        <span className="text-gray-600">Accessories:</span>
-                                        {editingSpecs ? (
-                                          <textarea className="p-2 border rounded-md min-w-[200px] w-full max-w-xl" rows="3" value={specsDraft.customFields?.accessories || ''} onChange={(e) => setSpecsDraft(v => ({ ...v, customFields: { ...v.customFields, accessories: e.target.value } }))} />
-                                        ) : (
-                                          <span className="font-medium text-gray-700">{asset.customFields?.accessories || 'N/A'}</span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </>
-                                )}
+
 
                                 {/* Generic specifications from formData */}
                                 {asset.formData && Object.keys(asset.formData).length > 0 && (
