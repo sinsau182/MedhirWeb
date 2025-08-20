@@ -16,6 +16,7 @@ const LostJunkLeadsView = ({ isManager, dateFilterProps = {}, onFilterChange, on
   const [filterText, setFilterText] = useState("");
   const dispatch = useDispatch();
   const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
+  
   useEffect(() => {
     dispatch(fetchManagerEmployees());
   }, [dispatch]);
