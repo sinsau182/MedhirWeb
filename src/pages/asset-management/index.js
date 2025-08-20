@@ -9,7 +9,7 @@ import { fetchAssetCategories } from '@/redux/slices/assetCategorySlice';
 import { fetchAssetLocations } from '@/redux/slices/assetLocationSlice';
 import { fetchAssetStatuses } from '@/redux/slices/assetStatusSlice';
 import { createAssetWithDTO, fetchAllAssets, patchAssetByAssetId } from '@/redux/slices/assetSlice';
-import { fetchCustomFormsByCategory } from '@/redux/slices/customFormsSlice';
+import { fetchCustomForms, fetchFormsByCategory } from '@/redux/slices/customFormSlice';
 
 import getConfig from 'next/config';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
@@ -124,14 +124,30 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
             return null;
         }
 
-        // Map backend field structure to frontend expected structure
-        const fieldName = field.name || field.fieldName || field.fieldLabel || 'Unknown Field';
+        // Map backend field structure to frontend expected structure with multiple fallbacks
+        const fieldName = field.name || 
+                         field.fieldName || 
+                         field.fieldLabel || 
+                         field.label || 
+                         field.title || 
+                         field.displayName || 
+                         field.caption || 
+                         'Unknown Field';
         const fieldType = field.type || field.fieldType || 'text';
         const isRequired = field.required !== undefined ? field.required : false;
         const placeholder = field.placeholder || field.defaultValue || '';
         const options = field.options || [];
 
         const fieldValue = customFormData[form.id]?.[field.id] || '';
+        
+        // Debug logging for field structure
+        console.log('Rendering field:', { 
+            fieldId: field.id, 
+            fieldName, 
+            fieldType, 
+            isRequired, 
+            field: field 
+        });
         
         switch (fieldType) {
             case 'text':
@@ -208,35 +224,35 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                             {fieldName}{isRequired ? ' *' : ''}
                         </label>
                     </div>
-                    );
-                case 'file':
-                    return (
-                        <div key={field.id}>
-                            <label className="block text-sm font-medium text-gray-700">
-                                {fieldName}{isRequired ? ' *' : ''}
-                            </label>
-                            <input
-                                type="file"
-                                onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.files[0])}
-                                className={`mt-1 w-full p-2 border rounded-md shadow-sm ${validationErrors[`custom_${form.id}_${field.id}`] ? 'border-red-500' : 'border-gray-300'}`}
-                            />
-                            {validationErrors[`custom_${form.id}_${field.id}`] && (
-                                <p className="mt-1 text-sm text-red-600">{validationErrors[`custom_${form.id}_${field.id}`]}</p>
-                                )}
-                        </div>
-                    );
-                default:
-                    return (
-                        <InputField
-                            key={field.id}
-                            label={`${fieldName}${isRequired ? ' *' : ''}`}
-                            type="text"
-                            value={fieldValue}
-                            onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.value)}
-                            placeholder={placeholder}
-                            error={validationErrors[`custom_${form.id}_${field.id}`]}
+                );
+            case 'file':
+                return (
+                    <div key={field.id}>
+                        <label className="block text-sm font-medium text-gray-700">
+                            {fieldName}{isRequired ? ' *' : ''}
+                        </label>
+                        <input
+                            type="file"
+                            onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.files[0])}
+                            className={`mt-1 w-full p-2 border rounded-md shadow-sm ${validationErrors[`custom_${form.id}_${field.id}`] ? 'border-red-500' : 'border-gray-300'}`}
                         />
-                    );
+                        {validationErrors[`custom_${form.id}_${field.id}`] && (
+                            <p className="mt-1 text-sm text-red-600">{validationErrors[`custom_${form.id}_${field.id}`]}</p>
+                        )}
+                    </div>
+                );
+            default:
+                return (
+                    <InputField
+                        key={field.id}
+                        label={`${fieldName}${isRequired ? ' *' : ''}`}
+                        type="text"
+                        value={fieldValue}
+                        onChange={(e) => handleCustomFieldChange(form.id, field.id, e.target.value)}
+                        placeholder={placeholder}
+                        error={validationErrors[`custom_${form.id}_${field.id}`]}
+                    />
+                );
         }
     };
 
@@ -248,11 +264,12 @@ const CustomFormRenderer = ({ customForms, customFormData, setCustomFormData, se
                     {form.fields && Array.isArray(form.fields) && form.fields.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {form.fields.map((field) => {
-                                // Map backend field structure to frontend expected structure
-                                const fieldName = field.name || field.fieldName || field.fieldLabel || 'Unknown Field';
-                                const fieldType = field.type || field.fieldType || 'text';
-                                const isRequired = field.required !== undefined ? field.required : false;
-                                const placeholder = field.placeholder || field.defaultValue || '';
+                                // Debug logging for field structure
+                                console.log('Processing field in form:', { 
+                                    formId: form.id, 
+                                    formName: form.name, 
+                                    field: field 
+                                });
                                 
                                 return (
                                     <div key={field.id}>
@@ -278,12 +295,10 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
     const { locations, loading: locationsLoading, error: locationsError } = useSelector(state => state.assetLocations);
     const { statuses, loading: statusesLoading, error: statusesError } = useSelector(state => state.assetStatuses);
     const { creatingAsset, error: assetError } = useSelector(state => state.assets);
-    const { formsByCategory, loading: customFormsLoading } = useSelector(state => state.customForms);
+    const { forms, loading: customFormsLoading } = useSelector(state => state.customForm);
     
-    // More robust fallback forms access
-    const customFormState = useSelector(state => state.customForm);
-    const fallbackForms = customFormState?.forms || [];
-    const safeFallbackForms = Array.isArray(fallbackForms) ? fallbackForms : [];
+    // More robust fallback forms access - use formsByCategory if available
+    const safeFallbackForms = Array.isArray(forms) ? forms : [];
     
     const [formData, setFormData] = useState({
         category: '', 
@@ -309,41 +324,50 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
     const [selectedSubcategoryId, setSelectedSubcategoryId] = useState('');
     const [validationErrors, setValidationErrors] = useState({});
 
-    // Get custom forms for the selected category (moved after state declarations)
-    let customForms = [];
-    try {
-        if (selectedCategoryData && formsByCategory) {
-            const categoryKey = selectedCategoryData.categoryId || selectedCategoryData.id;
-            customForms = formsByCategory[categoryKey] || [];
+    // Get custom forms for the selected category and subcategory
+    const customForms = React.useMemo(() => {
+        if (!selectedCategoryData || !selectedSubcategoryId) return [];
+        
+        try {
+            // Filter forms by subcategory from the category-specific forms
+            if (Array.isArray(safeFallbackForms)) {
+                const filteredForms = safeFallbackForms.filter(form => {
+                    // Try multiple possible field names for subcategory ID
+                    const formSubcategoryId = form?.subCategoryId || 
+                                            form?.subcategoryId || 
+                                            form?.assignedSubCategoryId || 
+                                            form?.subCategory?.id || 
+                                            form?.subcategory?.id;
+                    
+                    // Get the selected subcategory ID
+                    const selectedSubcategoryIdStr = String(selectedSubcategoryId).trim();
+                    
+                    // Log the comparison for debugging
+                    console.log('Form filtering by subcategory:', {
+                        formId: form?.id,
+                        formName: form?.name,
+                        formSubcategoryId,
+                        selectedSubcategoryId: selectedSubcategoryIdStr,
+                        subcategoryMatch: formSubcategoryId != null && String(formSubcategoryId).trim() === selectedSubcategoryIdStr
+                    });
+                    
+                    // Check if subcategory matches (convert both to strings for comparison)
+                    const subcategoryMatches = formSubcategoryId != null && 
+                                            String(formSubcategoryId).trim() === selectedSubcategoryIdStr;
+                    
+                    return subcategoryMatches;
+                });
+                
+                console.log('Filtered forms result:', filteredForms);
+                return filteredForms;
+            }
+            
+            return [];
+        } catch (error) {
+            console.error('Error getting custom forms:', error);
+            return [];
         }
-    } catch (error) {
-        customForms = [];
-    }
-    
-    // Fallback: Also check the other custom forms slice if needed
-    let fallbackCustomForms = [];
-    try {
-        if (selectedCategoryData && Array.isArray(safeFallbackForms)) {
-            fallbackCustomForms = safeFallbackForms.filter(form => 
-                form && form.categoryId === (selectedCategoryData.categoryId || selectedCategoryData.id)
-            );
-        }
-    } catch (error) {
-        fallbackCustomForms = [];
-    }
-    
-    // Use fallback forms if main forms are empty
-    const finalCustomForms = customForms.length > 0 ? customForms : fallbackCustomForms;
-
-    // Filter forms by selected subcategory when available
-    const subcategoryFilteredForms = React.useMemo(() => {
-        if (!selectedSubcategoryId) return [];
-        const filtered = (finalCustomForms || []).filter(f => {
-            const sid = f?.subCategoryId || f?.assignedSubCategoryId || f?.subcategoryId || f?.subCategory?.id;
-            return sid != null && String(sid) === String(selectedSubcategoryId);
-        });
-        return filtered;
-    }, [finalCustomForms, selectedSubcategoryId]);
+    }, [selectedSubcategoryId, safeFallbackForms]);
 
 
 
@@ -356,6 +380,8 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             dispatch(fetchAssetCategories());
             dispatch(fetchAssetLocations());
             dispatch(fetchAssetStatuses());
+            
+            // Custom forms will be loaded when a subcategory is selected
         }
     }, [isOpen, dispatch]);
 
@@ -393,9 +419,34 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
         if (!selectedSubcategoryId || !selectedCategoryData) return;
         const categoryId = selectedCategoryData.categoryId || selectedCategoryData.id;
         if (!categoryId) return;
-        console.log('Fetching custom forms for category after subcategory selection:', categoryId);
-        dispatch(fetchCustomFormsByCategory(categoryId));
+        console.log('Fetching custom forms for category after subcategory selection:', {
+            categoryId,
+            selectedSubcategoryId,
+            selectedCategoryData
+        });
+        // Use fetchFormsByCategory to get forms for the specific category
+        dispatch(fetchFormsByCategory(categoryId));
     }, [selectedSubcategoryId, selectedCategoryData, dispatch]);
+
+    // Debug logging for forms loading
+    useEffect(() => {
+        console.log('Forms state changed:', {
+            forms: safeFallbackForms,
+            formsLength: safeFallbackForms?.length || 0,
+            customForms: customForms,
+            customFormsLength: customForms?.length || 0,
+            selectedCategoryData,
+            selectedSubcategoryId,
+            loading: customFormsLoading
+        });
+    }, [safeFallbackForms, customForms, selectedCategoryData, selectedSubcategoryId, customFormsLoading]);
+
+    // Clear custom form data when subcategory changes
+    useEffect(() => {
+        if (selectedSubcategoryId) {
+            setCustomFormData({});
+        }
+    }, [selectedSubcategoryId]);
 
     // Clear custom form data when category changes
     useEffect(() => {
@@ -565,11 +616,11 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
         }
         
         // Validate custom form fields for the selected subcategory only
-        if (selectedSubcategoryId && subcategoryFilteredForms && subcategoryFilteredForms.length > 0) {
-            console.log('Validating custom forms:', finalCustomForms);
+        if (selectedSubcategoryId && customForms && customForms.length > 0) {
+            console.log('Validating custom forms:', customForms);
             console.log('Custom form data:', customFormData);
             
-            for (const form of subcategoryFilteredForms) {
+            for (const form of customForms) {
                 if (form.fields && Array.isArray(form.fields)) {
                     for (const field of form.fields) {
                         const fieldName = field.name || field.fieldName || field.fieldLabel || 'Unknown Field';
@@ -673,7 +724,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                 const formDataMap = {};
                 
                 Object.keys(customFormData).forEach(formId => {
-                    const form = subcategoryFilteredForms.find(f => f.id === formId);
+                    const form = customForms.find(f => f.id === formId);
                     if (form && form.fields) {
                         Object.keys(customFormData[formId]).forEach(fieldId => {
                             const field = form.fields.find(f => f.id === fieldId);
@@ -748,9 +799,24 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             // Upload attachment (if provided) to dedicated endpoint
             if (formData.invoiceScan) {
                 try {
-                    const tokenRaw = getItemFromSessionStorage('token', null);
-                    const token = typeof tokenRaw === 'string' ? tokenRaw : (tokenRaw?.token || tokenRaw?.accessToken || '');
-                    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                    // Get encrypted token from session storage and decrypt it
+                    const encryptedToken = getItemFromSessionStorage('token', null);
+                    let token = null;
+                    
+                    // Handle different token formats and decryption
+                    if (typeof encryptedToken === 'string') {
+                        // If it's already a string, it might be the decrypted token
+                        token = encryptedToken;
+                    } else if (encryptedToken && typeof encryptedToken === 'object') {
+                        // If it's an object, extract the token property
+                        token = encryptedToken.token || encryptedToken.accessToken || encryptedToken.value;
+                    }
+                    
+                    if (!token) {
+                        throw new Error('No valid token found in session storage');
+                    }
+                    
+                    const headers = { Authorization: `Bearer ${token}` };
                     const fd = new FormData();
                     const resolvedAssetId = (result && (result.assetId || result.id)) || assetData.assetId;
                     fd.append('assetId', resolvedAssetId);
@@ -759,33 +825,80 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                     const uploadUrl = `${publicRuntimeConfig.apiURL}/api/assets/upload-doc`;
                     console.log('[upload-doc] POST', uploadUrl, { assetId: resolvedAssetId, hasFile: !!formData.invoiceScan });
                     const uploadResp = await fetch(uploadUrl, { method: 'POST', headers, body: fd });
+                    
                     if (!uploadResp.ok) {
                         const errJson = await uploadResp.json().catch(() => ({}));
                         throw new Error(errJson.message || `Attachment upload failed (${uploadResp.status})`);
                     }
                     
-                    // Update the asset with document information after successful upload
-                    const documentData = {
-                        documents: [{
-                            name: formData.invoiceScan.name,
-                            type: formData.invoiceScan.type || 'File',
-                            uploadDate: new Date().toISOString(),
-                            fileUrl: uploadResp.headers.get('file-url') || null // If backend returns file URL
-                        }]
-                    };
+                    // Get the response data to extract the uploaded image ID
+                    const uploadResult = await uploadResp.json().catch(() => ({}));
+                    console.log('Upload response:', uploadResult);
                     
-                    // Update asset with document info
-                    try {
-                        await dispatch(patchAssetByAssetId({ 
-                            assetId: resolvedAssetId, 
-                            assetData: documentData 
-                        })).unwrap();
-                    } catch (updateError) {
-                        console.warn('Failed to update asset with document info:', updateError);
-                        // Don't fail the whole process if document update fails
+                    // Extract the uploaded image ID from the response
+                    const uploadedImageId = uploadResult.imageId || uploadResult.fileId || uploadResult.documentId || uploadResult.id;
+                    
+                    if (uploadedImageId) {
+                        console.log('Uploaded image ID received:', uploadedImageId);
+                        
+                        // Update the asset with document information including the image ID
+                        const documentData = {
+                            documents: [{
+                                id: uploadedImageId, // Store the backend-generated image ID
+                                name: formData.invoiceScan.name,
+                                type: formData.invoiceScan.type || 'File',
+                                uploadDate: new Date().toISOString(),
+                                fileUrl: uploadResp.headers.get('file-url') || uploadResult.fileUrl || uploadResult.url || null,
+                                // Store additional metadata if provided by backend
+                                metadata: {
+                                    originalFileName: formData.invoiceScan.name,
+                                    fileSize: formData.invoiceScan.size,
+                                    mimeType: formData.invoiceScan.type,
+                                    uploadedAt: new Date().toISOString()
+                                }
+                            }]
+                        };
+                        
+                        // Update asset with document info including the image ID
+                        try {
+                            await dispatch(patchAssetByAssetId({ 
+                                assetId: resolvedAssetId, 
+                                assetData: documentData 
+                            })).unwrap();
+                            
+                            toast.success(`Attachment uploaded successfully! Image ID: ${uploadedImageId}`);
+                        } catch (updateError) {
+                            console.warn('Failed to update asset with document info:', updateError);
+                            // Don't fail the whole process if document update fails
+                            toast.success(`Attachment uploaded successfully! Image ID: ${uploadedImageId} (Asset update pending)`);
+                        }
+                    } else {
+                        // Fallback if no image ID is returned
+                        console.warn('No image ID returned from upload endpoint');
+                        
+                        // Update the asset with document information after successful upload
+                        const documentData = {
+                            documents: [{
+                                name: formData.invoiceScan.name,
+                                type: formData.invoiceScan.type || 'File',
+                                uploadDate: new Date().toISOString(),
+                                fileUrl: uploadResp.headers.get('file-url') || uploadResult.fileUrl || uploadResult.url || null
+                            }]
+                        };
+                        
+                        // Update asset with document info
+                        try {
+                            await dispatch(patchAssetByAssetId({ 
+                                assetId: resolvedAssetId, 
+                                assetData: documentData 
+                            })).unwrap();
+                        } catch (updateError) {
+                            console.warn('Failed to update asset with document info:', updateError);
+                            // Don't fail the whole process if document update fails
+                        }
+                        
+                        toast.success('Attachment uploaded successfully!');
                     }
-                    
-                    toast.success('Attachment uploaded and asset updated');
                 } catch (e) {
                     const message = e?.message || 'Failed to upload attachment';
                     console.error('[upload-doc] error:', message);
@@ -856,10 +969,14 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 value={formData.subcategory}
                                 onChange={(e) => {
                                     const subName = e.target.value;
+                                    console.log('Subcategory selected:', subName);
                                     setFormData(prev => ({ ...prev, subcategory: subName }));
+                                    
                                     // Also set the selectedSubcategoryId for custom forms
                                     const sub = availableSubcategories.find(s => s.name === subName);
-                                    setSelectedSubcategoryId(sub?.subCategoryId || sub?.id || '');
+                                    const subId = sub?.subCategoryId || sub?.id || '';
+                                    console.log('Setting selectedSubcategoryId:', subId, 'for subcategory:', sub);
+                                    setSelectedSubcategoryId(subId);
                                 }}
                                 error={validationErrors.subcategory}
                                 disabled={!formData.category || availableSubcategories.length === 0}
@@ -995,8 +1112,8 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                     
                     {/* Custom Forms Section */}
                     {formData.category && (
-                        <div className="p-4 border rounded-md">
-                            
+                        <>
+                            <h3 className="font-semibold text-lg mb-4">Custom Form Fields</h3>
                             
                             {customFormsLoading && (
                                 <div className="text-center py-8">
@@ -1005,21 +1122,24 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 </div>
                             )}
                             
-                            {formData.category && selectedSubcategoryId && !customFormsLoading && subcategoryFilteredForms.length > 0 && (
+                            {formData.category && selectedSubcategoryId && !customFormsLoading && customForms.length > 0 && (
                                 <CustomFormRenderer
-                                    customForms={subcategoryFilteredForms}
+                                    customForms={customForms}
                                     customFormData={customFormData}
                                     setCustomFormData={setCustomFormData}
                                     selectedCategory={formData.category}
                                     validationErrors={validationErrors}
                                 />
                             )}
+                            {formData.category && selectedSubcategoryId && !customFormsLoading && customForms.length === 0 && (
+                                <div className="text-center py-6 text-gray-600">
+                                    <p>No custom forms found for this subcategory.</p>
+                                </div>
+                            )}
                             {formData.category && !selectedSubcategoryId && (
                                 <div className="text-center py-6 text-gray-600">Select a subcategory to load its custom form(s).</div>
                             )}
-                            
-
-                        </div>
+                        </>
                     )}
                     
 

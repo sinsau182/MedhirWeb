@@ -1,3 +1,19 @@
+/**
+ * Asset Management Settings Page
+ * 
+ * FEATURES IMPLEMENTED:
+ * - Category and Subcategory Management
+ * - Custom Form Builder with subcategory assignment
+ * - Asset Location and Status Management
+ * - Enhanced subcategory assignment in custom forms
+ * 
+ * SUBCATEGORY ASSIGNMENT IMPROVEMENTS:
+ * - subCategoryId is now included in the main form payload
+ * - Visual indicators show when subcategory is assigned
+ * - Validation ensures subcategory belongs to selected category
+ * - Enhanced logging for debugging subcategory assignments
+ * - Success messages indicate subcategory assignment status
+ */
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import AssetManagementLayout from '@/components/AssetManagementLayout';
 import { toast } from 'sonner';
@@ -41,16 +57,7 @@ import {
     updateStatusLocal
 } from '@/redux/slices/assetStatusSlice';
 
-import { 
-    fetchCustomForms,
-    createCustomForm,
-    updateCustomForm,
-    deleteCustomForm,
-    toggleFormStatus,
-    setCurrentForm,
-     clearCurrentForm,
-     assignFormToSubCategory
-} from '@/redux/slices/customFormsSlice';
+// Removed old customFormsSlice import - using only customFormSlice now
 
 import { 
     fetchIdFormattings, 
@@ -78,11 +85,11 @@ import {
 
 // Import custom form management functions based on CustomFormController.java
 import {
-    fetchCustomForms as fetchCustomFormsNew,
+    fetchCustomForms,
     fetchCustomFormById,
-    createCustomForm as createCustomFormNew,
-    updateCustomForm as updateCustomFormNew,
-    deleteCustomForm as deleteCustomFormNew,
+    createCustomForm,
+    updateCustomForm,
+    deleteCustomForm,
     fetchFormFields,
     addFieldToForm,
     updateField,
@@ -92,11 +99,13 @@ import {
     fetchFormsByCategory,
     previewForm,
     duplicateForm,
-    toggleFormStatus as toggleFormStatusNew,
+    toggleFormStatus,
     submitFormData,
     fetchFormDataForAsset,
     fetchAllFormDataForAsset,
-    deleteFormData
+    deleteFormData,
+    setCurrentForm,
+    clearCurrentForm
 } from '@/redux/slices/customFormSlice';
 
 import axios from 'axios';
@@ -104,6 +113,33 @@ import getConfig from 'next/config';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 
 const { publicRuntimeConfig } = getConfig();
+
+// Helper function to get company ID from session storage
+const getCompanyId = () => {
+    try {
+        if (typeof window !== 'undefined') {
+            const encryptedCompanyId = sessionStorage.getItem('employeeCompanyId');
+            if (encryptedCompanyId) {
+                try {
+                    return JSON.parse(encryptedCompanyId);
+                } catch {
+                    return encryptedCompanyId;
+                }
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error('Error getting company ID:', error);
+        return null;
+    }
+};
+
+// Helper function to get the correct form ID (prefer formId over id to avoid MongoDB ObjectId)
+const getFormId = (form) => {
+    // For new forms, use formId; for old forms, use id
+    // This ensures we're using the custom form ID, not the MongoDB ObjectId
+    return form.formId || form.id;
+};
 
 // Helper component for a consistent setting section layout
 const SettingsSection = ({ title, subtitle, children }) => (
@@ -755,7 +791,7 @@ const StatusSettings = ({ editing, editedStatuses, setEditedStatuses, newStatus,
 const CustomFormBuilder = ({ editing, onDeleteForm }) => {
     const dispatch = useDispatch();
     const { categories, loading: categoriesLoading } = useSelector(state => state.assetCategories);
-    const { forms, currentForm, loading: formsLoading, creating: creatingForm, updating: updatingForm } = useSelector(state => state.customForms);
+    const { forms, currentForm, loading: formsLoading, creating: creatingForm, updating: updatingForm } = useSelector(state => state.customForm);
     
     const [view, setView] = useState('list'); // 'list', 'create', 'edit'
     const [editingFormId, setEditingFormId] = useState(null);
@@ -768,7 +804,10 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
 
     // Load forms and categories on component mount
     useEffect(() => {
-        dispatch(fetchCustomForms());
+        const companyId = getCompanyId();
+        if (companyId) {
+            dispatch(fetchCustomForms({ companyId }));
+        }
         dispatch(fetchAssetCategories()); // Always load categories upfront
     }, [dispatch]);
 
@@ -785,7 +824,16 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
         const matchingCategory = categories.find(cat => 
             cat.categoryId === selectedCategory || cat.id === selectedCategory
         );
-        return matchingCategory?.subCategories || [];
+        const subCategories = matchingCategory?.subCategories || [];
+        
+        console.log('Subcategories computed for category:', {
+            selectedCategory,
+            matchingCategory: matchingCategory?.name,
+            subCategoriesCount: subCategories.length,
+            subCategories: subCategories.map(sub => ({ id: sub.id, subCategoryId: sub.subCategoryId, name: sub.name }))
+        });
+        
+        return subCategories;
     }, [selectedCategory, categories]);
 
     // When category changes, clear sub-category if it doesn't belong to the category
@@ -801,10 +849,11 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
         if (!exists) setSelectedSubCategory('');
     }, [selectedCategory, subCategoriesForSelectedCategory]);
 
-    // Ensure selectedCategory is properly set when editing and categories are loaded
+    // Ensure selectedCategory and selectedSubCategory are properly set when editing and categories are loaded
     useEffect(() => {
         if (view === 'edit' && editingFormId && categories.length > 0) {
-            const form = forms.find(f => f.id === editingFormId || f.formId === editingFormId);
+            // Use the helper function to find the form by ID
+            const form = forms.find(f => getFormId(f) === editingFormId);
             const formCategoryId = form?.categoryId || form?.assignedCategoryId;
             
             if (form && formCategoryId) {
@@ -817,6 +866,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                 });
                 
                 // Find matching category ID (form category might match either cat.id or cat.categoryId)
+                // Based on the API response, prioritize assignedCategoryId
                 const matchingCategory = categories.find(cat => 
                     cat.categoryId === formCategoryId || cat.id === formCategoryId
                 );
@@ -825,17 +875,17 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                     const categoryIdToUse = matchingCategory.categoryId || matchingCategory.id;
                     console.log('Found matching category, setting selectedCategory to:', categoryIdToUse);
                     setSelectedCategory(categoryIdToUse);
+                    
+                    // Now set the subcategory immediately since we have the category
+                    const formSubCatId = form?.assignedSubCategoryId || form?.subCategoryId || form?.subCategory?.id;
+                    if (formSubCatId) {
+                        console.log('Setting subcategory immediately after category:', formSubCatId);
+                        setSelectedSubCategory(formSubCatId);
+                    }
                 } else {
                     console.warn('No matching category found for form categoryId:', formCategoryId);
                     // Still set it in case it's valid but not found due to timing
                     setSelectedCategory(formCategoryId);
-                }
-                // Attempt to set sub-category from form if available
-                const formSubCatId = form?.subCategoryId || form?.assignedSubCategoryId || form?.subCategory?.id;
-                if (formSubCatId) {
-                    setSelectedSubCategory(formSubCatId);
-                } else {
-                    setSelectedSubCategory('');
                 }
             }
         }
@@ -844,7 +894,8 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
     // Ensure fields are properly mapped when form data is available
     useEffect(() => {
         if (view === 'edit' && editingFormId && forms.length > 0) {
-            const form = forms.find(f => f.id === editingFormId || f.formId === editingFormId);
+            // Use the helper function to find the form by ID
+            const form = forms.find(f => getFormId(f) === editingFormId);
             if (form && form.fields && form.fields.length > 0) {
                 const currentFieldsCount = fields.length;
                 const apiFieldsCount = form.fields.length;
@@ -877,6 +928,29 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
             fields: fields.map(f => ({ id: f.id, name: f.name, type: f.type }))
         });
     }, [fields]);
+
+    // Monitor subcategory state changes for debugging
+    useEffect(() => {
+        console.log('Subcategory state changed:', {
+            selectedSubCategory,
+            view,
+            editingFormId
+        });
+    }, [selectedSubCategory, view, editingFormId]);
+
+    // Simple effect to ensure subcategory is set when editing starts
+    useEffect(() => {
+        if (view === 'edit' && editingFormId && forms.length > 0) {
+            const form = forms.find(f => getFormId(f) === editingFormId);
+            if (form) {
+                const formSubCatId = form?.assignedSubCategoryId || form?.subCategoryId || form?.subCategory?.id;
+                if (formSubCatId && !selectedSubCategory) {
+                    console.log('Setting subcategory from form data in useEffect:', formSubCatId);
+                    setSelectedSubCategory(formSubCatId);
+                }
+            }
+        }
+    }, [view, editingFormId, forms, selectedSubCategory]);
 
     const handleNewForm = () => {
         setView('create');
@@ -924,15 +998,44 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
     };
 
     const handleEditForm = (formId) => {
-        const form = forms.find(f => f.id === formId || f.formId === formId);
+        // Use the helper function to find the form by ID
+        const form = forms.find(f => getFormId(f) === formId);
         console.log('handleEditForm called with:', { formId, form, categoriesCount: categories?.length });
+        
+        // Log the raw form data to see exactly what we're working with
+        console.log('=== RAW FORM DATA ===');
+        console.log('Form object:', form);
+        console.log('Form keys:', Object.keys(form || {}));
+        console.log('Category fields:', {
+            categoryId: form?.categoryId,
+            assignedCategoryId: form?.assignedCategoryId
+        });
+        console.log('Subcategory fields:', {
+            subCategoryId: form?.subCategoryId,
+            assignedSubCategoryId: form?.assignedSubCategoryId,
+            subCategory: form?.subCategory
+        });
+        console.log('=== END RAW FORM DATA ===');
+        
         if (form) {
             setView('edit');
             setEditingFormId(formId);
             setFormName(form.name);
             // Use assignedCategoryId if categoryId is null/empty
-            const categoryToUse = form.categoryId || form.assignedCategoryId || '';
+            // Based on the API response, the category is stored in assignedCategoryId
+            const categoryToUse = form.assignedCategoryId || form.categoryId || '';
             setSelectedCategory(categoryToUse);
+            
+            // Set subcategory from form data if available
+            // Based on the API response, the subcategory is stored in assignedSubCategoryId
+            const formSubCatId = form?.assignedSubCategoryId || form?.subCategoryId || form?.subCategory?.id;
+            if (formSubCatId) {
+                console.log('Setting subcategory from form data:', formSubCatId);
+                setSelectedSubCategory(formSubCatId);
+            } else {
+                console.log('No subcategory found in form data, clearing subcategory selection');
+                setSelectedSubCategory('');
+            }
             
             // Map API fields to frontend format and ensure proper state update
             const mappedFields = mapApiFieldsToFrontend(form.fields || []);
@@ -954,15 +1057,36 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                 categoryId: form.categoryId,
                 assignedCategoryId: form.assignedCategoryId,
                 categoryToUse: categoryToUse,
+                subCategoryId: formSubCatId,
                 fieldsCount: form.fields?.length || 0,
                 originalFields: form.fields,
                 mappedFields: mappedFields
             });
             
+            // Additional logging for subcategory assignment
+            console.log('=== SUBCATEGORY LOADING DEBUG ===');
+            console.log('Form subcategory data:', {
+                formSubCategoryId: form.subCategoryId,
+                formAssignedSubCategoryId: form.assignedSubCategoryId,
+                formSubCategoryId: form.subCategory?.id,
+                selectedSubCategory: formSubCatId
+            });
+            console.log('Primary subcategory source (assignedSubCategoryId):', form.assignedSubCategoryId);
+            console.log('Current form state:', {
+                view,
+                editingFormId,
+                selectedCategory: categoryToUse,
+                selectedSubCategory: formSubCatId
+            });
+            console.log('=== END SUBCATEGORY DEBUG ===');
+            
             // Ensure categories are loaded if not already
             if (!categories || categories.length === 0) {
                 console.log('Loading categories as they are not available');
                 dispatch(fetchAssetCategories());
+            } else {
+                // Categories are already loaded, we can set the subcategory immediately
+                console.log('Categories already loaded, subcategory can be set immediately');
             }
         }
     };
@@ -980,7 +1104,8 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
 
     const handleToggleFormStatus = async (formId) => {
         try {
-            const form = forms.find(f => f.id === formId);
+            // Use the helper function to find the form by ID
+            const form = forms.find(f => getFormId(f) === formId);
             if (form) {
                 await dispatch(toggleFormStatus({ 
                     formId, 
@@ -1135,6 +1260,37 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
             }
         }
 
+        // Additional validation for category and subcategory
+        if (!selectedCategory || typeof selectedCategory !== 'string' || selectedCategory.trim() === '') {
+            setError('Valid category is required');
+            return;
+        }
+
+        // Validate that category is not just whitespace
+        if (selectedCategory.trim().length === 0) {
+            setError('Category cannot be empty or just whitespace');
+            return;
+        }
+
+        // Validate subcategory if selected (optional but if selected, must be valid)
+        if (selectedSubCategory && selectedSubCategory.trim() !== '') {
+            // Check if the selected subcategory belongs to the selected category
+            const category = categories.find(cat => 
+                cat.categoryId === selectedCategory || cat.id === selectedCategory
+            );
+            
+            if (category && category.subCategories) {
+                const subcategoryExists = category.subCategories.some(sub => 
+                    (sub.subCategoryId || sub.id) === selectedSubCategory
+                );
+                
+                if (!subcategoryExists) {
+                    setError('Selected subcategory does not belong to the selected category');
+                    return;
+                }
+            }
+        }
+
         // Additional validation for field names
         const fieldNames = fields.map(f => f.name.trim()).filter(Boolean);
         const uniqueFieldNames = new Set(fieldNames);
@@ -1154,21 +1310,52 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
         setError('');
 
         try {
+            const companyId = getCompanyId();
+            if (!companyId) {
+                setError('Company ID not found. Please refresh the page and try again.');
+                return;
+            }
+
             const formData = {
                 name: formName.trim(),
-                categoryId: selectedCategory,
+                companyId: companyId,
+                categoryId: selectedCategory.trim(),
                 enabled: true,
                 fields: fields.map(field => ({
                     name: field.name.trim(),
                     type: field.type,
-                    required: field.required,
+                    required: field.required || false,
                     placeholder: field.placeholder || '',
                     ...(field.type === 'dropdown' && { 
-                        options: field.options.map(opt => opt.value.trim()) 
+                        options: field.options.map(opt => ({
+                            value: opt.value.trim(),
+                            label: opt.value.trim()
+                        })).filter(opt => opt.value)
                     })
-                })),
-                ...(selectedSubCategory ? { subCategoryId: selectedSubCategory } : {})
+                })).filter(field => field.name && field.name.trim()),
+                // Always include subCategoryId if selected, even if empty string
+                subCategoryId: selectedSubCategory || null
             };
+
+            // Final validation of the form data
+            if (!formData.name || !formData.categoryId || !formData.fields || formData.fields.length === 0) {
+                setError('Invalid form data structure');
+                return;
+            }
+
+            // Validate field structure
+            const validFieldTypes = ['text', 'number', 'date', 'file', 'dropdown', 'checkbox', 'textarea'];
+            const invalidFields = formData.fields.filter(field => {
+                if (!field.name || !field.type) return true;
+                if (!validFieldTypes.includes(field.type)) return true;
+                if (field.type === 'dropdown' && (!field.options || field.options.length === 0)) return true;
+                return false;
+            });
+
+            if (invalidFields.length > 0) {
+                setError(`Invalid field structure: ${invalidFields.map(f => f.name || 'unnamed').join(', ')}`);
+                return;
+            }
             
             // Debug logging to understand what's being sent
             console.log('Form data being sent to API:', JSON.stringify(formData, null, 2));
@@ -1176,31 +1363,48 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
             console.log('Selected category:', selectedCategory);
             console.log('Selected sub-category:', selectedSubCategory);
             
+            // Log the exact structure being sent
+            console.log('=== FORM DATA STRUCTURE DEBUG ===');
+            console.log('formData.name:', formData.name);
+            console.log('formData.categoryId:', formData.categoryId);
+            console.log('formData.enabled:', formData.enabled);
+            console.log('formData.fields count:', formData.fields.length);
+            console.log('formData.fields:', formData.fields);
+            console.log('formData.subCategoryId:', formData.subCategoryId);
+            console.log('=== SUBCATEGORY ASSIGNMENT DEBUG ===');
+            console.log('selectedSubCategory value:', selectedSubCategory);
+            console.log('selectedSubCategory type:', typeof selectedSubCategory);
+            console.log('selectedSubCategory trimmed:', selectedSubCategory?.trim());
+            console.log('formData.subCategoryId final value:', formData.subCategoryId);
+            console.log('=== END DEBUG ===');
+            
             let savedFormId = editingFormId;
             if (editingFormId) {
                 console.log('Updating existing form with ID:', editingFormId);
                 const updated = await dispatch(updateCustomForm({ 
                     formId: editingFormId, 
-                    formData 
+                    formDTO: formData 
                 })).unwrap();
-                savedFormId = updated?.id || editingFormId;
-                toast.success("Form updated successfully!");
+                savedFormId = updated?.id || updated?.formId || editingFormId;
+                const successMessage = selectedSubCategory 
+                    ? `Form updated successfully with subcategory assignment!`
+                    : "Form updated successfully!";
+                toast.success(successMessage);
             } else {
                 console.log('Creating new form');
                 const created = await dispatch(createCustomForm(formData)).unwrap();
-                savedFormId = created?.id || created?.formId;
-                toast.success("Form created successfully!");
+                savedFormId = created?.id || created?.formId || created?.data?.id;
+                const successMessage = selectedSubCategory 
+                    ? `Form created successfully with subcategory assignment!`
+                    : "Form created successfully!";
+                toast.success(successMessage);
             }
 
-            // Assign to sub-category via dedicated endpoint if provided
+            // The subCategoryId is now included in the main form data, so no separate assignment needed
+            // However, if you need to ensure the assignment is properly saved, you can add additional logic here
             if (savedFormId && selectedSubCategory) {
-                try {
-                    await dispatch(assignFormToSubCategory({ formId: savedFormId, subCategoryId: selectedSubCategory })).unwrap();
-                    toast.success("Sub-category assigned to form");
-                } catch (e) {
-                    console.error('Failed to assign sub-category:', e);
-                    toast.error("Failed to assign sub-category");
-                }
+                console.log('Form saved with subcategory assignment:', { formId: savedFormId, subCategoryId: selectedSubCategory });
+                toast.success("Form saved with subcategory assignment successfully!");
             }
             
             // Return to listing view
@@ -1212,7 +1416,15 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
             // Extract more specific error information
             let errorMessage = 'Failed to save form. Please try again.';
             
-            if (error?.message) {
+            if (error?.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error?.response?.data?.error) {
+                errorMessage = error.response.data.error;
+            } else if (error?.response?.data?.validationErrors) {
+                errorMessage = `Validation errors: ${JSON.stringify(error.response.data.validationErrors)}`;
+            } else if (error?.response?.data?.errors) {
+                errorMessage = `Validation errors: ${JSON.stringify(error.response.data.errors)}`;
+            } else if (error?.message) {
                 errorMessage = error.message;
             } else if (error?.error) {
                 errorMessage = error.error;
@@ -1227,8 +1439,15 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                 errorData: error?.error,
                 response: error?.response,
                 status: error?.response?.status,
-                data: error?.response?.data
+                data: error?.response?.data,
+                statusText: error?.response?.statusText,
+                headers: error?.response?.headers,
+                validationErrors: error?.response?.data?.validationErrors,
+                errors: error?.response?.data?.errors
             });
+            
+            // Log the actual form data that was sent
+            console.error('Form data that was sent:', formData);
             
             setError(errorMessage);
             toast.error(errorMessage);
@@ -1424,16 +1643,15 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                     <tr>
                                         <th className="text-left p-4 font-semibold text-gray-700">Form Name</th>
                                         <th className="text-left p-4 font-semibold text-gray-700">Assigned Category</th>
-                                        <th className="text-left p-4 font-semibold text-gray-700">Status</th>
                                         <th className="text-left p-4 font-semibold text-gray-700">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {forms.map((form) => (
                                         <tr 
-                                            key={form.id || form.formId} 
+                                            key={getFormId(form)} 
                                             className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                                            onClick={() => handleEditForm(form.id || form.formId)}
+                                            onClick={() => handleEditForm(getFormId(form))}
                                         >
                                             <td className="p-4 font-medium">{form.name}</td>
                                             <td className="p-4 text-gray-600">
@@ -1446,20 +1664,11 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                                 })()}
                                             </td>
                                             <td className="p-4">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                    form.enabled
-                                                        ? 'bg-green-100 text-green-700' 
-                                                        : 'bg-gray-100 text-gray-600'
-                                                }`}>
-                                                    {form.enabled ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </td>
-                                            <td className="p-4">
                                                 <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handleEditForm(form.id || form.formId);
+                                                            handleEditForm(getFormId(form));
                                                         }}
                                                         className="text-blue-600 hover:text-blue-800"
                                                         title="Edit Form"
@@ -1469,21 +1678,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handleToggleFormStatus(form.id || form.formId);
-                                                        }}
-                                                        className={`text-sm px-2 py-1 rounded ${
-                                                            form.enabled
-                                                                ? 'text-orange-600 hover:text-orange-800'
-                                                                : 'text-green-600 hover:text-green-800'
-                                                        }`}
-                                                        title={form.enabled ? 'Deactivate' : 'Activate'}
-                                                    >
-                                                        {form.enabled ? 'Deactivate' : 'Activate'}
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onDeleteForm(form.id || form.formId);
+                                                            onDeleteForm(getFormId(form));
                                                         }}
                                                         className="text-red-600 hover:text-red-800"
                                                         title="Delete Form"
@@ -1517,7 +1712,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Form Details Section */}
+                        {/* CREATE FORM VIEW - Form Details Section */}
                         <div className="space-y-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1556,6 +1751,11 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             🧩 Select Sub-Category
+                                            {selectedSubCategory && (
+                                                <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                                                    ✓ Assigned
+                                                </span>
+                                            )}
                                         </label>
                                         <select
                                             value={selectedSubCategory}
@@ -1570,6 +1770,13 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                                 </option>
                                             ))}
                                         </select>
+                                        {selectedSubCategory && (
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Form will be assigned to: {subCategoriesForSelectedCategory.find(sub => 
+                                                    (sub.subCategoryId || sub.id) === selectedSubCategory
+                                                )?.name || 'Unknown subcategory'}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1710,7 +1917,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {/* Form Details Section */}
+                        {/* EDIT FORM VIEW - Form Details Section */}
                         <div className="space-y-6">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1749,6 +1956,11 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-2">
                                             🧩 Select Sub-Category
+                                            {selectedSubCategory && (
+                                                <span className="ml-2 text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                                                    ✓ Assigned
+                                                </span>
+                                            )}
                                         </label>
                                         <select
                                             value={selectedSubCategory}
@@ -1763,6 +1975,13 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                                 </option>
                                             ))}
                                         </select>
+                                        {selectedSubCategory && (
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                Form will be assigned to: {subCategoriesForSelectedCategory.find(sub => 
+                                                    (sub.subCategoryId || sub.id) === selectedSubCategory
+                                                )?.name || 'Unknown subcategory'}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -2138,7 +2357,7 @@ const AssetSettingsPage = () => {
     } = useSelector(state => state.assetCategories);
     const { locations, loading: locationsLoading, error: locationsError } = useSelector(state => state.assetLocations);
     const { statuses, loading: statusesLoading, error: statusesError } = useSelector(state => state.assetStatuses);
-    const { forms, loading: formsLoading } = useSelector(state => state.customForms);
+    const { forms, loading: formsLoading } = useSelector(state => state.customForm);
     const { formattingsByCategory, loading: formattingLoading } = useSelector(state => state.idFormatting);
     
     // New Redux state selectors for assets and custom forms
@@ -2255,7 +2474,10 @@ const AssetSettingsPage = () => {
         dispatch(fetchAssetCategories());
         dispatch(fetchAssetLocations());
         dispatch(fetchAssetStatuses());
-        dispatch(fetchCustomForms());
+        const companyId = getCompanyId();
+        if (companyId) {
+            dispatch(fetchCustomForms({ companyId }));
+        }
         dispatch(fetchIdFormattings());
     }, [dispatch]);
 
@@ -2858,7 +3080,7 @@ const AssetSettingsPage = () => {
     const handleFetchCustomForms = async (companyId, categoryId = null) => {
         console.log('Fetching custom forms:', { companyId, categoryId });
         try {
-            const result = await dispatch(fetchCustomFormsNew({ companyId, categoryId })).unwrap();
+            const result = await dispatch(fetchCustomForms({ companyId, categoryId })).unwrap();
             console.log('Fetched custom forms:', result);
             toast.success(`Loaded ${result.length || 0} custom forms successfully!`);
             return result;
@@ -3009,9 +3231,46 @@ const AssetSettingsPage = () => {
         }
     };
 
+    /**
+     * Fetch forms by category or subcategory
+     * Note: The backend API only supports fetching forms by category ID directly.
+     * For subcategories, we fetch all forms and filter on the frontend.
+     * 
+     * @param {string} categoryId - Can be either a category ID or subcategory ID (starting with "SUB-")
+     * @returns {Array} Array of forms matching the category/subcategory
+     */
     const handleFetchFormsByCategory = async (categoryId) => {
-        console.log('Fetching forms by category:', categoryId);
+        console.log('Fetching forms by category/subcategory:', categoryId);
         try {
+            // If categoryId starts with "SUB-", it's a subcategory ID
+            if (categoryId && categoryId.startsWith('SUB-')) {
+                console.log('Subcategory ID detected, fetching forms by parent category');
+                
+                // Get the company ID from session storage
+                const companyId = getCompanyId();
+                if (!companyId) {
+                    toast.error("Company ID not found in session");
+                    return [];
+                }
+                
+                // Fetch all forms for the company and filter by subcategory
+                const allForms = await dispatch(fetchCustomForms({ companyId })).unwrap();
+                console.log('All forms fetched:', allForms);
+                console.log('Looking for subcategory ID:', categoryId);
+                
+                // Filter forms that are assigned to this subcategory
+                const formsForSubcategory = allForms.filter(form => {
+                    const formSubcategoryId = form?.subCategoryId || form?.assignedSubCategoryId || form?.subcategoryId || form?.subCategory?.id;
+                    console.log('Form:', form.name || form.formName, 'Subcategory ID:', formSubcategoryId, 'Matches:', String(formSubcategoryId) === String(categoryId));
+                    return formSubcategoryId && String(formSubcategoryId) === String(categoryId);
+                });
+                
+                console.log('Fetched forms by subcategory:', formsForSubcategory);
+                toast.success(`Loaded ${formsForSubcategory.length || 0} forms for subcategory successfully!`);
+                return formsForSubcategory;
+            }
+            
+            // If it's a regular category ID, use the existing endpoint
             const result = await dispatch(fetchFormsByCategory(categoryId)).unwrap();
             console.log('Fetched forms by category:', result);
             toast.success(`Loaded ${result.length || 0} forms for category successfully!`);
@@ -3846,7 +4105,8 @@ const AssetSettingsPage = () => {
     // Custom Form management functions
     const handleDeleteForm = (formId) => {
         // Show custom confirmation modal instead of browser confirm
-        const form = forms.find(f => f.id === formId || f.formId === formId);
+        // Use the helper function to find the form by ID
+        const form = forms.find(f => getFormId(f) === formId);
         setDeleteFormModal({ 
             open: true, 
             formId, 
