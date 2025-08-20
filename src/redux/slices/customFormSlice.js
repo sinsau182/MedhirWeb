@@ -621,8 +621,8 @@ const customFormSlice = createSlice({
       })
       .addCase(createCustomForm.fulfilled, (state, action) => {
         state.creatingForm = false;
-        if (action.payload.form) {
-          state.forms.push(action.payload.form);
+        if (action.payload) {
+          state.forms.push(action.payload);
         }
       })
       .addCase(createCustomForm.rejected, (state, action) => {
