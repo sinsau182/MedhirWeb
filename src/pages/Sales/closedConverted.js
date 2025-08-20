@@ -364,111 +364,60 @@ const ClosedConvertedPage = () => {
               </p>
             </div>
           ) : (
-            <div className="grid gap-4">
-              {filteredLeads.filter((lead) =>
-                lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
-                lead.contactNumber?.includes(filterText) ||
-                lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
-              ).map((lead) => (
-                <div
-                  key={lead.leadId}
-                  onClick={() => handleLeadClick(lead.leadId)}
-                  className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {lead.name}
-                        </h3>
-                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                          Converted
-                        </span>
-                      </div>
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Client Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Project Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Project ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Final Quotation
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Payment Date
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredLeads.filter((lead) =>
+                      lead.name?.toLowerCase().includes(filterText.toLowerCase()) ||
+                      lead.contactNumber?.includes(filterText) ||
+                      lead.leadId?.toLowerCase().includes(filterText.toLowerCase())
+                    ).map((lead) => (
+                      <tr
+                        key={lead.leadId}
+                        onClick={() => handleLeadClick(lead.leadId)}
+                        className="hover:bg-gray-50 cursor-pointer transition-colors"
+                      >
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {lead.name || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {lead.projectName || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {lead.projectId || 'N/A'}
+                        </td>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-3">
-                        <div className="flex items-center gap-2">
-                          <FaCalendarAlt className="w-4 h-4 text-gray-400" />
-                          <span className="text-gray-600">Converted:</span>
-                          <span className="font-medium">
-                            {formatDate(lead.paymentDate)}
-                          </span>
-                        </div>
-
-                        {lead.contactNumber && (
-                          <div className="flex items-center gap-2">
-                            <FaPhone className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-600">Phone:</span>
-                            <span className="font-medium">
-                              {lead.contactNumber}
-                            </span>
-                          </div>
-                        )}
-
-                        {lead.email && (
-                          <div className="flex items-center gap-2">
-                            <FaEnvelope className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-600">Email:</span>
-                            <span className="font-medium">
-                              {lead.email}
-                            </span>
-                          </div>
-                        )}
-
-                        {lead.salesRep && (
-                          <div className="flex items-center gap-2">
-                            <FaUser className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-600">
-                              Sales Rep:
-                            </span>
-                            <span className="font-medium">
-                              {lead.salesRep}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        {lead.quotedAmount && (
-                          <div className="flex items-center gap-2">
-                            <FaRupeeSign className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-600">
-                              Quoted Amount:
-                            </span>
-                            <span className="font-medium">
-                              {formatCurrency(lead.quotedAmount)}
-                            </span>
-                          </div>
-                        )}
-
-                        {lead.finalQuotation && (
-                          <div className="flex items-center gap-2">
-                            <FaRupeeSign className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-600">
-                              Final Quotation:
-                            </span>
-                            <span className="font-medium">
-                              {formatCurrency(lead.finalQuotation)}
-                            </span>
-                          </div>
-                        )}
-
-                        {lead.signupAmount && (
-                          <div className="flex items-center gap-2">
-                            <FaRupeeSign className="w-4 h-4 text-gray-400" />
-                            <span className="text-gray-600">
-                              Signup Amount:
-                            </span>
-                            <span className="font-medium">
-                              {formatCurrency(lead.signupAmount)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {formatCurrency(lead.finalQuotation)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {formatDate(lead.paymentDate)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
