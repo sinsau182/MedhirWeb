@@ -724,7 +724,7 @@ const OdooDetailBody = ({
               {[
                 {
                   label: "Project Name",
-                  field: "projectName",
+                  field: "name",
                   type: "text",
                 },
                 {

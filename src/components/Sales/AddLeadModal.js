@@ -47,7 +47,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
     projectType: '',
     address: '',
     area: '',
-    // budget: '',
+    budget: '',
     // designStyle: '',
     leadSource: '',
     referralName: '',
@@ -92,7 +92,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
         projectType: '',
         address: '',
         area: '',
-        // budget: '',
+        budget: '',
         // designStyle: '',
         leadSource: '',
         referralName: '',
@@ -253,15 +253,15 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
         processedValue = value.slice(0, 100);
         break;
       
-      // case 'budget':
-      //   // Only allow numbers and decimal point
-      //   processedValue = value.replace(/[^\d.]/g, '');
-      //   // Prevent multiple decimal points
-      //   const decimalCount = (processedValue.match(/\./g) || []).length;
-      //   if (decimalCount > 1) {
-      //     processedValue = processedValue.replace(/\.+$/, '');
-      //   }
-      //   break;
+      case 'budget':
+        // Only allow numbers and decimal point
+        processedValue = value.replace(/[^\d.]/g, '');
+        // Prevent multiple decimal points
+        const decimalCount = (processedValue.match(/\./g) || []).length;
+        if (decimalCount > 1) {
+          processedValue = processedValue.replace(/\.+$/, '');
+        }
+        break;
       
       case 'address':
         // Allow alphanumeric, spaces, and common address characters
@@ -338,6 +338,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
               {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
 
+            <div className='grid grid-cols-2 gap-2'>
             {/* Contact Number Field */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
@@ -352,24 +353,25 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
               />
               {errors.contactNumber && <p className="text-red-500 text-xs mt-1">{errors.contactNumber}</p>}
             </div>
-
-            {/* Alternate Phone Number Field */}
+            {/* Budget Field */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
-                Alternate Phone Number
+                Budget
               </label>
               <Input
-                type="tel"
-                placeholder="Enter alternate phone number"
-                value={formData.alternateContactNumber}
-                onChange={(e) => handleInputChange('alternateContactNumber', e.target.value)}
-                className={`border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 ${errors.alternateContactNumber ? 'border-red-500' : ''}`}
+                type="number"
+                placeholder="Enter budget"
+                value={formData.budget}
+                onChange={(e) => handleInputChange('budget', e.target.value)}
+                className={`border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 ${errors.budget ? 'border-red-500' : ''}`}
               />
-              {errors.alternateContactNumber && <p className="text-red-500 text-xs mt-1">{errors.alternateContactNumber}</p>}
+              {errors.budget && <p className="text-red-500 text-xs mt-1">{errors.budget}</p>}
+            </div>
+
             </div>
 
             {/* Project Type and Lead Source */}
-            <div className='grid grid-cols-2 gap-4'>
+            <div className='grid grid-cols-2 gap-2'>
               <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 Project Type <span className="text-blue-500 font-bold">*</span>
