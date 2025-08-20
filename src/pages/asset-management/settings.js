@@ -38,7 +38,7 @@ import {
     removeSubCategoryLocal
 } from '@/redux/slices/assetCategorySlice';
 
-import { checkAssetApiHealth } from '@/redux/slices/assetSlice';
+
 
 import { 
     fetchAssetLocations, 
@@ -138,9 +138,23 @@ const getCompanyId = () => {
 
 // Helper function to get the correct form ID (prefer formId over id to avoid MongoDB ObjectId)
 const getFormId = (form) => {
+    // Add defensive programming to handle undefined/null forms
+    if (!form || typeof form !== 'object') {
+        console.warn('getFormId called with invalid form:', form);
+        return null;
+    }
+    
     // For new forms, use formId; for old forms, use id
     // This ensures we're using the custom form ID, not the MongoDB ObjectId
-    return form.formId || form.id;
+    const formId = form.formId || form.id;
+    
+    // Additional validation to ensure we have a valid ID
+    if (!formId || formId === 'undefined' || formId === undefined) {
+        console.warn('getFormId: Form has no valid ID:', { form, formId });
+        return null;
+    }
+    
+    return formId;
 };
 
 // Helper component for a consistent setting section layout
@@ -242,7 +256,7 @@ const CategorySettings = ({
             
             {/* Step 2: Category Cards with Sub-Categories */}
             <div className="space-y-6">
-                {editedCategories.map(cat => {
+                {editedCategories && Array.isArray(editedCategories) ? editedCategories.filter(cat => cat && typeof cat === 'object').map(cat => {
                     // Ensure we're using the custom categoryId, not MongoDB _id
         const categoryId = cat.categoryId;
                     const subCategories = cat.subCategories || [];
@@ -581,10 +595,10 @@ const CategorySettings = ({
 
                         </div>
                     );
-                })}
+                }) : null}
                 
                 {/* Empty State for Categories */}
-                {editedCategories.length === 0 && (
+                {(!editedCategories || editedCategories.length === 0) && (
                     <div className="text-center py-12 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
                         <div className="text-4xl mb-4">📁</div>
                         <h4 className="text-lg font-semibold mb-2">No categories yet</h4>
@@ -841,6 +855,27 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
         dispatch(fetchAssetCategories()); // Always load categories upfront
     }, [dispatch]);
 
+    // Debug effect to monitor forms data
+    useEffect(() => {
+        console.log('=== FORMS DATA MONITORING ===');
+        console.log('Forms from Redux:', forms);
+        console.log('Forms type:', typeof forms);
+        console.log('Forms is array:', Array.isArray(forms));
+        if (forms && Array.isArray(forms)) {
+            console.log('Forms count:', forms.length);
+            console.log('Forms structure:', forms.map((form, index) => ({
+                index,
+                hasForm: !!form,
+                type: typeof form,
+                name: form?.name,
+                id: form?.id,
+                formId: form?.formId,
+                keys: form ? Object.keys(form) : []
+            })));
+        }
+        console.log('=== END FORMS MONITORING ===');
+    }, [forms]);
+
     // Load categories for form creation (backup)
     useEffect(() => {
         if (view === 'create' || view === 'edit') {
@@ -860,7 +895,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
             selectedCategory,
             matchingCategory: matchingCategory?.name,
             subCategoriesCount: subCategories.length,
-            subCategories: subCategories.map(sub => ({ id: sub.id, subCategoryId: sub.subCategoryId, name: sub.name }))
+            subCategories: subCategories.filter(sub => sub && typeof sub === 'object').map(sub => ({ id: sub.id, subCategoryId: sub.subCategoryId, name: sub.name }))
         });
         
         return subCategories;
@@ -883,7 +918,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
     useEffect(() => {
         if (view === 'edit' && editingFormId && categories.length > 0) {
             // Use the helper function to find the form by ID
-            const form = forms.find(f => getFormId(f) === editingFormId);
+            const form = forms && Array.isArray(forms) ? forms.find(f => f && getFormId(f) === editingFormId) : null;
             const formCategoryId = form?.categoryId || form?.assignedCategoryId;
             
             if (form && formCategoryId) {
@@ -892,7 +927,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                     formAssignedCategoryId: form.assignedCategoryId,
                     actualCategoryId: formCategoryId,
                     currentSelectedCategory: selectedCategory,
-                    availableCategories: categories.map(c => ({ id: c.id, categoryId: c.categoryId, name: c.name }))
+                    availableCategories: categories && Array.isArray(categories) ? categories.filter(c => c && typeof c === 'object').map(c => ({ id: c.id, categoryId: c.categoryId, name: c.name })) : []
                 });
                 
                 // Find matching category ID (form category might match either cat.id or cat.categoryId)
@@ -923,9 +958,9 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
 
     // Ensure fields are properly mapped when form data is available
     useEffect(() => {
-        if (view === 'edit' && editingFormId && forms.length > 0) {
+        if (view === 'edit' && editingFormId && forms && Array.isArray(forms) && forms.length > 0) {
             // Use the helper function to find the form by ID
-            const form = forms.find(f => getFormId(f) === editingFormId);
+            const form = forms && Array.isArray(forms) ? forms.find(f => f && getFormId(f) === editingFormId) : null;
             if (form && form.fields && form.fields.length > 0) {
                 const currentFieldsCount = fields.length;
                 const apiFieldsCount = form.fields.length;
@@ -970,8 +1005,8 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
 
     // Simple effect to ensure subcategory is set when editing starts
     useEffect(() => {
-        if (view === 'edit' && editingFormId && forms.length > 0) {
-            const form = forms.find(f => getFormId(f) === editingFormId);
+        if (view === 'edit' && editingFormId && forms && Array.isArray(forms) && forms.length > 0) {
+            const form = forms && Array.isArray(forms) ? forms.find(f => f && getFormId(f) === editingFormId) : null;
             if (form) {
                 const formSubCatId = form?.assignedSubCategoryId || form?.subCategoryId || form?.subCategory?.id;
                 if (formSubCatId && !selectedSubCategory) {
@@ -1039,8 +1074,21 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
 
     const handleEditForm = (formId) => {
         // Use the helper function to find the form by ID
-        const form = forms.find(f => getFormId(f) === formId);
+        const form = forms && Array.isArray(forms) ? forms.find(f => f && getFormId(f) === formId) : null;
         console.log('handleEditForm called with:', { formId, form, categoriesCount: categories?.length });
+        
+        // Validate form data before proceeding
+        if (!form || typeof form !== 'object') {
+            console.error('Invalid form data:', form);
+            toast.error('Invalid form data. Please refresh the page and try again.');
+            return;
+        }
+        
+        if (!form.name) {
+            console.error('Form missing name property:', form);
+            toast.error('Form data is incomplete. Please refresh the page and try again.');
+            return;
+        }
         
         // Log the raw form data to see exactly what we're working with
         console.log('=== RAW FORM DATA ===');
@@ -1146,7 +1194,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
     const handleToggleFormStatus = async (formId) => {
         try {
             // Use the helper function to find the form by ID
-            const form = forms.find(f => getFormId(f) === formId);
+            const form = forms && Array.isArray(forms) ? forms.find(f => f && getFormId(f) === formId) : null;
             if (form) {
                 await dispatch(toggleFormStatus({ 
                     formId, 
@@ -1452,7 +1500,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                 console.log('Updating existing form with ID:', editingFormId);
                 const updated = await dispatch(updateCustomForm({ 
                     formId: editingFormId, 
-                    formDTO: formData 
+                    formData: formData 
                 })).unwrap();
                 savedFormId = updated?.id || updated?.formId || editingFormId;
                 const successMessage = selectedSubCategory 
@@ -1602,7 +1650,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                 <h4 className="font-semibold text-gray-800 mb-4">Form Preview</h4>
                 <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-4">
                     <h3 className="text-xl font-bold text-gray-800">{formName || 'Untitled Form'}</h3>
-                    {fields.map(field => (
+                    {fields && Array.isArray(fields) ? fields.filter(field => field && typeof field === 'object').map(field => (
                         <div key={field.id} className="space-y-2">
                             <label className="block text-sm font-medium text-gray-700">
                                 {field.name}
@@ -1667,7 +1715,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                 />
                             )}
                         </div>
-                    ))}
+                    )) : null}
                 </div>
             </div>
         );
@@ -1693,7 +1741,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
                             <p className="mt-4 text-gray-600">Loading forms...</p>
                         </div>
-                    ) : forms.length === 0 ? (
+                    ) : (!forms || forms.length === 0 || forms.every(form => !form || !form.name)) ? (
                         <div className="text-center py-12 text-gray-500">
                             <div className="text-4xl mb-4">📝</div>
                             <h4 className="text-lg font-semibold mb-2">No forms created yet</h4>
@@ -1716,13 +1764,20 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {forms.map((form) => (
+                                    {forms && Array.isArray(forms) ? forms.filter(form => form && typeof form === 'object' && form.name && getFormId(form)).map((form) => (
                                         <tr 
                                             key={getFormId(form)} 
                                             className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                                            onClick={() => handleEditForm(getFormId(form))}
+                                            onClick={() => {
+                                                const formId = getFormId(form);
+                                                if (formId) {
+                                                    handleEditForm(formId);
+                                                } else {
+                                                    toast.error('Cannot edit: Invalid form ID');
+                                                }
+                                            }}
                                         >
-                                            <td className="p-4 font-medium">{form.name}</td>
+                                            <td className="p-4 font-medium">{form.name || 'Unnamed Form'}</td>
                                             <td className="p-4 text-gray-600">
                                                 {(() => {
                                                     const formCategoryId = form.categoryId || form.assignedCategoryId;
@@ -1737,7 +1792,12 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            handleEditForm(getFormId(form));
+                                                            const formId = getFormId(form);
+                                                            if (formId) {
+                                                                handleEditForm(formId);
+                                                            } else {
+                                                                toast.error('Cannot edit: Invalid form ID');
+                                                            }
                                                         }}
                                                         className="text-blue-600 hover:text-blue-800"
                                                         title="Edit Form"
@@ -1748,7 +1808,12 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
-                                                            onDeleteForm(getFormId(form));
+                                                            const formId = getFormId(form);
+                                                            if (formId) {
+                                                                onDeleteForm(formId);
+                                                            } else {
+                                                                toast.error('Cannot delete: Invalid form ID');
+                                                            }
                                                         }}
                                                         className="text-red-600 hover:text-red-800"
                                                         title="Delete Form"
@@ -1758,7 +1823,13 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )) : (
+                                        <tr>
+                                            <td colSpan="3" className="p-4 text-center text-gray-500">
+                                                No forms available
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -1810,11 +1881,11 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                             disabled={categoriesLoading}
                                         >
                                             <option value="">Select a category...</option>
-                                            {categories.map(cat => (
+                                            {categories && Array.isArray(categories) ? categories.filter(cat => cat && typeof cat === 'object').map(cat => (
                                                 <option key={cat.categoryId || cat.id} value={cat.categoryId || cat.id}>
                                                     {cat.name}
                                                 </option>
-                                            ))}
+                                            )) : []}
                                         </select>
                                         {categoriesLoading && <div className="text-blue-600 text-sm mt-1">Loading categories...</div>}
                                     </div>
@@ -1841,11 +1912,11 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                             disabled={!selectedCategory || categoriesLoading}
                                         >
                                             <option value="">Select a sub-category...</option>
-                                            {subCategoriesForSelectedCategory.map(sub => (
+                                            {subCategoriesForSelectedCategory && Array.isArray(subCategoriesForSelectedCategory) ? subCategoriesForSelectedCategory.filter(sub => sub && typeof sub === 'object').map(sub => (
                                                 <option key={sub.subCategoryId || sub.id} value={sub.subCategoryId || sub.id}>
                                                     {sub.name}
                                                 </option>
-                                            ))}
+                                            )) : []}
                                         </select>
                                         {selectedSubCategory && (
                                             <p className="text-xs text-gray-500 mt-1">
@@ -2021,11 +2092,11 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                             disabled={categoriesLoading}
                                         >
                                             <option value="">Select a category...</option>
-                                            {categories.map(cat => (
+                                            {categories && Array.isArray(categories) ? categories.filter(cat => cat && typeof cat === 'object').map(cat => (
                                                 <option key={cat.categoryId || cat.id} value={cat.categoryId || cat.id}>
                                                     {cat.name}
                                                 </option>
-                                            ))}
+                                            )) : []}
                                         </select>
                                         {categoriesLoading && <div className="text-blue-600 text-sm mt-1">Loading categories...</div>}
                                     </div>
@@ -2045,11 +2116,11 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                                             disabled={!selectedCategory || categoriesLoading}
                                         >
                                             <option value="">Select a sub-category...</option>
-                                            {subCategoriesForSelectedCategory.map(sub => (
+                                            {subCategoriesForSelectedCategory && Array.isArray(subCategoriesForSelectedCategory) ? subCategoriesForSelectedCategory.filter(sub => sub && typeof sub === 'object').map(sub => (
                                                 <option key={sub.subCategoryId || sub.id} value={sub.subCategoryId || sub.id}>
                                                     {sub.name}
                                                 </option>
-                                            ))}
+                                            )) : []}
                                         </select>
                                         {selectedSubCategory && (
                                             <p className="text-xs text-gray-500 mt-1">
@@ -2628,47 +2699,13 @@ const AssetSettingsPage = () => {
         assetsList: []
     });
 
-    // Network status state
-    const [networkStatus, setNetworkStatus] = useState({ 
-        isOnline: true, 
-        lastChecked: null, 
-        apiHealth: null 
-    });
+
 
     // Initialize data
     useEffect(() => {
         console.log('Loading asset management data...');
         
-        // Check network and API health
-        const checkNetworkStatus = async () => {
-            try {
-                // Check if browser is online
-                const isOnline = navigator.onLine;
-                setNetworkStatus(prev => ({ ...prev, isOnline }));
-                
-                if (isOnline) {
-                    // Check API health
-                    const apiHealth = await checkAssetApiHealth();
-                    setNetworkStatus(prev => ({ 
-                        ...prev, 
-                        apiHealth,
-                        lastChecked: new Date()
-                    }));
-                    
-                    if (!apiHealth.isHealthy) {
-                        console.warn('API health check failed:', apiHealth.error);
-                        toast.warning('API server appears to be offline. Some features may not work properly.');
-                    }
-                } else {
-                    console.warn('Browser is offline');
-                    toast.warning('You appear to be offline. Please check your internet connection.');
-                }
-            } catch (error) {
-                console.error('Error checking network status:', error);
-            }
-        };
-        
-        checkNetworkStatus();
+
         
         dispatch(fetchAssetCategories());
         dispatch(fetchAssetLocations());
@@ -2682,7 +2719,7 @@ const AssetSettingsPage = () => {
 
     useEffect(() => {
         console.log('Categories updated in component:', categories);
-        console.log('Categories structure:', categories?.map(cat => ({
+        console.log('Categories structure:', categories?.filter(cat => cat && typeof cat === 'object').map(cat => ({
             id: cat.id,
             categoryId: cat.categoryId,
             name: cat.name,
@@ -2693,7 +2730,9 @@ const AssetSettingsPage = () => {
         // Only update editedCategories if categories have actually changed
         if (categories && categories.length > 0) {
             console.log('Updating editedCategories with new categories');
-            setEditedCategories([...categories]);
+            // Filter out any null/undefined values before setting state
+            const validCategories = categories.filter(cat => cat && typeof cat === 'object');
+            setEditedCategories([...validCategories]);
         } else if (!categories || categories.length === 0) {
             console.log('Setting editedCategories to empty array');
             setEditedCategories([]);
@@ -2701,13 +2740,15 @@ const AssetSettingsPage = () => {
     }, [categories]);
 
     useEffect(() => {
-        setEditedLocations(locations || []);
+        // Filter out any null/undefined values before setting state
+        const validLocations = locations ? locations.filter(loc => loc && typeof loc === 'object') : [];
+        setEditedLocations(validLocations);
     }, [locations]);
 
     useEffect(() => {
         console.log('=== STATUSES LOADED FROM REDUX ===');
         console.log('Raw statuses from Redux:', statuses);
-        console.log('Statuses structure:', statuses?.map(s => ({
+        console.log('Statuses structure:', statuses?.filter(s => s && typeof s === 'object').map(s => ({
             id: s.id,
             statusId: s.statusId,
             statusLabelId: s.statusLabelId,
@@ -2716,7 +2757,9 @@ const AssetSettingsPage = () => {
             description: s.description,
             sortOrder: s.sortOrder
         })));
-        setEditedStatuses(statuses || []);
+        // Filter out any null/undefined values before setting state
+        const validStatuses = statuses ? statuses.filter(s => s && typeof s === 'object') : [];
+        setEditedStatuses(validStatuses);
     }, [statuses]);
 
     // Enhanced category management functions
@@ -4500,9 +4543,23 @@ const AssetSettingsPage = () => {
 
     // Custom Form management functions
     const handleDeleteForm = (formId) => {
+        // Validate formId before proceeding
+        if (!formId || formId === 'undefined' || formId === undefined) {
+            console.error('Invalid form ID for deletion:', formId);
+            toast.error('Cannot delete: Invalid form ID');
+            return;
+        }
+        
         // Show custom confirmation modal instead of browser confirm
         // Use the helper function to find the form by ID
-        const form = forms.find(f => getFormId(f) === formId);
+        const form = forms && Array.isArray(forms) ? forms.find(f => f && getFormId(f) === formId) : null;
+        
+        if (!form) {
+            console.error('Form not found for deletion:', formId);
+            toast.error('Form not found. Please refresh the page and try again.');
+            return;
+        }
+        
         setDeleteFormModal({ 
             open: true, 
             formId, 
@@ -4756,54 +4813,7 @@ const AssetSettingsPage = () => {
                             <p className="text-gray-500 mt-1">Configure and standardize your company&apos;s asset tracking system.</p>
                         </div>
                         
-                        {/* Network Status Indicator */}
-                        <div className="flex items-center gap-3">
-                            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
-                                networkStatus.isOnline && networkStatus.apiHealth?.isHealthy
-                                    ? 'bg-green-100 text-green-700'
-                                    : networkStatus.isOnline
-                                    ? 'bg-yellow-100 text-yellow-700'
-                                    : 'bg-red-100 text-red-700'
-                            }`}>
-                                <div className={`w-2 h-2 rounded-full ${
-                                    networkStatus.isOnline && networkStatus.apiHealth?.isHealthy
-                                        ? 'bg-green-500'
-                                        : networkStatus.isOnline
-                                        ? 'bg-yellow-500'
-                                        : 'bg-red-500'
-                                }`}></div>
-                                <span>
-                                    {networkStatus.isOnline && networkStatus.apiHealth?.isHealthy
-                                        ? 'Online'
-                                        : networkStatus.isOnline
-                                        ? 'API Offline'
-                                        : 'Offline'
-                                    }
-                                </span>
-                            </div>
-                            
-                            {networkStatus.lastChecked && (
-                                <button
-                                    onClick={async () => {
-                                        const apiHealth = await checkAssetApiHealth();
-                                        setNetworkStatus(prev => ({ 
-                                            ...prev, 
-                                            apiHealth,
-                                            lastChecked: new Date()
-                                        }));
-                                        if (apiHealth.isHealthy) {
-                                            toast.success('API connection restored!');
-                                        } else {
-                                            toast.error('API still offline');
-                                        }
-                                    }}
-                                    className="text-blue-600 hover:text-blue-800 text-sm"
-                                    title="Check API Status"
-                                >
-                                    🔄
-                                </button>
-                            )}
-                        </div>
+
                     </div>
                 </header>
                 
