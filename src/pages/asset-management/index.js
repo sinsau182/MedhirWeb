@@ -1044,11 +1044,121 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
                                 <div className="text-center py-6 text-gray-600">Select a subcategory to load its custom form(s).</div>
                             )}
                             
-
+                            {/* Static Laptop Form for IT Equipment when no custom forms are loaded */}
+                            {formData.category && selectedSubcategoryId && !customFormsLoading && subcategoryFilteredForms.length === 0 && formData.category === 'IT Equipment' && (
+                                <div className="p-4 border rounded-md">
+                                    <h3 className="font-semibold text-lg mb-4 text-gray-800">Laptop Form</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <InputField 
+                                                label="Processor *" 
+                                                name="processor" 
+                                                value={formData.processor}
+                                                onChange={handleChange}
+                                                placeholder="Enter processor details"
+                                            />
+                                        </div>
+                                        <div>
+                                            <InputField 
+                                                label="RAM *" 
+                                                name="ram" 
+                                                value={formData.ram}
+                                                onChange={handleChange}
+                                                placeholder="e.g., 16GB"
+                                            />
+                                        </div>
+                                        <div>
+                                            <InputField 
+                                                label="Storage *" 
+                                                name="memory" 
+                                                value={formData.memory}
+                                                onChange={handleChange}
+                                                placeholder="e.g., 512GB SSD"
+                                            />
+                                        </div>
+                                        <div>
+                                            <InputField 
+                                                label="Graphics Card *" 
+                                                name="graphicsCard" 
+                                                value={formData.graphicsCard}
+                                                onChange={handleChange}
+                                                placeholder="Enter graphics card details"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                     
-
+                    {/* Conditional IT Fields */}
+                    {showITFields && (
+                        <div className="p-4 border rounded-md bg-blue-50 border-blue-200">
+                            <h3 className="font-semibold text-lg mb-4 text-blue-800">IT Equipment Details</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <SelectField 
+                                    label="Laptop Company" 
+                                    name="laptopCompany"
+                                    value={formData.laptopCompany}
+                                    onChange={handleChange}
+                                >
+                                    <option value="">Select Company...</option>
+                                    {MOCK_LAPTOP_COMPANIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                </SelectField>
+                                <InputField 
+                                    label="Processor/Model" 
+                                    name="processor" 
+                                    value={formData.processor}
+                                    onChange={handleChange}
+                                />
+                                <InputField 
+                                    label="RAM (e.g., 16GB)" 
+                                    name="ram" 
+                                    value={formData.ram}
+                                    onChange={handleChange}
+                                />
+                                <InputField 
+                                    label="Memory (e.g., 512GB SSD)" 
+                                    name="memory" 
+                                    value={formData.memory}
+                                    onChange={handleChange}
+                                />
+                                <InputField 
+                                    label="Graphics Card" 
+                                    name="graphicsCard" 
+                                    value={formData.graphicsCard}
+                                    onChange={handleChange}
+                                />
+                                <SelectField 
+                                    label="Condition" 
+                                    name="condition"
+                                    value={formData.condition}
+                                    onChange={handleChange}
+                                >
+                                    <option value="New">New</option>
+                                    <option value="Good">Good</option>
+                                    <option value="Fair">Fair</option>
+                                    <option value="Damaged">Damaged</option>
+                                </SelectField>
+                                <InputField 
+                                    label="Accessories" 
+                                    name="accessories" 
+                                    value={formData.accessories}
+                                    onChange={handleChange}
+                                    placeholder="e.g., Charger, Mouse" 
+                                />
+                                <SelectField 
+                                    label="Assigned To Team" 
+                                    name="team"
+                                    value={formData.team}
+                                    onChange={handleChange}
+                                >
+                                    <option value="">Select Team...</option>
+                                    {MOCK_TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
+                                </SelectField>
+                            </div>
+                        </div>
+                    )}
 
 
 
@@ -1275,4 +1385,4 @@ const AssetManagementPage = () => {
     );
 };
 
-export default withAuth(AssetManagementPage);
+export default withAuth(AssetManagementPage); 
