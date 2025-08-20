@@ -9,7 +9,7 @@ import { fetchAssetCategories } from '@/redux/slices/assetCategorySlice';
 import { fetchAssetLocations } from '@/redux/slices/assetLocationSlice';
 import { fetchAssetStatuses } from '@/redux/slices/assetStatusSlice';
 import { createAssetWithDTO, fetchAllAssets, patchAssetByAssetId } from '@/redux/slices/assetSlice';
-import { fetchCustomForms, fetchFormsByCategory } from '@/redux/slices/customFormSlice';
+import { fetchCustomForms, fetchCustomFormsByCategory } from '@/redux/slices/customFormSlice';
 
 import getConfig from 'next/config';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
@@ -424,8 +424,8 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             selectedSubcategoryId,
             selectedCategoryData
         });
-        // Use fetchFormsByCategory to get forms for the specific category
-        dispatch(fetchFormsByCategory(categoryId));
+        // Use fetchCustomFormsByCategory to get forms for the specific category
+        dispatch(fetchCustomFormsByCategory(categoryId));
     }, [selectedSubcategoryId, selectedCategoryData, dispatch]);
 
     // Debug logging for forms loading

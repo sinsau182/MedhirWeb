@@ -1265,33 +1265,7 @@ const AssetDetailPage = () => {
         );
     }
     
-    // Helper to get subcategory name from asset
-    const getSubcategoryName = (assetObj) => {
-        if (!assetObj) return 'No Asset Data';
-        
-        // Debug: Log the asset object to see what fields are available
-        console.log('Asset object in getSubcategoryName:', assetObj);
-        console.log('Available fields:', Object.keys(assetObj));
-        
-        // Check for different possible subcategory field names
-        const subcategoryId = assetObj.subCategoryId || assetObj.subcategoryId || assetObj.sub_category_id || assetObj.subcategory_id || assetObj.subCategory || assetObj.subcategory;
-        
-        console.log('Subcategory ID found:', subcategoryId);
-        
-        if (!subcategoryId) return 'No Subcategory';
-        
-        if (!Array.isArray(categories) || categories.length === 0) return 'Loading...';
-        
-        for (const cat of categories) {
-            if (Array.isArray(cat.subCategories)) {
-                const subcat = cat.subCategories.find(
-                    s => (s.subCategoryId || s.id) === subcategoryId
-                );
-                if (subcat) return subcat.name || 'Unknown Subcategory';
-            }
-        }
-        return 'Unknown Subcategory';
-    };
+
     
     return (
         <AssetManagementLayout>
