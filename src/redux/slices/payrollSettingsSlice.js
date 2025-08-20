@@ -29,7 +29,7 @@ export const fetchTDS = createAsyncThunk(
   }
 );
 
-// Async thunk for fetching Professional Tax settings
+// Async thunk for fetching Professional Tax settings from main payroll settings
 export const fetchPTAX = createAsyncThunk(
   "payrollSettings/fetchPTAX",
   async (_, { rejectWithValue }) => {
@@ -37,19 +37,64 @@ export const fetchPTAX = createAsyncThunk(
       const token = getItemFromSessionStorage("token", null);
       const company = sessionStorage.getItem("employeeCompanyId");
       const response = await axios.get(
-        `${publicRuntimeConfig.apiURL}/professional-tax-settings/company/${company}`,
+        `${publicRuntimeConfig.apiURL}/api/settings/payroll/company/${company}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      return response.data;
+      // Extract professional tax data from the response
+      if (response.data && response.data.professionalTaxThreshold !== undefined) {
+        return {
+          monthlySalaryThreshold: response.data.professionalTaxThreshold,
+          amountAboveThreshold: response.data.professionalTaxAmountAboveThreshold,
+          amountBelowThreshold: response.data.professionalTaxAmountBelowThreshold,
+          description: response.data.description || "",
+        };
+      }
+      return null;
     } catch (error) {
       if (error.response?.status === 404) {
         return null;
       }
       return rejectWithValue(error.response?.data?.message || "Failed to fetch Professional Tax settings");
+    }
+  }
+);
+
+// Async thunk for fetching Pay Structure settings from main payroll settings
+export const fetchPayStructureSettings = createAsyncThunk(
+  "payrollSettings/fetchPayStructureSettings",
+  async (_, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const company = sessionStorage.getItem("employeeCompanyId");
+      const response = await axios.get(
+        `${publicRuntimeConfig.apiURL}/api/settings/payroll/company/${company}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      // Extract pay structure data from the response
+      if (response.data && response.data.basicPercentage !== undefined) {
+        return {
+          basicPercentage: response.data.basicPercentage,
+          hraPercentage: response.data.hraPercentage,
+          employerPfPercentage: response.data.employerPfPercentage,
+          employeePfPercentage: response.data.employeePfPercentage,
+          pfCap: response.data.pfCap,
+          description: response.data.description || "",
+        };
+      }
+      return null;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch Pay Structure settings");
     }
   }
 );
@@ -121,20 +166,52 @@ export const savePTAX = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token", null);
       const companyId = sessionStorage.getItem("employeeCompanyId");
+      const { isPtaxConfigured, payrollFreezeData, payStructureData } = getState().payrollSettings;
+      
+      // Prepare the data for the payroll settings API
+      const payrollSettingsData = {
+        companyId: companyId,
+        professionalTaxThreshold: parseFloat(ptaxData.monthlySalaryThreshold),
+        professionalTaxAmountAboveThreshold: parseFloat(ptaxData.amountAboveThreshold),
+        professionalTaxAmountBelowThreshold: parseFloat(ptaxData.amountBelowThreshold),
+        description: ptaxData.description || "",
+      };
+
+      // If payroll freeze settings exist, include them
+      if (payrollFreezeData) {
+        payrollSettingsData.payrollEnablementDate = payrollFreezeData.payrollEnablementDate || payrollFreezeData.payrollEnablementDay;
+        payrollSettingsData.freezeAfterDays = payrollFreezeData.freezeAfterDays;
+      }
+
+      // If pay structure settings exist, include them
+      if (payStructureData) {
+        payrollSettingsData.basicPercentage = payStructureData.basicPercentage;
+        payrollSettingsData.hraPercentage = payStructureData.hraPercentage;
+        payrollSettingsData.employerPfPercentage = payStructureData.employerPfPercentage;
+        payrollSettingsData.employeePfPercentage = payStructureData.employeePfPercentage;
+        payrollSettingsData.pfCap = payStructureData.pfCap;
+      }
+
+      let url, method;
+      
+      if (isPtaxConfigured && payrollFreezeData?.settingsId) {
+        // Update existing settings
+        url = `${publicRuntimeConfig.apiURL}/api/settings/payroll/update/${payrollFreezeData.settingsId}`;
+        method = "put";
+      } else {
+        // Create new settings
+        url = `${publicRuntimeConfig.apiURL}/api/settings/payroll/create`;
+        method = "post";
+      }
+
       const response = await axios({
-        method: "post",
-        url: `${publicRuntimeConfig.apiURL}/professional-tax-settings`,
+        method,
+        url,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        data: {
-          monthlySalaryThreshold: parseFloat(ptaxData.monthlySalaryThreshold),
-          amountAboveThreshold: parseFloat(ptaxData.amountAboveThreshold),
-          amountBelowThreshold: parseFloat(ptaxData.amountBelowThreshold),
-          description: ptaxData.description,
-          companyId: companyId,
-        },
+        data: payrollSettingsData,
       });
       return response.data;
     } catch (error) {
@@ -150,7 +227,32 @@ export const savePayrollFreezeSettings = createAsyncThunk(
     try {
       const token = getItemFromSessionStorage("token", null);
       const companyId = sessionStorage.getItem("employeeCompanyId");
-      const { isPayrollFreezeConfigured, payrollFreezeData } = getState().payrollSettings;
+      const { isPayrollFreezeConfigured, payrollFreezeData, ptaxData, payStructureData } = getState().payrollSettings;
+      
+      // Prepare the data for the payroll settings API
+      const payrollSettingsData = {
+        companyId: companyId,
+        payrollEnablementDate: parseInt(freezeData.payrollEnablementDay),
+        freezeAfterDays: parseInt(freezeData.freezeAfterDays),
+      };
+
+      // If professional tax settings exist, include them
+      if (ptaxData) {
+        payrollSettingsData.professionalTaxThreshold = ptaxData.monthlySalaryThreshold;
+        payrollSettingsData.professionalTaxAmountAboveThreshold = ptaxData.amountAboveThreshold;
+        payrollSettingsData.professionalTaxAmountBelowThreshold = ptaxData.amountBelowThreshold;
+        payrollSettingsData.description = ptaxData.description || "";
+      }
+
+      // If pay structure settings exist, include them
+      if (payStructureData) {
+        payrollSettingsData.basicPercentage = payStructureData.basicPercentage;
+        payrollSettingsData.hraPercentage = payStructureData.hraPercentage;
+        payrollSettingsData.employerPfPercentage = payStructureData.employerPfPercentage;
+        payrollSettingsData.employeePfPercentage = payStructureData.employeePfPercentage;
+        payrollSettingsData.pfCap = payStructureData.pfCap;
+        payrollSettingsData.description = payStructureData.description || "";
+      }
       
       let url, method;
       
@@ -171,15 +273,72 @@ export const savePayrollFreezeSettings = createAsyncThunk(
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        data: {
-          payrollEnablementDate: parseInt(freezeData.payrollEnablementDay),
-          freezeAfterDays: parseInt(freezeData.freezeAfterDays),
-          companyId: companyId,
-        },
+        data: payrollSettingsData,
       });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || "Failed to save Payroll Freeze settings");
+    }
+  }
+);
+
+// Async thunk for saving/updating Pay Structure Settings
+export const savePayStructureSettings = createAsyncThunk(
+  "payrollSettings/savePayStructureSettings",
+  async (payStructureData, { getState, rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const companyId = sessionStorage.getItem("employeeCompanyId");
+      const { isPayStructureConfigured, payrollFreezeData, ptaxData } = getState().payrollSettings;
+      
+      // Prepare the data for the payroll settings API
+      const payrollSettingsData = {
+        companyId: companyId,
+        basicPercentage: parseFloat(payStructureData.basicPercentage),
+        hraPercentage: parseFloat(payStructureData.hraPercentage),
+        employerPfPercentage: parseFloat(payStructureData.employerPfPercentage),
+        employeePfPercentage: parseFloat(payStructureData.employeePfPercentage),
+        pfCap: parseFloat(payStructureData.pfCap),
+        description: payStructureData.description || "",
+      };
+
+      // If payroll freeze settings exist, include them
+      if (payrollFreezeData) {
+        payrollSettingsData.payrollEnablementDate = payrollFreezeData.payrollEnablementDate || payrollFreezeData.payrollEnablementDay;
+        payrollSettingsData.freezeAfterDays = payrollFreezeData.freezeAfterDays;
+      }
+
+      // If professional tax settings exist, include them
+      if (ptaxData) {
+        payrollSettingsData.professionalTaxThreshold = ptaxData.monthlySalaryThreshold;
+        payrollSettingsData.professionalTaxAmountAboveThreshold = ptaxData.amountAboveThreshold;
+        payrollSettingsData.professionalTaxAmountBelowThreshold = ptaxData.amountBelowThreshold;
+      }
+
+      let url, method;
+      
+      if (isPayStructureConfigured && payrollFreezeData?.settingsId) {
+        // Update existing settings
+        url = `${publicRuntimeConfig.apiURL}/api/settings/payroll/update/${payrollFreezeData.settingsId}`;
+        method = "put";
+      } else {
+        // Create new settings
+        url = `${publicRuntimeConfig.apiURL}/api/settings/payroll/create`;
+        method = "post";
+      }
+
+      const response = await axios({
+        method,
+        url,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        data: payrollSettingsData,
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Failed to save Pay Structure settings");
     }
   }
 );
@@ -214,11 +373,13 @@ const initialState = {
   tdsData: null,
   ptaxData: null,
   payrollFreezeData: null,
+  payStructureData: null,
   loading: false,
   error: null,
   isTdsConfigured: false,
   isPtaxConfigured: false,
   isPayrollFreezeConfigured: false,
+  isPayStructureConfigured: false,
   settings: null,
 };
 
@@ -240,6 +401,10 @@ const payrollSettingsSlice = createSlice({
     resetPayrollFreezeForm: (state) => {
       state.payrollFreezeData = null;
       state.isPayrollFreezeConfigured = false;
+    },
+    resetPayStructureForm: (state) => {
+      state.payStructureData = null;
+      state.isPayStructureConfigured = false;
     },
   },
   extraReducers: (builder) => {
@@ -289,6 +454,21 @@ const payrollSettingsSlice = createSlice({
         state.error = action.payload;
         state.isPayrollFreezeConfigured = false;
       })
+      // Pay Structure Settings reducers
+      .addCase(fetchPayStructureSettings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPayStructureSettings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.payStructureData = action.payload;
+        state.isPayStructureConfigured = !!action.payload;
+      })
+      .addCase(fetchPayStructureSettings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        state.isPayStructureConfigured = false;
+      })
       // Save TDS reducers
       .addCase(saveTDS.pending, (state) => {
         state.loading = true;
@@ -331,20 +511,34 @@ const payrollSettingsSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      // Save Pay Structure Settings reducers
+      .addCase(savePayStructureSettings.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(savePayStructureSettings.fulfilled, (state, action) => {
+        state.loading = false;
+        state.payStructureData = action.payload;
+        state.isPayStructureConfigured = true;
+      })
+      .addCase(savePayStructureSettings.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       .addCase(fetchPayrollSettings.pending, (state) => {
         state.loading = true;
         state.error = null;
-    })
-    .addCase(fetchPayrollSettings.fulfilled, (state, action) => {
+      })
+      .addCase(fetchPayrollSettings.fulfilled, (state, action) => {
         state.loading = false;
         state.settings = action.payload;
-    })
-    .addCase(fetchPayrollSettings.rejected, (state, action) => {
+      })
+      .addCase(fetchPayrollSettings.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-    });
+      });
   },
 });
 
-export const { clearErrors, resetTdsForm, resetPtaxForm, resetPayrollFreezeForm } = payrollSettingsSlice.actions;
+export const { clearErrors, resetTdsForm, resetPtaxForm, resetPayrollFreezeForm, resetPayStructureForm } = payrollSettingsSlice.actions;
 export default payrollSettingsSlice.reducer; 

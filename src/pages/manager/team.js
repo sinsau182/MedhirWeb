@@ -23,12 +23,48 @@ const ManagerEmployees = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  const filteredEmployees = employees.filter((employee) =>
+  const filteredEmployees = (employees || []).filter((employee) =>
     employee.name.toLowerCase().includes(searchInput.toLowerCase())
   );
 
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-gray-100">
+        <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
+        <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-56"} transition-all duration-300`}>
+          <HradminNavbar />
+          <div className="p-6 mt-16">
+            <div className="flex items-center justify-center py-16">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <span className="ml-3 text-gray-600">Loading team members...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
-    return <div>Error: {error}</div>;
+    return (
+      <div className="flex h-screen bg-gray-100">
+        <Sidebar isCollapsed={isSidebarCollapsed} toggleSidebar={toggleSidebar} />
+        <div className={`flex-1 ${isSidebarCollapsed ? "ml-16" : "ml-56"} transition-all duration-300`}>
+          <HradminNavbar />
+          <div className="p-6 mt-16">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+              <h3 className="text-lg font-semibold text-red-800 mb-2">Error Loading Team Members</h3>
+              <p className="text-red-600">{error}</p>
+              <button 
+                onClick={() => dispatch(fetchManagerEmployees())}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -98,7 +134,7 @@ const ManagerEmployees = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filteredEmployees.length === 0 ? (
+                  {!employees || employees.length === 0 ? (
                     <tr>
                       <td colSpan={9} className="text-center py-16">
                         <div className="flex flex-col items-center justify-center">
@@ -124,13 +160,33 @@ const ManagerEmployees = () => {
                         </div>
                       </td>
                     </tr>
+                  ) : filteredEmployees.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="text-center py-16">
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mb-6">
+                            <Users className="w-10 h-10 text-blue-500" />
+                          </div>
+                          <h3 className="text-xl font-semibold text-gray-800 mb-2">No Search Results</h3>
+                          <p className="text-gray-600 text-center max-w-md mb-6">
+                            No team members found matching "{searchInput}". Try adjusting your search terms.
+                          </p>
+                          <button
+                            onClick={() => setSearchInput("")}
+                            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm"
+                          >
+                            Clear Search
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ) : (
-                    filteredEmployees.map((employee) => (
+                    (filteredEmployees || []).map((employee) => (
                       <tr
-                        key={employee.employeeId}
+                        key={employee?.employeeId || `employee-${Math.random()}`}
                         className="hover:bg-gray-50 cursor-pointer"
                         onMouseEnter={() =>
-                          setHoveredEmployeeId(employee.employeeId)
+                          setHoveredEmployeeId(employee?.employeeId)
                         }
                         onMouseLeave={() => setHoveredEmployeeId(null)}
                       >
@@ -141,7 +197,7 @@ const ManagerEmployees = () => {
                           {employee?.name}
                         </td>
                         <td className="py-3 px-3 text-sm text-gray-800 truncate">
-                          {hoveredEmployeeId === employee.employeeId ? (
+                          {hoveredEmployeeId === employee?.employeeId ? (
                             // Show full department name on hover
                             <span className="block whitespace-normal break-words">
                               {employee?.departmentName}
@@ -174,7 +230,7 @@ const ManagerEmployees = () => {
                           {employee?.designationName}
                         </td>
                         <td className="py-3 px-3 text-sm text-gray-800 relative max-w-xs">
-                          {hoveredEmployeeId === employee.employeeId ? (
+                          {hoveredEmployeeId === employee?.employeeId ? (
                             // Show full address on hover
                             <span className="block whitespace-normal break-words">
                               {employee?.currentAddress}
