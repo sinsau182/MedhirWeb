@@ -432,4 +432,4 @@ const ClosedConvertedPage = () => {
   );
 };
 
-export default ClosedConvertedPage; 
+export default ClosedConvertedPage;
