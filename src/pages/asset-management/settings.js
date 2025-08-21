@@ -936,7 +936,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
             return String(id) === String(selectedSubCategory);
         });
         if (!exists) setSelectedSubCategory('');
-    }, [selectedCategory, subCategoriesForSelectedCategory]);
+    }, [selectedCategory, subCategoriesForSelectedCategory, selectedSubCategory]);
 
     // Ensure selectedCategory and selectedSubCategory are properly set when editing and categories are loaded
     useEffect(() => {
@@ -978,7 +978,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                 }
             }
         }
-    }, [view, editingFormId, categories, forms]);
+    }, [view, editingFormId, categories, forms, selectedCategory]);
 
     // Ensure fields are properly mapped when form data is available
     useEffect(() => {
@@ -1008,7 +1008,7 @@ const CustomFormBuilder = ({ editing, onDeleteForm }) => {
                 setFields([]);
             }
         }
-    }, [view, editingFormId, forms]);
+    }, [view, editingFormId, forms, fields]);
 
     // Monitor fields state changes for debugging
     useEffect(() => {

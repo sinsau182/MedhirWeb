@@ -367,7 +367,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
             console.error('Error getting custom forms:', error);
             return [];
         }
-    }, [selectedSubcategoryId, safeFallbackForms]);
+    }, [selectedSubcategoryId, safeFallbackForms, selectedCategoryData]);
 
 
 
@@ -453,7 +453,7 @@ const AddAssetModal = ({ isOpen, onClose, onSubmit }) => {
         if (formData.category) {
             setCustomFormData({});
         }
-    }, [formData.category]);
+    }, [formData.category, formData.subcategory]);
 
     // Generate asset ID by querying backend for the next ID when subcategory is selected
     useEffect(() => {
