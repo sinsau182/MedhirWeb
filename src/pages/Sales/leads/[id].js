@@ -117,6 +117,7 @@ function formatRelativeTime(date) {
 
 const SalesHeader = ({ lead, pipelines, onStatusChange }) => {
   const router = useRouter();
+  const [moveBucketOpen, setMoveBucketOpen] = useState(false);
 
   // Filter out LOST and JUNK stages
   const filteredPipelines = pipelines.filter(stage => stage.formType !== "LOST" && stage.formType !== "JUNK");
@@ -220,6 +221,78 @@ const SalesHeader = ({ lead, pipelines, onStatusChange }) => {
             // );
           })}
         </div>
+        
+        {/* Move to Bucket Feature */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-600">Move to:</span>
+          <Select
+            value=""
+            open={moveBucketOpen}
+            onOpenChange={setMoveBucketOpen}
+            onValueChange={(stageId) => {
+              const selectedStage = pipelines.find(p => p.stageId === stageId);
+              if (selectedStage) {
+                onStatusChange(selectedStage.name);
+              }
+              setMoveBucketOpen(false);
+            }}
+          >
+            <SelectTrigger className="w-36 h-9 border-gray-300 text-sm rounded-md focus:ring-2 focus:ring-blue-400 focus:border-blue-400 bg-blue-50 hover:bg-blue-100 border-blue-200">
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+                <span className="text-blue-700 font-medium">Move Bucket</span>
+              </div>
+            </SelectTrigger>
+            <SelectContent className="rounded-md shadow-lg max-h-60 overflow-y-auto w-64">
+              <div className="p-2 border-b border-gray-200">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Available Stages</span>
+              </div>
+              {pipelines.filter(stage => stage.stageId && stage.stageId !== "").map((stage) => {
+                const currentStageId = lead.stageId;
+                const isCurrentStage = stage.stageId === currentStageId;
+                const stageIcons = {
+                  'LOST': '❌',
+                  'JUNK': '🗑️',
+                  'CONVERTED': '✅',
+                  'ASSIGNED': '👥',
+                  'SEMI': '📞',
+                  'POTENTIAL': '⭐',
+                  'HIGHPOTENTIAL': '🌟'
+                };
+                
+                return (
+                  <SelectItem 
+                    key={stage.stageId} 
+                    value={stage.stageId}
+                    disabled={isCurrentStage}
+                    className={`${isCurrentStage ? 'bg-gray-100 text-gray-400' : 'hover:bg-blue-50'} py-2 px-3`}
+                  >
+                    <div className="flex items-center gap-3 w-full">
+                      <span className="text-lg">{stageIcons[stage.formType] || '📋'}</span>
+                      <div className="flex-1">
+                        <span className={`${isCurrentStage ? 'text-gray-400' : 'text-gray-900'} font-medium text-sm`}>
+                          {stage.name}
+                        </span>
+                        {stage.formType && (
+                          <span className="text-xs text-gray-500 block">
+                            {stage.formType.toLowerCase()}
+                          </span>
+                        )}
+                      </div>
+                      {isCurrentStage && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                          Current
+                        </span>
+                      )}
+                    </div>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </div>
   );
@@ -250,7 +323,6 @@ const SalesDetailBody = ({
   const { employees: managerEmployees, loading: managerEmployeesLoading } =
     useSelector((state) => state.managerEmployee);
   const [activeTab, setActiveTab] = useState("activity");
-  const [isEditingContact, setIsEditingContact] = useState(false);
   const [noteContent, setNoteContent] = useState("");
   const [expandedActivities, setExpandedActivities] = useState({});
   const [showAllHistory, setShowAllHistory] = useState(false);
@@ -258,42 +330,49 @@ const SalesDetailBody = ({
   const [expandedNotes, setExpandedNotes] = useState({});
   const [notes, setNotes] = useState([]);
   const [fileModal, setFileModal] = useState({ open: false, url: null });
-  // Conversation logs composer state
-  const [convoType, setConvoType] = useState("");
-  const [convoSummary, setConvoSummary] = useState("");
-  const [convoNextAction, setConvoNextAction] = useState("");
-  const [convoDueDate, setConvoDueDate] = useState("");
+  // Removed conversation logs composer state (now using simplified call summaries only)
+  // Notes + conversation type for integrated summaries
+  const [noteConvoType, setNoteConvoType] = useState("");
+  const [taskSourceText, setTaskSourceText] = useState("");
+  const [summariesCollapsed, setSummariesCollapsed] = useState(false);
+  
+  // Task management for summaries form
+  const [summaryTasks, setSummaryTasks] = useState([]);
+  const [showTaskInput, setShowTaskInput] = useState(false);
+  const [newTaskText, setNewTaskText] = useState("");
+  const [newTaskDueDate, setNewTaskDueDate] = useState("");
 
-  // Hoisted handler so it's available before JSX is evaluated
-  async function handleAddConversationLog() {
-    if (!convoType) { toast.error("Please select a conversation type"); return; }
-    if (!convoSummary.trim()) { toast.error("Please enter a call summary"); return; }
-    try {
-      const token = getItemFromSessionStorage("token") || "";
-      await axios.post(
-        `${API_BASE_URL}/leads/${lead.leadId}/activities`,
-        {
-          activityType: convoType,
-          title: `Conversation - ${convoType}`,
-          details: convoSummary,
-          nextAction: convoNextAction || null,
-          dueDate: convoDueDate || null,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        }
-      );
-      setConvoType(""); setConvoSummary(""); setConvoNextAction(""); setConvoDueDate("");
-      if (lead && lead.leadId) {
-        // fetchActivities(lead.leadId);
-        // fetchActivityLogs(lead.leadId);
-      }
-      toast.success("Conversation log added");
-    } catch (e) {
-      console.error("Failed to add conversation log", e);
-      toast.error("Failed to add conversation log");
-    }
-  }
+
+  // Removed handleAddConversationLog (now using simplified notes system)
+
+  // Removed bulk task suggestion functions (now using simple single task creation per conversation)
+  
+  // Task management functions for summaries form
+  const handleAddSummaryTask = () => {
+    if (!newTaskText.trim()) return;
+    
+    const newTask = {
+      id: Date.now(),
+      text: newTaskText.trim(),
+      dueDate: newTaskDueDate || null,
+      completed: false
+    };
+    
+    setSummaryTasks([...summaryTasks, newTask]);
+    setNewTaskText("");
+    setNewTaskDueDate("");
+    setShowTaskInput(false);
+  };
+  
+  const handleRemoveSummaryTask = (taskId) => {
+    setSummaryTasks(summaryTasks.filter(task => task.id !== taskId));
+  };
+  
+  const handleEditSummaryTask = (taskId, newText) => {
+    setSummaryTasks(summaryTasks.map(task => 
+      task.id === taskId ? { ...task, text: newText } : task
+    ));
+  };
 
   const token = getItemFromSessionStorage("token");
   const isManager = jwtDecode(token).roles.includes("MANAGER");
@@ -323,6 +402,8 @@ const SalesDetailBody = ({
   const [isEditingTeam, setIsEditingTeam] = useState(false);
   const [assignedSalesRep, setAssignedSalesRep] = useState("");
   const [assignedDesigner, setAssignedDesigner] = useState("");
+  const [salesDropdownOpen, setSalesDropdownOpen] = useState(false);
+  const [designerDropdownOpen, setDesignerDropdownOpen] = useState(false);
   const [assignedSalesRepId, setAssignedSalesRepId] = useState("");
   const [assignedDesignerId, setAssignedDesignerId] = useState("");
   const [contactEditingField, setContactEditingField] = useState(null);
@@ -337,6 +418,10 @@ const SalesDetailBody = ({
     setAssignedDesigner(designerEmployee?.name || "");
     setAssignedSalesRepId(lead.salesRep || "");
     setAssignedDesignerId(lead.designer || "");
+    
+    // Initialize dropdown states - keep closed by default
+    setSalesDropdownOpen(false);
+    setDesignerDropdownOpen(false);
   }, [lead, managerEmployees]);
   // --- End Assigned Team Edit State ---
 
@@ -560,12 +645,6 @@ const SalesDetailBody = ({
       onFieldChange("contactNumber", contactFields.contactNumber.trim());
       onFieldChange("alternateContactNumber", contactFields.alternateContactNumber.trim());
       onFieldChange("email", contactFields.email.trim());
-      setIsEditingContact(false);
-      // Optimistic local update
-      onFieldChange("name", contactFields.name.trim());
-      onFieldChange("contactNumber", contactFields.contactNumber.trim());
-      onFieldChange("alternateContactNumber", contactFields.alternateContactNumber.trim());
-      onFieldChange("email", contactFields.email.trim());
       toast.success("Contact details updated!");
     } catch (e) {
       console.error("Failed to update contact details:", e);
@@ -578,7 +657,12 @@ const SalesDetailBody = ({
   };
 
   const handleContactedFieldChange = (field, value) => {
-    setContactedFields((prev) => ({ ...prev, [field]: value }));
+    // For files, store the file object temporarily for upload processing
+    if (field === "floorPlan" && value instanceof File) {
+      setContactedFields((prev) => ({ ...prev, [field]: value }));
+    } else {
+      setContactedFields((prev) => ({ ...prev, [field]: value }));
+    }
   };
 
   const handlePotentialFieldChange = (field, value) => {
@@ -632,9 +716,10 @@ const SalesDetailBody = ({
     }
   };
 
-  const saveContactedField = async (field) => {
+  const saveContactedField = async (field, fileValue) => {
     try {
-      const value = contactedFields[field];
+      const value = fileValue || contactedFields[field];
+      
       // Required validation for Estimated Budget
       if (field === "estimatedBudget") {
         if (value === undefined || value === null || String(value).trim() === "") {
@@ -642,15 +727,39 @@ const SalesDetailBody = ({
           return;
         }
       }
+
+      // Handle file upload for floor plan
+      if (field === "floorPlan" && value instanceof File) {
+        const formData = new FormData();
+        formData.append("floorPlan", value);
+        formData.append("leadId", lead.leadId);
+
+        await axios.put(`${API_BASE_URL}/leads/${lead.leadId}/upload-floor-plan`, formData, {
+          headers: { 
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+            'Content-Type': 'multipart/form-data'
+          },
+        });
+        
+        // Update local state with file name
+        setContactedFields(prev => ({ ...prev, floorPlan: value.name }));
+        onFieldChange("floorPlan", value.name);
+        toast.success("Floor plan uploaded successfully");
+        return;
+      }
+
+      // Handle regular field updates
       const payload = {};
       const numericFields = ["estimatedBudget"]; 
       payload[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
         ? Number(value)
         : value;
+      
       // Map estimatedBudget to backend if it uses a different key
       if (field === "estimatedBudget") {
         payload.estimatedBudget = payload.estimatedBudget;
       }
+      
       await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, payload, {
         headers: { Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}` },
       });
@@ -752,7 +861,7 @@ const SalesDetailBody = ({
         combinedNotes = lead.notesList.map((n) => ({
           user: n.user || lead.name || "User",
           content: n.content,
-          time: n.time || n.createdAt || new Date(),
+          time: n.timestamp || n.createdAt || n.time || new Date(),
           noteId: n.noteId || n.id,
         }));
       }
@@ -771,13 +880,15 @@ const SalesDetailBody = ({
       noteContent
     );
     setNotesLoading(true);
+    const typeLabel = noteConvoType === 'PHONE_CALL' ? 'Phone' : noteConvoType === 'MEETING' ? 'Meeting' : '';
+    const contentToSave = typeLabel ? `[${typeLabel}] ${noteContent}` : noteContent;
     try {
       let newNote;
       if (editingNoteId) {
         // Edit note
         await axios.put(
           `${API_BASE_URL}/leads/${lead.leadId}/notes/${editingNoteId}`,
-          { content: noteContent },
+          { content: contentToSave },
           {
             headers: {
               Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
@@ -787,14 +898,14 @@ const SalesDetailBody = ({
         // Update note in local state
         setNotes((prev) =>
           prev.map((n) =>
-            n.noteId === editingNoteId ? { ...n, content: noteContent } : n
+            n.noteId === editingNoteId ? { ...n, content: contentToSave } : n
           )
         );
       } else {
         // Add note
         const res = await axios.post(
           `${API_BASE_URL}/leads/${lead.leadId}/notes`,
-          { content: noteContent },
+          { content: contentToSave },
           {
             headers: {
               Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
@@ -802,19 +913,59 @@ const SalesDetailBody = ({
           }
         );
         // Add new note to local state
+        const currentTime = new Date();
         newNote = {
           user: lead.name || "User",
-          content: noteContent,
-          time: new Date(),
+          content: contentToSave,
+          time: currentTime,
+          createdAt: currentTime.toISOString(),
+          timestamp: currentTime.toISOString(),
           noteId: res.data?.noteId || undefined,
         };
         setNotes((prev) => [newNote, ...prev]);
       }
+      
+      // Create tasks if any are added
+      if (summaryTasks.length > 0) {
+        for (const task of summaryTasks) {
+          try {
+            await axios.post(
+              `${API_BASE_URL}/leads/${lead.leadId}/activities`,
+              {
+                title: task.text,
+                description: `Task created from call summary: ${noteContent.slice(0, 100)}...`,
+                activityType: "TO-DO",
+                dueDate: task.dueDate || null,
+                assignee: null
+              },
+              {
+                headers: {
+                  Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+                },
+              }
+            );
+          } catch (taskError) {
+            console.error("Failed to create task:", taskError);
+            toast.error(`Failed to create task: ${task.text}`);
+          }
+        }
+        // Clear tasks after creation
+        setSummaryTasks([]);
+        toast.success(`Summary saved with ${summaryTasks.length} task(s) created!`);
+      } else {
+        toast.success("Summary saved successfully!");
+      }
+      
       setNoteContent("");
+      setNoteConvoType("");
       setEditingNoteIdx(null);
       setEditingNoteId(null);
+      setShowTaskInput(false);
+      setNewTaskText("");
+      setNewTaskDueDate("");
     } catch (e) {
       console.error("Failed to save note:", e);
+      toast.error("Failed to save summary");
     }
     setNotesLoading(false);
   };
@@ -841,6 +992,59 @@ const SalesDetailBody = ({
   const HISTORY_LIMIT = 5;
   const ACTIVITY_LOG_LIMIT = 5;
 
+  // Build conversation summary groups from activities (phone/meeting) and notes with [Phone]/[Meeting]
+  const todoActivities = (activities || []).filter(
+    (a) => (a.type && (a.type.toUpperCase() === "TO-DO" || a.type.toUpperCase() === "TODO"))
+  );
+  const convoActivities = (activities || []).filter(
+    (a) => a.type && (a.type.toUpperCase() === "PHONE_CALL" || a.type.toUpperCase() === "MEETING")
+  );
+  function parseNoteConversation(note) {
+    const content = note?.content || "";
+    const match = content.match(/^\[(Phone|Meeting)\]\s*/i);
+    if (!match) return null;
+    const type = match[1].toUpperCase() === 'PHONE' ? 'PHONE_CALL' : 'MEETING';
+    const summary = content.replace(/^\[(Phone|Meeting)\]\s*/i, "").trim();
+    return { 
+      type, 
+      summary, 
+      time: note.timestamp || note.createdAt || note.time || new Date() 
+    };
+  }
+  const convoFromNotes = (notes || [])
+    .map(parseNoteConversation)
+    .filter(Boolean);
+  // Create a normalized key to match tasks by details equality
+  const normalize = (s) => (s || "").trim();
+  const conversationGroups = [
+    ...convoActivities.map((a) => ({
+      type: a.type,
+      summary: a.details || a.title || "",
+      time: a.createdAt || a.updatedAt || new Date(),
+    })),
+    ...convoFromNotes,
+  ]
+    // de-duplicate by (type, summary)
+    .filter((item, index, arr) =>
+      index === arr.findIndex((x) => x.type === item.type && normalize(x.summary) === normalize(item.summary))
+    )
+    .map((c) => ({
+      ...c,
+      tasks: todoActivities.filter((t) => normalize(t.details || "") === normalize(c.summary)),
+    }))
+    // sort newest first (most recent at top)
+    .sort((a, b) => {
+      const timeA = new Date(a.time);
+      const timeB = new Date(b.time);
+      
+      // Handle invalid dates
+      if (isNaN(timeA.getTime())) return 1;
+      if (isNaN(timeB.getTime())) return -1;
+      
+      // Sort descending (newest first)
+      return timeB.getTime() - timeA.getTime();
+    });
+
   return (
     <div className="flex-grow bg-gray-50 p-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -852,6 +1056,106 @@ const SalesDetailBody = ({
               <h3 className="text-lg font-semibold text-gray-800">
                 Lead Details
               </h3>
+              
+              {/* Assigned Team - Ultra Compact Design */}
+              <div className="flex items-center gap-4">
+                <span className="text-base font-medium text-gray-600">Team:</span>
+                <div className="flex items-center gap-3">
+                  {/* Sales Person */}
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-gray-500">Sales Person:</span>
+                    {(assignedSalesRepId || lead.salesRep) && !salesDropdownOpen ? (
+                      <button
+                        onClick={() => setSalesDropdownOpen(true)}
+                        className="px-2 py-1 h-7 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition-colors min-w-32 text-left"
+                      >
+                        {managerEmployees.find((emp) => emp.employeeId === (assignedSalesRepId || lead.salesRep))?.name || 
+                         (assignedSalesRepId || lead.salesRep) || "Select"}
+                      </button>
+                    ) : (
+                      <Select
+                        value={assignedSalesRepId || "unassigned"}
+                        open={salesDropdownOpen}
+                        onOpenChange={setSalesDropdownOpen}
+                        onValueChange={async (val) => {
+                          if (val === "unassigned") {
+                            setAssignedSalesRep("");
+                            setAssignedSalesRepId("");
+                            setSalesDropdownOpen(true); // Keep dropdown open for unassigned
+                          } else {
+                            const selectedEmployee = managerEmployees.find((emp) => emp.employeeId === val);
+                            setAssignedSalesRep(selectedEmployee?.name || "");
+                            setAssignedSalesRepId(val);
+                            setSalesDropdownOpen(false); // Close dropdown when assigned
+                          }
+                          await handleSaveTeam();
+                        }}
+                      >
+                        <SelectTrigger className="w-32 h-7 border-gray-300 text-xs rounded focus:ring-1 focus:ring-blue-400 focus:border-blue-400">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded shadow-lg">
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
+                          {managerEmployeesLoading ? (
+                            <SelectItem value="loading" disabled>Loading...</SelectItem>
+                          ) : (
+                            managerEmployees.filter(emp => emp.employeeId && emp.employeeId !== "").map((employee) => (
+                              <SelectItem key={employee.employeeId} value={employee.employeeId}>
+                                {employee.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  
+                  {/* Designer */}
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-gray-500">Designer:</span>
+                    {(assignedDesignerId || lead.designer) && !designerDropdownOpen ? (
+                      <button
+                        onClick={() => setDesignerDropdownOpen(true)}
+                        className="px-2 py-1 h-7 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:ring-1 focus:ring-blue-400 focus:border-blue-400 transition-colors min-w-32 text-left"
+                      >
+                        {managerEmployees.find((emp) => emp.employeeId === (assignedDesignerId || lead.designer))?.name || 
+                         (assignedDesignerId || lead.designer) || "Select"}
+                      </button>
+                    ) : (
+                      <Select
+                        value={assignedDesignerId || "unassigned"}
+                        open={designerDropdownOpen}
+                        onOpenChange={setDesignerDropdownOpen}
+                        onValueChange={async (val) => {
+                          if (val === "unassigned") {
+                            setAssignedDesigner("");
+                            setAssignedDesignerId("");
+                            setDesignerDropdownOpen(true); // Keep dropdown open for unassigned
+                          } else {
+                            const selectedEmployee = managerEmployees.find((emp) => emp.employeeId === val);
+                            setAssignedDesigner(selectedEmployee?.name || "");
+                            setAssignedDesignerId(val);
+                            setDesignerDropdownOpen(false); // Close dropdown when assigned
+                          }
+                          await handleSaveTeam();
+                        }}
+                      >
+                        <SelectTrigger className="w-32 h-7 border-gray-300 text-xs rounded focus:ring-1 focus:ring-blue-400 focus:border-blue-400">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded shadow-lg">
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
+                          {managerEmployees.filter(emp => emp.employeeId && emp.employeeId !== "").map((employee) => (
+                            <SelectItem key={employee.employeeId} value={employee.employeeId}>
+                              {employee.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
             {/* Single border below heading */}
             <div className="border-b border-gray-200 mb-4"></div>
@@ -860,69 +1164,88 @@ const SalesDetailBody = ({
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-semibold text-gray-800">Contact Details</h3>
               </div>
-              {isEditingContact || contactEditingField ? (
-                <div className="space-y-3">
-                  <input
-                    value={contactFields.name}
-                    onChange={(e) => handleContactFieldChange("name", e.target.value)}
-                    className="w-full p-2 border rounded-md"
-                    autoFocus={contactEditingField === 'name'}
-                    onBlur={async () => { setContactEditingField(null); await handleSaveContact(); }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-                    placeholder="Full Name"
-                  />
-                  <input
-                    value={contactFields.contactNumber}
-                    onChange={(e) => handleContactFieldChange("contactNumber", e.target.value)}
-                    className="w-full p-2 border rounded-md"
-                    autoFocus={contactEditingField === 'contactNumber'}
-                    onBlur={async () => { setContactEditingField(null); await handleSaveContact(); }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-                    placeholder="Contact Number"
-                  />
-                  <input
-                    value={contactFields.alternateContactNumber}
-                    onChange={(e) => handleContactFieldChange("alternateContactNumber", e.target.value)}
-                    className="w-full p-2 border rounded-md"
-                    autoFocus={contactEditingField === 'alternateContactNumber'}
-                    onBlur={async () => { setContactEditingField(null); await handleSaveContact(); }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-                    placeholder="Alternate Phone Number (Optional)"
-                  />
-                  <input
-                    value={contactFields.email}
-                    onChange={(e) => handleContactFieldChange("email", e.target.value)}
-                    className="w-full p-2 border rounded-md"
-                    autoFocus={contactEditingField === 'email'}
-                    onBlur={async () => { setContactEditingField(null); await handleSaveContact(); }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-                    placeholder="Email (Optional)"
-                  />
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3 text-gray-900 font-semibold cursor-pointer" onClick={() => { setIsEditingContact(true); setContactEditingField('name'); }}>
-                    <FaUser className="text-gray-400" />
-                    <span>{(contactFields.name || "").trim() || "N/A"}</span>
-                  </div>
-                  <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setIsEditingContact(true); setContactEditingField('email'); }}>
-                    <FaEnvelope className="text-gray-400" />
-                    <span className="text-gray-900 font-medium">{(contactFields.email || "").trim() || "N/A"}</span>
-                  </div>
-                  <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setIsEditingContact(true); setContactEditingField('contactNumber'); }}>
-                    <FaPhone className="text-gray-400" />
-                    <span className="text-gray-900 font-medium">
-                      {contactFields.contactNumber ? `+91 ${contactFields.contactNumber}` : "N/A"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setIsEditingContact(true); setContactEditingField('alternateContactNumber'); }}>
-                    <FaPhone className="text-gray-400" />
-                    <span className="text-gray-900 font-medium">
-                      {contactFields.alternateContactNumber ? `+91 ${contactFields.alternateContactNumber}` : "Alternate Phone (click to add)"}
-                    </span>
-                  </div>
-                </div>
-              )}
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div>
+                   <label className="block text-xs font-medium text-gray-500 mb-2">Full Name</label>
+                   {contactEditingField === 'name' ? (
+                     <input
+                       value={contactFields.name}
+                       onChange={(e) => handleContactFieldChange("name", e.target.value)}
+                       className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                       autoFocus
+                       onBlur={async () => { setContactEditingField(null); await handleSaveContact(); }}
+                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                       placeholder="Full Name"
+                     />
+                   ) : (
+                     <div className="flex items-center gap-3 text-gray-900 font-semibold cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors" onClick={() => { setContactEditingField('name'); }}>
+                       <FaUser className="text-gray-400" />
+                       <span>{(contactFields.name || "").trim() || "(click to add)"}</span>
+                     </div>
+                   )}
+                 </div>
+                 <div>
+                   <label className="block text-xs font-medium text-gray-500 mb-2">Email Address</label>
+                   {contactEditingField === 'email' ? (
+                     <input
+                       value={contactFields.email}
+                       onChange={(e) => handleContactFieldChange("email", e.target.value)}
+                       className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                       autoFocus
+                       onBlur={async () => { setContactEditingField(null); await handleSaveContact(); }}
+                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                       placeholder="Email (Optional)"
+                     />
+                   ) : (
+                     <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors" onClick={() => { setContactEditingField('email'); }}>
+                       <FaEnvelope className="text-gray-400" />
+                       <span className="text-gray-900 font-medium">{(contactFields.email || "").trim() || "(click to add)"}</span>
+                     </div>
+                   )}
+                 </div>
+                 <div>
+                   <label className="block text-xs font-medium text-gray-500 mb-2">Contact Number</label>
+                   {contactEditingField === 'contactNumber' ? (
+                     <input
+                       value={contactFields.contactNumber}
+                       onChange={(e) => handleContactFieldChange("contactNumber", e.target.value)}
+                       className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                       autoFocus
+                       onBlur={async () => { setContactEditingField(null); await handleSaveContact(); }}
+                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                       placeholder="Contact Number"
+                     />
+                   ) : (
+                     <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors" onClick={() => { setContactEditingField('contactNumber'); }}>
+                       <FaPhone className="text-gray-400" />
+                       <span className="text-gray-900 font-medium">
+                         {contactFields.contactNumber ? `+91 ${contactFields.contactNumber}` : "(click to add)"}
+                       </span>
+                     </div>
+                   )}
+                 </div>
+                 <div>
+                   <label className="block text-xs font-medium text-gray-500 mb-2">Alternate Phone Number</label>
+                   {contactEditingField === 'alternateContactNumber' ? (
+                     <input
+                       value={contactFields.alternateContactNumber}
+                       onChange={(e) => handleContactFieldChange("alternateContactNumber", e.target.value)}
+                       className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                       autoFocus
+                       onBlur={async () => { setContactEditingField(null); await handleSaveContact(); }}
+                       onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                       placeholder="Alternate Phone Number (Optional)"
+                     />
+                   ) : (
+                     <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors" onClick={() => { setContactEditingField('alternateContactNumber'); }}>
+                       <FaPhone className="text-gray-400" />
+                       <span className="text-gray-900 font-medium">
+                         {contactFields.alternateContactNumber ? `+91 ${contactFields.alternateContactNumber}` : "(click to add)"}
+                       </span>
+                     </div>
+                   )}
+                 </div>
+               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-8">
               {[
@@ -1034,14 +1357,14 @@ const SalesDetailBody = ({
                       {field === "budget"
                         ? (projectFields.budget ?? lead.budget)
                           ? Number(projectFields.budget ?? lead.budget).toLocaleString("en-IN")
-                          : "N/A"
+                          : "(click to add)"
                         : field === "area"
                         ? (projectFields.area ?? lead.area)
                           ? `${projectFields.area ?? lead.area} sq. ft.`
-                          : "N/A"
+                          : "(click to add)"
                         : field === "referralName"
-                        ? (projectFields.referralName ?? lead.referralName) || (lead.leadSource === "Referral" ? "Not specified" : "N/A")
-                        : (projectFields[field] ?? lead[field]) || "N/A"}
+                        ? (projectFields.referralName ?? lead.referralName) || (lead.leadSource === "Referral" ? "Not specified" : "(click to add)")
+                        : (projectFields[field] ?? lead[field]) || "(click to add)"}
                     </div>
                   )}
                 </div>
@@ -1077,7 +1400,7 @@ const SalesDetailBody = ({
                   </div>
                 </div>
               )}
-            </div>
+          </div>
 
             {/* Contacted Section moved here above Potential */}
             <div className="border-t border-gray-200 my-6"></div>
@@ -1086,15 +1409,25 @@ const SalesDetailBody = ({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500 mb-1">Floor Plan</span>
-                  <input
-                    type="text"
-                    value={contactedFields.floorPlan}
-                    onChange={(e) => handleContactedFieldChange('floorPlan', e.target.value)}
-                    onBlur={() => saveContactedField('floorPlan')}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-                    className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    placeholder="Enter floor plan"
-                  />
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.dwg,.dxf,.svg"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          handleContactedFieldChange('floorPlan', file);
+                          saveContactedField('floorPlan', file);
+                        }
+                      }}
+                      className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                    {contactedFields.floorPlan && typeof contactedFields.floorPlan === 'string' && (
+                      <div className="mt-2 text-xs text-gray-600">
+                        Current: {contactedFields.floorPlan}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500 mb-1">First Call Date</span>
@@ -1106,7 +1439,7 @@ const SalesDetailBody = ({
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
                     className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
-                </div>
+                            </div>
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500 mb-1">Estimated Budget <span className="text-red-500">*</span></span>
                   <input
@@ -1119,9 +1452,9 @@ const SalesDetailBody = ({
                     placeholder="0"
                     required
                   />
-                </div>
-              </div>
-            </div>
+                              </div>
+          </div>
+        </div>
 
             {/* Potential Section */}
             <div className="border-t border-gray-200 my-6"></div>
@@ -1130,7 +1463,7 @@ const SalesDetailBody = ({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500 mb-1">First Meeting Date</span>
-                  <input
+                <input
                     type="date"
                     value={potentialFields.firstMeetingDate}
                     onChange={(e) => handlePotentialFieldChange('firstMeetingDate', e.target.value)}
@@ -1141,7 +1474,7 @@ const SalesDetailBody = ({
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500 mb-1">Initial Quotation <span className="text-red-500">*</span></span>
-                  <input
+                <input
                     type="number"
                     value={potentialFields.initialQuote}
                     onChange={(e) => handlePotentialFieldChange('initialQuote', e.target.value)}
@@ -1154,7 +1487,7 @@ const SalesDetailBody = ({
                 </div>
                 <div className="flex flex-col md:col-span-1">
                   <span className="text-xs text-gray-500 mb-1">Requirements <span className="text-red-500">*</span></span>
-                  <input
+                <input
                     type="text"
                     value={potentialFields.requirements}
                     onChange={(e) => handlePotentialFieldChange('requirements', e.target.value)}
@@ -1164,128 +1497,264 @@ const SalesDetailBody = ({
                     placeholder="Enter requirements"
                     required
                   />
-                </div>
               </div>
-            </div>
+                </div>
+                </div>
             {/* Contact Details section duplicated earlier; removing this copy */}
 
-            {/* Merged: Assigned Team */}
-            <div className="border-t border-gray-200 my-6"></div>
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-semibold text-gray-800">Assigned Team</h3>
-                {/* {isManager && (
-                  <button
-                    onClick={() => setIsEditingTeam(!isEditingTeam)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-semibold hover:bg-gray-50"
-                  >
-                    <FaPencilAlt className="w-3 h-3" /> {isEditingTeam ? "Cancel" : "Edit"}
-                  </button>
-                )} */}
-              </div>
-              {isEditingTeam || teamEditingField ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Sales Person</label>
-                    <Select
-                      value={assignedSalesRepId || "unassigned"}
-                      onValueChange={async (val) => {
-                        if (val === "unassigned") {
-                          setAssignedSalesRep("");
-                          setAssignedSalesRepId("");
-                        } else {
-                          const selectedEmployee = managerEmployees.find((emp) => emp.employeeId === val);
-                          setAssignedSalesRep(selectedEmployee?.name || "");
-                          setAssignedSalesRepId(val);
-                        }
-                        await handleSaveTeam();
-                      }}
-                    >
-                      <SelectTrigger className="w-full border-gray-300 text-sm rounded-md focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); /* open menu already handled */ } }}
+
+          </div>
+          </div>
+
+        {/* Right Column */}
+        <div className="flex flex-col gap-6">
+          {/* Call Summaries Section - Redesigned */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-base font-medium text-gray-900">Summaries</h3>
+              <button
+                onClick={() => setSummariesCollapsed(!summariesCollapsed)}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+                title={summariesCollapsed ? "Expand" : "Collapse"}
+              >
+                <svg 
+                  className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${summariesCollapsed ? 'rotate-180' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+            
+            {!summariesCollapsed && (
+              <div className="transition-all duration-300 ease-in-out">
+                {/* Call Type Selection - Bullet Options */}
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-gray-700 mb-2">Call Type</label>
+                  <div className="grid grid-cols-4 gap-1">
+                    {[
+                      { value: 'PHONE_CALL', icon: '📞', label: 'Phone Call', color: 'green' },
+                      { value: 'MEETING', icon: '🤝', label: 'Meeting', color: 'blue' },
+                      { value: 'EMAIL', icon: '📧', label: 'Email', color: 'orange' },
+                      { value: 'VIDEO_CALL', icon: '🎥', label: 'Video Call', color: 'purple' }
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setNoteConvoType(option.value)}
+                        className={`flex items-center gap-1 py-1 rounded-lg border transition-all duration-200 ${
+                          noteConvoType === option.value
+                            ? option.value === 'PHONE_CALL' ? 'border-green-400 bg-green-50 text-green-700' :
+                              option.value === 'MEETING' ? 'border-blue-400 bg-blue-50 text-blue-700' :
+                              option.value === 'EMAIL' ? 'border-orange-400 bg-orange-50 text-orange-700' :
+                              'border-purple-400 bg-purple-50 text-purple-700'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-600'
+                        }`}
                       >
-                        <SelectValue placeholder="Unassigned" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-md shadow-lg">
-                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {managerEmployeesLoading ? (
-                          <SelectItem value="" disabled>
-                            Loading...
-                          </SelectItem>
-                        ) : (
-                          managerEmployees.map((employee) => (
-                            <SelectItem key={employee.employeeId} value={employee.employeeId}>
-                              {employee.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
+                        <span className="text-sm">{option.icon}</span>
+                        <span className="text-xs font-medium">{option.label}</span>
+                      </button>
+                    ))}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Designer</label>
-                    <Select
-                      value={assignedDesignerId || "unassigned"}
-                      onValueChange={async (val) => {
-                        if (val === "unassigned") {
-                          setAssignedDesigner("");
-                          setAssignedDesignerId("");
-                        } else {
-                          const selectedEmployee = managerEmployees.find((emp) => emp.employeeId === val);
-                          setAssignedDesigner(selectedEmployee?.name || "");
-                          setAssignedDesignerId(val);
-                        }
-                        await handleSaveTeam();
-                      }}
-                    >
-                      <SelectTrigger className="w-full border-gray-300 text-sm rounded-md focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); } }}
-                      >
-                        <SelectValue placeholder="Unassigned" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-md shadow-lg">
-                        <SelectItem value="unassigned">Unassigned</SelectItem>
-                        {managerEmployees.map((employee) => (
-                          <SelectItem key={employee.employeeId} value={employee.employeeId}>
-                            {employee.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {/* Auto-saved on selection change */}
                 </div>
+
+                {/* Summary Input Field */}
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Call Summary</label>
+                  <textarea
+                    rows={4}
+                    value={noteContent}
+                    onChange={(e) => setNoteContent(e.target.value)}
+                    placeholder="Describe what happened during this conversation, key points discussed, decisions made..."
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-900 placeholder-gray-400"
+                  />
+                </div>
+
+                {/* Tasks Section */}
+                {(summaryTasks.length > 0 || showTaskInput) && (
+                  <div className="mb-3">
+                    <label className="block text-xs font-medium text-gray-700 mb-2">Tasks</label>
+                    
+                    {/* Existing Tasks */}
+                    {summaryTasks.length > 0 && (
+                      <div className="space-y-2 mb-3">
+                        {summaryTasks.map((task) => (
+                          <div key={task.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
+                            <div className="flex-1">
+                              <p className="text-xs text-gray-800">{task.text}</p>
+                              {task.dueDate && (
+                                <p className="text-xs text-gray-500">Due: {new Date(task.dueDate).toLocaleDateString()}</p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSummaryTask(task.id)}
+                              className="text-red-500 hover:text-red-700 p-1"
+                              title="Remove task"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Add Task Input */}
+                    {showTaskInput && (
+                      <div className="space-y-2 p-3 border border-gray-200 rounded-md bg-gray-50">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newTaskText}
+                            onChange={(e) => setNewTaskText(e.target.value)}
+                            placeholder="Enter task description..."
+                            className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                          <input
+                            type="date"
+                            value={newTaskDueDate}
+                            onChange={(e) => setNewTaskDueDate(e.target.value)}
+                            className="px-3 py-2 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={handleAddSummaryTask}
+                            disabled={!newTaskText.trim()}
+                            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Add Task
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowTaskInput(false);
+                              setNewTaskText("");
+                              setNewTaskDueDate("");
+                            }}
+                            className="px-3 py-1.5 bg-gray-500 hover:bg-gray-600 text-white text-xs font-medium rounded-md transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAddOrEditNote}
+                    disabled={notesLoading || !noteContent.trim() || !noteConvoType}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Save Summary
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setShowTaskInput(!showTaskInput)}
+                    className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-md transition-colors flex items-center gap-1"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    + Task
+                  </button>
+                  
+                  {/* <button
+                    type="button"
+                    onClick={() => {
+                      setEditingActivity(null);
+                      setIsActivityModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-md transition-colors flex items-center gap-1"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Add Activity
+                  </button> */}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Call History */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-gray-900">Call History</h3>
+            </div>
+            
+            <div className="space-y-3">
+              {conversationGroups && conversationGroups.length > 0 ? (
+                conversationGroups.map((c, idx) => (
+                  <div key={idx} className="bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-gray-300 transition-all duration-200">
+                    {/* Header */}
+                    <div className="px-3 py-2 bg-gradient-to-r from-gray-50 to-white">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-5 h-5 rounded flex items-center justify-center text-xs ${
+                            c.type === 'PHONE_CALL' ? 'bg-green-100 text-green-700' :
+                            c.type === 'MEETING' ? 'bg-blue-100 text-blue-700' :
+                            c.type === 'EMAIL' ? 'bg-orange-100 text-orange-700' :
+                            'bg-purple-100 text-purple-700'
+                          }`}>
+                            {c.type === 'PHONE_CALL' ? '📞' : 
+                             c.type === 'MEETING' ? '🤝' :
+                             c.type === 'EMAIL' ? '📧' : '🎥'}
+                          </span>
+                          <h4 className="font-semibold text-gray-900 text-sm">
+                            {c.type === 'PHONE_CALL' ? 'Phone Call' : 
+                             c.type === 'MEETING' ? 'Meeting' :
+                             c.type === 'EMAIL' ? 'Email' : 'Video Call'}
+                          </h4>
+                        </div>
+
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">
+                            {new Date(c.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • {new Date(c.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="p-3">
+                      <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                        {c.summary}
+                      </p>
+                    </div>
+                  </div>
+                ))
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setIsEditingTeam(true); setTeamEditingField('salesRep'); }}>
-                    <span className="text-gray-500 text-sm">Sales Person:</span>
-                    <span className={lead.salesRep ? "font-semibold text-gray-900" : "text-gray-400 font-medium"}>
-                      {(assignedSalesRepId || lead.salesRep)
-                        ? managerEmployees.find((emp) => emp.employeeId === (assignedSalesRepId || lead.salesRep))?.name || (assignedSalesRepId || lead.salesRep)
-                        : "Unassigned"}
-                    </span>
+                <div className="text-center py-6">
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
                   </div>
-                  <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setIsEditingTeam(true); setTeamEditingField('designer'); }}>
-                    <span className="text-gray-500 text-sm">Designer:</span>
-                    <span className={lead.designer ? "font-semibold text-gray-900" : "text-gray-400 font-medium"}>
-                      {(assignedDesignerId || lead.designer)
-                        ? managerEmployees.find((emp) => emp.employeeId === (assignedDesignerId || lead.designer))?.name || (assignedDesignerId || lead.designer)
-                        : "Unassigned"}
-                    </span>
-                  </div>
+                  <p className="text-gray-500 text-xs">No conversations yet</p>
+                  <p className="text-gray-400 text-xs">Add your first call summary above</p>
                 </div>
               )}
             </div>
           </div>
-        </div>
 
-        {/* Right Column */}
-        <div className="flex flex-col gap-6">
+          {/* All Tasks Section */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-gray-800">
-                Conversation Logs
-              </h3>
+              <h3 className="text-base font-semibold text-gray-800">All Tasks</h3>
               <button
                 onClick={() => {
                   setEditingActivity(null);
@@ -1297,61 +1766,7 @@ const SalesDetailBody = ({
                 +
               </button>
             </div>
-            {/* Conversation Logs Composer */}
-            <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-600 mb-1">Conversation Type</span>
-                  <select
-                    value={convoType}
-                    onChange={(e) => setConvoType(e.target.value)}
-                    className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  >
-                    <option value="">Select type</option>
-                    <option value="PHONE_CALL">Phone Call</option>
-                    <option value="MEETING">Meeting</option>
-                  </select>
-                </div>
-                <div className="md:col-span-2 flex flex-col">
-                  <span className="text-xs text-gray-600 mb-1">Call Summary</span>
-                  <input
-                    type="text"
-                    value={convoSummary}
-                    onChange={(e) => setConvoSummary(e.target.value)}
-                    placeholder="What happened on the call/meet?"
-                    className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-600 mb-1">Next Action / Task</span>
-                  <input
-                    type="text"
-                    value={convoNextAction}
-                    onChange={(e) => setConvoNextAction(e.target.value)}
-                    placeholder="e.g., Send quote, Follow-up call"
-                    className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-600 mb-1">Reminder / Due Date</span>
-                  <input
-                    type="datetime-local"
-                    value={convoDueDate}
-                    onChange={(e) => setConvoDueDate(e.target.value)}
-                    className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-                <div className="md:col-span-3 flex items-end">
-                  <button
-                    type="button"
-                    onClick={handleAddConversationLog}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Add Log
-                  </button>
-                </div>
-              </div>
-            </div>
+            
             <div className="space-y-3">
               {activities && activities.length > 0 ? (
                 activities
@@ -1381,6 +1796,11 @@ const SalesDetailBody = ({
                         <span className="text-sm text-gray-500">
                           {activity.dueDate}
                         </span>
+                        {activity.details && (
+                          <span className="text-xs text-gray-400 mt-1">
+                            From: {activity.details.substring(0, 50)}...
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 ml-4">
                         <button
@@ -1411,7 +1831,7 @@ const SalesDetailBody = ({
                   ))
               ) : (
                 <div className="text-center text-sm text-gray-400 py-4">
-                  No pending activities.
+                  No pending tasks. Create tasks from your call summaries! 📋
                 </div>
               )}
             </div>
