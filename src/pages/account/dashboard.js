@@ -81,12 +81,6 @@ const AccountDashboard = () => {
     loadDashboardData();
   }, [dispatch]);
 
-  useEffect(() => {
-    if (invoices && bills && expenses) {
-      calculateStats();
-    }
-  }, [invoices, bills, expenses, calculateStats]);
-
   const calculateStats = useCallback(() => {
     const totalInvoices = invoices?.length || 0;
     const totalBills = bills?.length || 0;
@@ -103,6 +97,12 @@ const AccountDashboard = () => {
       totalExpenditure
     });
   }, [invoices, bills, expenses]);
+
+  useEffect(() => {
+    if (invoices && bills && expenses) {
+      calculateStats();
+    }
+  }, [invoices, bills, expenses, calculateStats]);
 
   const handleModalOpen = (type, title) => {
     setModalType(type);
