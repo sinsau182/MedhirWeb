@@ -63,7 +63,7 @@ const defaultLeadData = {
   name: "",
   contactNumber: "",
   email: "",
-  projectType: "",
+  propertyType: "",
   propertyType: "",
   address: "",
   area: "",
@@ -163,7 +163,7 @@ const DeletePipelineModal = ({ isOpen, onClose }) => {
     dispatch(fetchPipelines());
     // Refresh leads to get the updated grouped format
     const employeeId = sessionStorage.getItem("employeeId");
-    dispatch(fetchLeads({ employeeId }));
+    dispatch(fetchLeads({ employeeId, silent: true }));
   };
 
   const handleSelectAll = () => {
@@ -324,8 +324,39 @@ const LeadManagementContent = ({ role }) => {
     // For Lead Management (Sales role), filter by employeeId
     // For Manager role, fetch all leads without filtering
     const employeeId = sessionStorage.getItem("employeeId");
-    dispatch(fetchLeads({ employeeId }));
+    dispatch(fetchLeads({ employeeId, silent: true }));
     dispatch(fetchManagerEmployees());
+  }, [dispatch]);
+
+  // Live refresh: periodically refetch leads and on window focus/visibility change
+  useEffect(() => {
+    const REFRESH_INTERVAL_MS = 2000; // 20s
+
+    const refetchLeads = () => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      const employeeId = sessionStorage.getItem("employeeId");
+      dispatch(fetchLeads({ employeeId, silent: true }));
+    };
+
+    const onFocus = () => refetchLeads();
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", onFocus);
+    }
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", refetchLeads);
+    }
+
+    const intervalId = setInterval(refetchLeads, REFRESH_INTERVAL_MS);
+
+    return () => {
+      clearInterval(intervalId);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", onFocus);
+      }
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", refetchLeads);
+      }
+    };
   }, [dispatch]);
 
 
@@ -511,7 +542,7 @@ const LeadManagementContent = ({ role }) => {
     setIsAddingStage(false);
     // Refresh leads to get the updated grouped format
     const employeeId = sessionStorage.getItem("employeeId");
-    dispatch(fetchLeads({ employeeId }));
+    dispatch(fetchLeads({ employeeId, silent: true }));
   };
 
   // Delete pipeline handler
@@ -522,7 +553,7 @@ const LeadManagementContent = ({ role }) => {
     dispatch(fetchPipelines());
     // Refresh leads to get the updated grouped format
     const employeeId = sessionStorage.getItem("employeeId");
-    dispatch(fetchLeads({ employeeId }));
+    dispatch(fetchLeads({ employeeId, silent: true }));
     setShowDeletePipelineModal(false);
     setSelectedPipelinesToDelete([]);
   };
@@ -541,7 +572,7 @@ const LeadManagementContent = ({ role }) => {
       toast.success("Default pipeline stages initialized successfully!");
       dispatch(fetchPipelines());
       const employeeId = sessionStorage.getItem("employeeId");
-      dispatch(fetchLeads({ employeeId }));
+      dispatch(fetchLeads({ employeeId, silent: true }));
     } catch (error) {
       toast.error("Failed to initialize pipeline stages");
     } finally {
@@ -741,7 +772,7 @@ const LeadManagementContent = ({ role }) => {
       
       // Refresh leads to get the updated grouped format
       const employeeId = sessionStorage.getItem("employeeId");
-      dispatch(fetchLeads({ employeeId }));
+      dispatch(fetchLeads({ employeeId, silent: true }));
     } catch (error) {
       console.error("Assignment error:", error);
       throw error;
@@ -767,7 +798,7 @@ const LeadManagementContent = ({ role }) => {
       
       // Refresh leads to get the updated grouped format
       const employeeId = sessionStorage.getItem("employeeId");
-      dispatch(fetchLeads({ employeeId }));
+      dispatch(fetchLeads({ employeeId, silent: true }));
     } catch (error) {
       console.error("Team assignment error:", error);
       throw error;
@@ -794,7 +825,7 @@ const LeadManagementContent = ({ role }) => {
       
       // Refresh leads to get the updated grouped format
       const employeeId = sessionStorage.getItem("employeeId");
-      dispatch(fetchLeads({ employeeId }));
+      dispatch(fetchLeads({ employeeId, silent: true }));
     } catch (error) {
       console.error("Semi contacted update error:", error);
       throw error;
@@ -821,7 +852,7 @@ const LeadManagementContent = ({ role }) => {
       
       // Refresh leads to get the updated grouped format
       const employeeId = sessionStorage.getItem("employeeId");
-      dispatch(fetchLeads({ employeeId }));
+      dispatch(fetchLeads({ employeeId, silent: true }));
     } catch (error) {
       console.error("Potential update error:", error);
       throw error;
@@ -849,7 +880,7 @@ const LeadManagementContent = ({ role }) => {
       
       // Refresh leads to get the updated grouped format
       const employeeId = sessionStorage.getItem("employeeId");
-      dispatch(fetchLeads({ employeeId }));
+      dispatch(fetchLeads({ employeeId, silent: true }));
     } catch (error) {
       console.error("High potential update error:", error);
       throw error;

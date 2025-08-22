@@ -404,7 +404,7 @@ const ClosedConvertedPage = () => {
                           {lead.name || 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {lead.projectName || 'N/A'}
+                          {lead.propertyName || 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {lead.projectId || 'N/A'}

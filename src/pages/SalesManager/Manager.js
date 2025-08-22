@@ -64,7 +64,7 @@ const defaultLeadData = {
   name: "",
   contactNumber: "",
   email: "",
-  projectType: "",
+  propertyType: "",
   propertyType: "",
   address: "",
   area: "",
@@ -193,6 +193,43 @@ const ManagerContent = ({ role }) => {
     } else {
       dispatch(fetchLeads());
     }
+  }, [dispatch, selectedEmployeeId, unassignedOnly]);
+
+  // Live refresh: periodically refetch leads and on window focus/visibility change
+  useEffect(() => {
+    const REFRESH_INTERVAL_MS = 2000; // 20s
+
+    const refetchLeads = () => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      const base = { silent: true };
+      if (unassignedOnly) {
+        dispatch(fetchLeads(base));
+      } else if (selectedEmployeeId && selectedEmployeeId !== "all") {
+        dispatch(fetchLeads({ employeeId: selectedEmployeeId, ...base }));
+      } else {
+        dispatch(fetchLeads(base));
+      }
+    };
+
+    const onFocus = () => refetchLeads();
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", onFocus);
+    }
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", refetchLeads);
+    }
+
+    const intervalId = setInterval(refetchLeads, REFRESH_INTERVAL_MS);
+
+    return () => {
+      clearInterval(intervalId);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", onFocus);
+      }
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", refetchLeads);
+      }
+    };
   }, [dispatch, selectedEmployeeId, unassignedOnly]);
 
   // Deduplicate leads by leadId and add stage information - Manager specific
