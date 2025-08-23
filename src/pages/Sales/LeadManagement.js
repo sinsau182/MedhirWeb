@@ -580,131 +580,7 @@ const LeadManagementContent = ({ role }) => {
     }
   };
 
-  // Drag-and-drop handler for Kanban board
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-    if (!over || !active) {
-      console.log("No over or active element");
-      return;
-    }
 
-    const leadId = active.id;
-    const newPipelineName = over.id;
-
-    if (!leadId || !newPipelineName) {
-      console.log("Missing leadId or newPipelineName");
-      return;
-    }
-
-    // Find the new pipeline by name
-    const newPipeline = pipelines.find((p) => p.name === newPipelineName);
-
-    if (!newPipeline) {
-      console.log("Pipeline not found for name:", newPipelineName);
-      return;
-    }
-
-    // Find the lead in the grouped format
-    let lead = null;
-    let currentPipelineId = null;
-    
-    // Check if leads is in the new grouped format
-    if (Array.isArray(leads) && leads.length > 0 && leads[0].stageId && leads[0].leads) {
-      // New format: find lead in grouped structure
-      for (const stageGroup of leads) {
-        const foundLead = stageGroup.leads.find(l => l.leadId === leadId);
-        if (foundLead) {
-          lead = foundLead;
-          currentPipelineId = stageGroup.stageId;
-          break;
-        }
-      }
-    } else {
-      // Old format: find lead directly
-      lead = leads.find((l) => l.leadId === leadId);
-      currentPipelineId = lead?.pipelineId || lead?.stageId;
-    }
-
-    if (!lead) {
-      console.log("Lead not found for ID:", leadId);
-      return;
-    }
-
-    const newPipelineId = newPipeline.pipelineId || newPipeline.stageId;
-
-    console.log("Pipeline comparison:", {
-      currentPipelineId,
-      newPipelineId,
-      isDifferent: String(currentPipelineId) !== String(newPipelineId),
-    });
-
-    if (String(currentPipelineId) !== String(newPipelineId)) {
-      // Check if moving from stage index 0 to stage index 1
-      const currentPipelineIndex = pipelines.findIndex(p => 
-        p.pipelineId === currentPipelineId || p.stageId === currentPipelineId
-      );
-      const newPipelineIndex = pipelines.findIndex(p => 
-        p.pipelineId === newPipelineId || p.stageId === newPipelineId
-      );
-      
-      // Get current stage name
-      const currentStageName = pipelines[currentPipelineIndex]?.name || 'Unknown Stage';
-      const newStageName = pipelines[newPipelineIndex]?.name || 'Unknown Stage';
-
-            // Check for backward movement restriction
-            if (currentPipelineIndex > newPipelineIndex) {
-              toast.error("Lead cannot be moved backward in kanban board");
-              return;
-            }
-      
-      // If pipeline requires a form, open the modal instead of moving directly
-      if (newPipeline.formType === "CONVERTED") {
-        setSelectedLead({ ...lead, pipelineId: newPipelineId });
-        setShowConvertModal(true);
-        return;
-      } else if (newPipeline.formType === "JUNK") {
-        setSelectedLead({ ...lead, pipelineId: newPipelineId });
-        setShowJunkModal(true);
-        return;
-      } else if (newPipeline.formType === "LOST") {
-        setSelectedLead({ ...lead, pipelineId: newPipelineId });
-        setShowLostModal(true);
-        return;
-      } else if (newPipeline.formType === "ASSIGNED") {
-        setSelectedLeadForAssignment(lead);
-        setTargetPipelineId(newPipelineId);
-        setShowAssignModal(true);
-        return;
-      } else if (newPipeline.formType === "SEMI") {
-        setSelectedLeadForSemiContacted(lead);
-        setTargetPipelineIdForSemiContacted(newPipelineId);
-        setShowSemiContactedModal(true);
-        return;
-      } else if (newPipeline.formType === "POTENTIAL") {
-        setSelectedLeadForPotential(lead);
-        setTargetPipelineIdForPotential(newPipelineId);
-        setShowPotentialModal(true);
-        return;
-      } else if (newPipeline.formType === "HIGHPOTENTIAL") {
-        setSelectedLeadForHighPotential(lead);
-        setTargetPipelineIdForHighPotential(newPipelineId);
-        setShowHighPotentialModal(true);
-        return;
-      }
-
-      // Otherwise, move lead directly
-      console.log("✅ Moving lead directly via API:", { 
-        leadId, 
-        newPipelineId,
-        leadName: lead.name,
-        fromStage: currentStageName,
-        toStage: newStageName
-      });
-      dispatch(moveLeadToPipeline({ leadId, newPipelineId }));
-    } else {
-      console.log("Pipeline is the same, no move needed");
-    }
-  };
 
   // Confirmation modal for pipeline actions
   const PipelineActionConfirmModal = () =>
@@ -1009,7 +885,7 @@ const LeadManagementContent = ({ role }) => {
             p.name.toLowerCase() !== "junk"
           )}
           onScheduleActivity={handleScheduleActivity}
-          onDragEnd={handleDragEnd}
+
           onTeamAssign={handleTeamAssign}
           managerEmployees={managerEmployees || []}
           allowAssignment={false}

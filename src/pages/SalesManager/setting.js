@@ -3566,40 +3566,7 @@ const SettingContent = ({ role }) => {
     }
   };
 
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) {
-      console.log("DragEnd: No valid drop target or same position", {
-        active,
-        over,
-      });
-      return;
-    }
-    const leadId = active.id;
-    const newStatus = over.id;
-    const oldLead = dedupedLeads.find((l) => l.leadId === leadId);
-    console.log("DragEnd:", { leadId, newStatus, oldLead });
-    if (newStatus === "Converted") {
-      setPendingConversion({ lead: oldLead, fromStatus: oldLead.status });
-      setLeadToConvertId(leadId);
-      setShowConvertModal(true);
-      console.log("Opening Convert Modal", { leadId, newStatus });
-    } else if (newStatus === "Lost") {
-      setPendingLost({ lead: oldLead, fromStatus: oldLead.status });
-      setLeadToMarkLost(oldLead);
-      setShowLostReasonModal(true);
-      console.log("Opening Lost Modal", { leadId, newStatus });
-    } else if (newStatus === "Junk") {
-      setPendingJunk({ lead: oldLead, fromStatus: oldLead.status });
-      setLeadToMarkJunkId(leadId);
-      setShowJunkReasonModal(true);
-      console.log("Opening Junk Modal", { leadId, newStatus });
-    } else {
-      // For other status changes, dispatch an update action
-      dispatch(updateLead({ ...oldLead, status: newStatus }));
-      console.log("Moved lead to new status", { leadId, newStatus });
-    }
-  };
+
 
   const handleEdit = (lead) => {
     setEditingLead(lead);
@@ -3977,7 +3944,7 @@ const SettingContent = ({ role }) => {
             <KanbanBoard
               leadsByStatus={leadsByStatus}
               kanbanStatuses={kanbanStatuses}
-              onDragEnd={handleDragEnd}
+
               onEdit={handleEdit}
               onConvert={handleConvert}
               onMarkLost={handleMarkLost}

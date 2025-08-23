@@ -949,6 +949,32 @@ const SalesDetailBody = ({
       
       // Silent reload - refresh data without showing loading state
       if (lead && lead.leadId) {
+        // Refresh lead data silently to get updated notes
+        const fetchLeadSilently = async () => {
+          try {
+            const token = getItemFromSessionStorage("token") || "";
+            const response = await axios.get(
+              `${API_BASE_URL}/leads/${lead.leadId}`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+            // Update lead data without showing loading
+            const updatedLead = response.data;
+            if (updatedLead.notesList) {
+              const combinedNotes = updatedLead.notesList.map((n) => ({
+                user: n.user || updatedLead.name || "User",
+                content: n.content,
+                time: n.timestamp || n.createdAt || n.time || new Date(),
+                noteId: n.noteId || n.id,
+              }));
+              setNotes(combinedNotes);
+            }
+          } catch (err) {
+            console.error("Silent lead refresh failed:", err);
+          }
+        };
+        
         // Refresh activities silently
         const fetchActivitiesSilently = async () => {
           try {
@@ -983,7 +1009,8 @@ const SalesDetailBody = ({
           }
         };
         
-        // Execute both silent refreshes
+        // Execute silent refreshes
+        fetchLeadSilently();
         fetchActivitiesSilently();
         fetchActivityLogsSilently();
       }
@@ -1142,13 +1169,13 @@ const SalesDetailBody = ({
                         >
                           <FaCheck size={14} />
                         </button>
-                        <button
+                        {/* <button
                           onClick={() => onEditActivity(activity)}
                           title="Edit"
                           className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition-colors"
                         >
                           <FaPencilAlt size={14} />
-                        </button>
+                        </button> */}
                         <button
                           onClick={() =>
                             activity.id && onDeleteActivity(activity.id)
