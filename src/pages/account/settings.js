@@ -1049,7 +1049,7 @@ const AccountSettingsPage = () => {
         setIsLoading(true);
         
         // Fetch document settings
-        const settingsRes = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/account/company/${companyId}?companyId=${companyId}`, {
+        const settingsRes = await fetch(`${publicRuntimeConfig.apiURL}/api/settings/account?companyId=${companyId}`, {
           headers: buildAuthHeaders(token),
         });
         if (settingsRes.status === 401) {
