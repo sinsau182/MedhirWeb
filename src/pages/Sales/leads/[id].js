@@ -1131,7 +1131,7 @@ const SalesDetailBody = ({
                               From: {activity.details.substring(0, 30)}...
                             </span>
                           )}
-                        </div>
+                        </div> 
                       </div>
                       <div className="flex flex-col gap-2">
                       <div className="flex items-center gap-2 ml-3 flex-shrink-0">
