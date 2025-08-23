@@ -337,17 +337,17 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
         </div>
         <div className="flex items-center gap-2">
         {/* Activity Button */}
-        <button
+        {/* <button
           type="button"
           title="Schedule Activity"
           onClick={() => onScheduleActivity && onScheduleActivity(lead)}
           className="lead-actions hover:bg-blue-50 rounded-full p-1 transition-colors text-gray-400 hover:text-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-300"
         >
           <FaRegClock size={14} />
-        </button>
+        </button> */}
 
         {/* Freeze Button - Only show for High Potential leads */}
-        {isHighPotential() && (
+        {/* {isHighPotential() && (
           <CustomTooltip text={lead.isFreeze ? "Lead is frozen" : "Freeze Lead"}>
             <button
               type="button"
@@ -362,16 +362,16 @@ const LeadCard = ({ lead, onEdit, onConvert, onMarkLost, onMarkJunk, onScheduleA
               <FaSnowflake size={14} />
             </button>
             </CustomTooltip>
-        )}
+        )} */}
 
-        <button
+        {/* <button
           type="button"
           title="Mark as Lost or Junk"
           onClick={handleTrashAction}
           className="lead-actions hover:bg-red-50 rounded-full p-1 transition-colors text-gray-400 hover:text-red-600 focus:outline-none focus:ring-1 focus:ring-red-300"
         >
           <FaTrash size={14} />
-        </button>
+        </button> */}
         </div>
       </div>
       

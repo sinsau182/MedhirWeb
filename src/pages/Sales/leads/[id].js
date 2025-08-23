@@ -37,6 +37,9 @@ import {
   FaInfo,
   FaArrowRight,
   FaArrowLeft,
+  FaCheckCircle,
+  FaClipboardCheck,
+  FaCheckDouble,
 } from "react-icons/fa";
 import MainLayout from "@/components/MainLayout";
 import { toast } from "sonner";
@@ -143,18 +146,18 @@ const SalesHeader = ({ lead, pipelines, onStatusChange }) => {
     Low: "bg-gray-100 text-gray-600",
   }[priorityLabel];
   return (
-    <div className="sticky top-16 z-10 bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
+    <div className="sticky top-16 z-10 bg-white border-b border-gray-200 px-8 py-2 flex items-center justify-between">
       {/* Left Side */}
       <div className="flex-1 flex flex-col">
         <div className="flex items-center gap-2">
           <button className="text-sm text-gray-500 font-medium" onClick={() => router.back()}>
             <FaArrowLeft className="w-5 h-5" />
           </button>
-          <span className="text-2xl text-gray-800 font-semibold">
+          <span className="text-2xl mt-1 text-gray-800 font-semibold">
             {lead.name} &ndash; {lead.propertyType}
           </span>
         </div>
-        <div className="flex items-center gap-6 mt-2 ml-8">
+        <div className="flex items-center gap-6 ml-8">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500 font-medium">Priority:</span>
             <span
@@ -186,39 +189,6 @@ const SalesHeader = ({ lead, pipelines, onStatusChange }) => {
               customLabel = "text-blue-600";
               baseCircle = "";
             }
-            // return (
-            //   <React.Fragment key={stage.stageId}>
-            //     <div
-            //       className="flex items-center gap-2 cursor-pointer"
-            //       onClick={() => onStatusChange(stage.name)}
-            //     >
-            //       {isCompleted ? (
-            //         <FaCheck className="text-green-500" />
-            //       ) : (
-            //         <span
-            //           className={`flex items-center justify-center rounded-full border w-5 h-5 text-xs font-bold ${baseCircle} ${customCircle}`}
-            //         >
-            //           {idx + 1}
-            //         </span>
-            //       )}
-            //       <span
-            //         className={`text-sm ${
-            //           isActive || isCompleted ? "font-medium" : ""
-            //         } ${
-            //           customLabel ||
-            //           (isActive || isCompleted
-            //             ? "text-gray-800"
-            //             : "text-gray-400")
-            //         }`}
-            //       >
-            //         {stage.name}
-            //       </span>
-            //     </div>
-            //     {idx < filteredPipelines.length - 1 && (
-            //       <span className="text-gray-300">&gt;</span>
-            //     )}
-            //   </React.Fragment>
-            // );
           })}
         </div>
         
@@ -318,6 +288,8 @@ const SalesDetailBody = ({
   setIsActivityModalOpen,
   activityLogs,
   activeRole,
+  setActivities,
+  setActivityLogs,
 }) => {
   const dispatch = useDispatch();
   const { employees: managerEmployees, loading: managerEmployeesLoading } =
@@ -350,11 +322,15 @@ const SalesDetailBody = ({
   // Task management functions for summaries form
   const handleAddSummaryTask = () => {
     if (!newTaskText.trim()) return;
+    if (!newTaskDueDate) {
+      toast.error("Due date is required for next actions");
+      return;
+    }
     
     const newTask = {
       id: Date.now(),
       text: newTaskText.trim(),
-      dueDate: newTaskDueDate || null,
+      dueDate: newTaskDueDate,
       completed: false
     };
     
@@ -879,6 +855,13 @@ const SalesDetailBody = ({
       "Save Note button pressed. Attempting to post note:",
       noteContent
     );
+    
+    // Make it compulsory to add at least one task for all summaries
+    if (summaryTasks.length === 0) {
+      toast.error("Please add at least one task before saving the summary");
+      return;
+    }
+    
     setNotesLoading(true);
     const typeLabel = noteConvoType === 'PHONE_CALL' ? 'Phone' : noteConvoType === 'MEETING' ? 'Meeting' : '';
     const contentToSave = typeLabel ? `[${typeLabel}] ${noteContent}` : noteContent;
@@ -935,7 +918,7 @@ const SalesDetailBody = ({
                 title: task.text,
                 description: `Task created from call summary: ${noteContent.slice(0, 100)}...`,
                 activityType: "TO-DO",
-                dueDate: task.dueDate || null,
+                dueDate: task.dueDate,
                 assignee: null
               },
               {
@@ -963,6 +946,48 @@ const SalesDetailBody = ({
       setShowTaskInput(false);
       setNewTaskText("");
       setNewTaskDueDate("");
+      
+      // Silent reload - refresh data without showing loading state
+      if (lead && lead.leadId) {
+        // Refresh activities silently
+        const fetchActivitiesSilently = async () => {
+          try {
+            const token = getItemFromSessionStorage("token") || "";
+            const response = await axios.get(
+              `${API_BASE_URL}/leads/${lead.leadId}/activities`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+            // Update activities state without showing loading
+            setActivities(response.data);
+          } catch (err) {
+            console.error("Silent activities refresh failed:", err);
+          }
+        };
+        
+        // Refresh activity logs silently
+        const fetchActivityLogsSilently = async () => {
+          try {
+            const token = getItemFromSessionStorage("token") || "";
+            const response = await axios.get(
+              `${API_BASE_URL}/leads/${lead.leadId}/activity-logs`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+            // Update activity logs state without showing loading
+            setActivityLogs(response.data);
+          } catch (err) {
+            console.error("Silent activity logs refresh failed:", err);
+          }
+        };
+        
+        // Execute both silent refreshes
+        fetchActivitiesSilently();
+        fetchActivityLogsSilently();
+      }
+      
     } catch (e) {
       console.error("Failed to save note:", e);
       toast.error("Failed to save summary");
@@ -1046,13 +1071,109 @@ const SalesDetailBody = ({
     });
 
   return (
-    <div className="flex-grow bg-gray-50 p-6">
+    <div className="flex-grow bg-gray-50 p-4">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column */}
         <div className="lg:col-span-2 flex flex-col gap-6">
+          {/* All Tasks Container */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-2.5">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-base font-semibold text-gray-800">Pending Tasks</h3>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">
+                  {activities?.filter(a => a.status !== "done" && a.id && !deletedActivityIds.has(a.id)).length || 0} tasks
+                </span>
+                {/* <button
+                  onClick={() => {
+                    setEditingActivity(null);
+                    setIsActivityModalOpen(true);
+                  }}
+                  className="w-6 h-6 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 transition text-sm"
+                  title="Add Activity"
+                >
+                  +
+                </button> */}
+              </div>
+            </div>
+            
+            <div className="max-h-40 overflow-y-auto space-y-2 pr-2">
+              {activities && activities.length > 0 ? (
+                activities
+                  .filter(
+                    (a) =>
+                      a.status !== "done" &&
+                      a.id &&
+                      !deletedActivityIds.has(a.id)
+                  )
+                  .map((activity, index) => (
+                    <div
+                      key={activity.id || `temp-${index}`}
+                      className="bg-gray-50 rounded-md border border-gray-200 p-1 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          {/* <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-700 capitalize">
+                            {activity.type}
+                          </span> */}
+                          {/* <span className="text-blue-600 text-xs font-medium">
+                            {activity.status}
+                          </span> */}
+                        </div>
+                        <span className="font-medium text-gray-800 text-sm truncate">
+                          {activity.title}
+                        </span>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          {activity.dueDate && (
+                            <span>Due: {activity.dueDate}</span>
+                          )}
+                          {activity.details && (
+                            <span className="truncate">
+                              From: {activity.details.substring(0, 30)}...
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                        <button
+                          onClick={() => activity.id && onMarkDone(activity.id)}
+                          title="Mark as Done"
+                          className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50 transition-colors"
+                        >
+                          <FaCheck size={14} />
+                        </button>
+                        <button
+                          onClick={() => onEditActivity(activity)}
+                          title="Edit"
+                          className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition-colors"
+                        >
+                          <FaPencilAlt size={14} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            activity.id && onDeleteActivity(activity.id)
+                          }
+                          title="Delete"
+                          className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
+                        >
+                          <FaTimes size={14} />
+                        </button>
+                      </div>
+                      
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                <div className="text-center text-sm text-gray-400 py-6">
+                  No pending tasks. Create tasks from your call summaries! 📋
+                </div>
+              )}
+            </div>
+          </div>
+          
           {/* Project Details */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold text-gray-800">
                 Lead Details
               </h3>
@@ -1160,13 +1281,13 @@ const SalesDetailBody = ({
             {/* Single border below heading */}
             <div className="border-b border-gray-200 mb-4"></div>
             {/* Contact Details (moved to top of this card) */}
-            <div className="border-b border-gray-100 pb-4 mb-4">
-              <div className="flex items-center justify-between mb-4">
+            <div className="border-b border-gray-100 pb-2 mb-4">
+              <div className="flex items-center justify-between mb-2">
                 <h3 className="text-base font-semibold text-gray-800">Contact Details</h3>
               </div>
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <div>
-                   <label className="block text-xs font-medium text-gray-500 mb-2">Full Name</label>
+                   <label className="block text-xs font-medium text-gray-500 mb-0">Full Name</label>
                    {contactEditingField === 'name' ? (
                      <input
                        value={contactFields.name}
@@ -1185,7 +1306,7 @@ const SalesDetailBody = ({
                    )}
                  </div>
                  <div>
-                   <label className="block text-xs font-medium text-gray-500 mb-2">Email Address</label>
+                   <label className="block text-xs font-medium text-gray-500 mb-0">Email Address</label>
                    {contactEditingField === 'email' ? (
                      <input
                        value={contactFields.email}
@@ -1204,7 +1325,7 @@ const SalesDetailBody = ({
                    )}
                  </div>
                  <div>
-                   <label className="block text-xs font-medium text-gray-500 mb-2">Contact Number</label>
+                   <label className="block text-xs font-medium text-gray-500 mb-0">Contact Number</label>
                    {contactEditingField === 'contactNumber' ? (
                      <input
                        value={contactFields.contactNumber}
@@ -1225,7 +1346,7 @@ const SalesDetailBody = ({
                    )}
                  </div>
                  <div>
-                   <label className="block text-xs font-medium text-gray-500 mb-2">Alternate Phone Number</label>
+                   <label className="block text-xs font-medium text-gray-500 mb-0">Alternate Phone Number</label>
                    {contactEditingField === 'alternateContactNumber' ? (
                      <input
                        value={contactFields.alternateContactNumber}
@@ -1528,7 +1649,7 @@ const SalesDetailBody = ({
               </button>
             </div>
             
-            {!summariesCollapsed && (
+            {summariesCollapsed && (
               <div className="transition-all duration-300 ease-in-out">
                 {/* Call Type Selection - Bullet Options */}
                 <div className="mb-3">
@@ -1561,7 +1682,7 @@ const SalesDetailBody = ({
                 </div>
 
                 {/* Summary Input Field */}
-                <div className="mb-3">
+                <div className="mb-1">
                   <label className="block text-xs font-medium text-gray-700 mb-1">Call Summary</label>
                   <textarea
                     rows={4}
@@ -1573,86 +1694,103 @@ const SalesDetailBody = ({
                 </div>
 
                 {/* Tasks Section */}
-                {(summaryTasks.length > 0 || showTaskInput) && (
-                  <div className="mb-3">
-                    <label className="block text-xs font-medium text-gray-700 mb-2">Tasks</label>
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Next Actions <span className="text-red-500">*</span>
+                  </label>
                     
-                    {/* Existing Tasks */}
-                    {summaryTasks.length > 0 && (
-                      <div className="space-y-2 mb-3">
-                        {summaryTasks.map((task) => (
-                          <div key={task.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
-                            <div className="flex-1">
-                              <p className="text-xs text-gray-800">{task.text}</p>
-                              {task.dueDate && (
-                                <p className="text-xs text-gray-500">Due: {new Date(task.dueDate).toLocaleDateString()}</p>
-                              )}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveSummaryTask(task.id)}
-                              className="text-red-500 hover:text-red-700 p-1"
-                              title="Remove task"
-                            >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
+                                      {/* Existing Tasks */}
+                  {summaryTasks.length > 0 ? (
+                    <div className="space-y-2 mb-3">
+                      {summaryTasks.map((task) => (
+                        <div key={task.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
+                          <div className="flex-1">
+                            <p className="text-xs text-gray-800">{task.text}</p>
+                            {task.dueDate && (
+                              <p className="text-xs text-gray-500">Due: {new Date(task.dueDate).toLocaleDateString()}</p>
+                            )}
                           </div>
-                        ))}
-                      </div>
-                    )}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSummaryTask(task.id)}
+                            className="text-red-500 hover:text-red-700 p-1"
+                            title="Remove task"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : !showTaskInput ? (
+                    <div className="text-center py-3 text-xs text-gray-500 bg-gray-50 rounded-md border border-gray-200">
+                      No Actions added yet. Click "+ Next Action" to add at least one.
+                    </div>
+                  ) : null}
 
                     {/* Add Task Input */}
                     {showTaskInput && (
-                      <div className="space-y-2 p-3 border border-gray-200 rounded-md bg-gray-50">
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
+                      <div className="space-y-0 p-2 border border-gray-200 rounded-md bg-gray-50 grid grid-cols-2 gap-0">
+                        {/* Task Description - Full Width */}
+                        <div className="flex flex-col gap-2">
+                          <label className="block text-xs font-medium text-gray-700 mb-0">Task Description <span className="text-red-500">*</span></label>
+                        <div>
+                          <textarea
+                            rows={3}
                             value={newTaskText}
                             onChange={(e) => setNewTaskText(e.target.value)}
                             placeholder="Enter task description..."
-                            className="flex-1 px-3 py-2 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                          <input
-                            type="date"
-                            value={newTaskDueDate}
-                            onChange={(e) => setNewTaskDueDate(e.target.value)}
-                            className="px-3 py-2 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                           />
                         </div>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={handleAddSummaryTask}
-                            disabled={!newTaskText.trim()}
-                            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          >
-                            Add Task
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowTaskInput(false);
-                              setNewTaskText("");
-                              setNewTaskDueDate("");
-                            }}
-                            className="px-3 py-1.5 bg-gray-500 hover:bg-gray-600 text-white text-xs font-medium rounded-md transition-colors"
-                          >
-                            Cancel
-                          </button>
+                        </div>
+                        {/* Due Date and Buttons - Right Side */}
+                        <div className="flex justify-end">
+                          <div className="flex flex-col gap-2">
+                                                      <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">Due Date <span className="text-red-500">*</span></label>
+                            <input
+                              type="date"
+                              value={newTaskDueDate}
+                              onChange={(e) => setNewTaskDueDate(e.target.value)}
+                              className="px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              required
+                            />
+                          </div>
+                            <div className="flex gap-2">
+                                                          <button
+                              type="button"
+                              onClick={handleAddSummaryTask}
+                              disabled={!newTaskText.trim() || !newTaskDueDate}
+                              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              Add Task
+                            </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowTaskInput(false);
+                                  setNewTaskText("");
+                                  setNewTaskDueDate("");
+                                }}
+                                className="px-3 py-1.5 bg-gray-500 hover:bg-gray-600 text-white text-xs font-medium rounded-md transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
                   </div>
-                )}
 
                 {/* Action Buttons */}
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={handleAddOrEditNote}
-                    disabled={notesLoading || !noteContent.trim() || !noteConvoType}
+                    disabled={notesLoading || !noteContent.trim() || !noteConvoType || summaryTasks.length === 0}
                     className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                   >
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1666,10 +1804,7 @@ const SalesDetailBody = ({
                     onClick={() => setShowTaskInput(!showTaskInput)}
                     className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-medium rounded-md transition-colors flex items-center gap-1"
                   >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    + Task
+                    + Next Action
                   </button>
                   
                   {/* <button
@@ -1691,20 +1826,20 @@ const SalesDetailBody = ({
           </div>
 
           {/* Call History */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
-            <div className="mb-3">
-              <h3 className="text-sm font-medium text-gray-900">Call History</h3>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2.5">
+            <div className="mb-2">
+              <h3 className="text-md font-medium text-gray-900">Call History</h3>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-2">
               {conversationGroups && conversationGroups.length > 0 ? (
                 conversationGroups.map((c, idx) => (
                   <div key={idx} className="bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-gray-300 transition-all duration-200">
                     {/* Header */}
-                    <div className="px-3 py-2 bg-gradient-to-r from-gray-50 to-white">
+                    <div className="px-3 py-1.5 bg-gradient-to-r from-gray-50 to-white">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-5 h-5 rounded flex items-center justify-center text-xs ${
+                        <div className="flex items-center gap-1">
+                          <span className={`w-4 h-4 rounded flex items-center justify-center text-xs ${
                             c.type === 'PHONE_CALL' ? 'bg-green-100 text-green-700' :
                             c.type === 'MEETING' ? 'bg-blue-100 text-blue-700' :
                             c.type === 'EMAIL' ? 'bg-orange-100 text-orange-700' :
@@ -1730,7 +1865,7 @@ const SalesDetailBody = ({
                     </div>
                     
                     {/* Content */}
-                    <div className="p-3">
+                    <div className="p-2">
                       <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
                         {c.summary}
                       </p>
@@ -1751,91 +1886,7 @@ const SalesDetailBody = ({
             </div>
           </div>
 
-          {/* All Tasks Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-gray-800">All Tasks</h3>
-              <button
-                onClick={() => {
-                  setEditingActivity(null);
-                  setIsActivityModalOpen(true);
-                }}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 transition"
-                title="Add Activity"
-              >
-                +
-              </button>
-            </div>
-            
-            <div className="space-y-3">
-              {activities && activities.length > 0 ? (
-                activities
-                  .filter(
-                    (a) =>
-                      a.status !== "done" &&
-                      a.id &&
-                      !deletedActivityIds.has(a.id)
-                  )
-                  .map((activity, index) => (
-                    <div
-                      key={activity.id || `temp-${index}`}
-                      className="bg-gray-50 rounded-lg border border-gray-200 p-3 flex items-center justify-between"
-                    >
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-gray-200 text-gray-700 capitalize">
-                            {activity.type}
-                          </span>
-                          <span className="text-blue-600 text-xs font-medium ml-2">
-                            {activity.status}
-                          </span>
-                        </div>
-                        <span className="font-semibold text-gray-800 text-sm">
-                          {activity.title}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {activity.dueDate}
-                        </span>
-                        {activity.details && (
-                          <span className="text-xs text-gray-400 mt-1">
-                            From: {activity.details.substring(0, 50)}...
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 ml-4">
-                        <button
-                          onClick={() => activity.id && onMarkDone(activity.id)}
-                          title="Mark as Done"
-                          className="text-green-600 hover:text-green-800"
-                        >
-                          <FaCheck size={18} />
-                        </button>
-                        <button
-                          onClick={() => onEditActivity(activity)}
-                          title="Edit"
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <FaPencilAlt size={18} />
-                        </button>
-                        <button
-                          onClick={() =>
-                            activity.id && onDeleteActivity(activity.id)
-                          }
-                          title="Delete"
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <FaTimes size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-              ) : (
-                <div className="text-center text-sm text-gray-400 py-4">
-                  No pending tasks. Create tasks from your call summaries! 📋
-                </div>
-              )}
-            </div>
-          </div>
+
         </div>
       </div>
     </div>
@@ -2427,7 +2478,12 @@ const LeadDetailContent = () => {
     if (!activityToDelete) return;
     try {
       await axios.delete(
-        `${API_BASE_URL}/leads/${lead.leadId}/activities/${activityToDelete.id}`
+        `${API_BASE_URL}/leads/${lead.leadId}/activities/${activityToDelete.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+          },
+        }
       );
       await fetchActivities(lead.leadId); // Refresh activities
       await fetchActivityLogs(lead.leadId); // Refresh activity logs
@@ -2695,6 +2751,8 @@ const LeadDetailContent = () => {
         onDeleteActivity={handleDeleteActivity}
         onMarkDone={handleMarkDone}
         activityLogs={activityLogs}
+        setActivities={setActivities}
+        setActivityLogs={setActivityLogs}
       />
       <AdvancedScheduleActivityModal
         isOpen={isActivityModalOpen}
