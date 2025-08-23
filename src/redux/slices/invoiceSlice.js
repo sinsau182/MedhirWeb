@@ -144,15 +144,18 @@ export const generateNextInvoiceNumber = createAsyncThunk(
 
 export const fetchProjectCustomerList = createAsyncThunk(
   "receipts/fetchProjectCustomerList",
-  async (_, { rejectWithValue }) => {
+  async (companyId, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
-      const response = await fetch(`${publicRuntimeConfig.apiURL}/leads/project-customer/all`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `${publicRuntimeConfig.apiURL}/leads/project-customer/all?companyId=${companyId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
       const data = await response.json();
       if (!response.ok) return rejectWithValue(data.message);
       return data;

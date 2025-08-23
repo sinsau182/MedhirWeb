@@ -72,7 +72,7 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
 
     useEffect(() => {
         if (!projectCustomerList || projectCustomerList.length === 0) {
-            dispatch(fetchProjectCustomerList());
+            dispatch(fetchProjectCustomerList(companyId));
         }
     }, [dispatch, projectCustomerList]);
 
@@ -752,4 +752,4 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
     );
 };
 
-export default AddInvoiceForm; 
+export default AddInvoiceForm;
