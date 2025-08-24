@@ -15,15 +15,18 @@ function getTokenOrThrow() {
 // Fetch all invoices
 export const fetchInvoices = createAsyncThunk(
   "invoices/fetchInvoices",
-  async (_, { rejectWithValue }) => {
+  async (companyId, { rejectWithValue }) => {
     try {
       const token = getTokenOrThrow();
-      const response = await fetch(API_BASE_URL, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}?companyId=${companyId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
       const data = await response.json();
       if (!response.ok) return rejectWithValue(data.message || "Failed to fetch invoices");
       return data;
