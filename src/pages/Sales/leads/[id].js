@@ -134,6 +134,24 @@ const sources = [
   "Other",
 ];
 
+const designStyles = [
+  "Modern",
+  "Contemporary",
+  "Traditional",
+  "Minimalist",
+  "Scandinavian",
+  "Industrial",
+  "Bohemian",
+  "Rustic",
+  "Luxury",
+  "Eco-friendly",
+  "Art Deco",
+  "Mediterranean",
+  "Asian",
+  "Victorian",
+  "Other",
+];
+
 // Utility function for date/time formatting
 function formatDateTime(dateStr) {
   if (!dateStr) return "";
@@ -412,6 +430,8 @@ const SalesDetailBody = ({
     firstMeetingDate: lead.firstMeetingDate || "",
     initialQuote: lead.initialQuote || lead.quotedAmount || "",
     requirements: lead.requirements || "",
+    area: lead.area || "",
+    designStyle: lead.designStyle || "",
   });
 
   const [highPotentialFields, setHighPotentialFields] = useState({
@@ -502,6 +522,8 @@ const SalesDetailBody = ({
       firstMeetingDate: lead.firstMeetingDate || "",
       initialQuote: lead.initialQuote || lead.quotedAmount || "",
       requirements: lead.requirements || "",
+      area: lead.area || "",
+      designStyle: lead.designStyle || "",
     });
             setHighPotentialFields({
           requirements: lead.requirements || "",
@@ -737,6 +759,20 @@ const SalesDetailBody = ({
 
   const handleProjectFieldChange = (field, value) => {
     setProjectFields((prev) => ({ ...prev, [field]: value }));
+    
+    // If lead source is changed to "Referral", prompt for referral name
+    if (field === "leadSource" && value === "Referral") {
+      // Clear any existing referral name when switching to Referral
+      setProjectFields((prev) => ({ ...prev, referralName: "" }));
+      
+      // Show a toast to remind user to enter referral name
+      toast.info("Please enter the referral name below");
+    }
+    
+    // If lead source is changed away from "Referral", clear referral name
+    if (field === "leadSource" && value !== "Referral") {
+      setProjectFields((prev) => ({ ...prev, referralName: "" }));
+    }
   };
 
   const handleContactedFieldChange = (field, value) => {
@@ -786,6 +822,18 @@ const SalesDetailBody = ({
       textFields[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
         ? Number(value)
         : value;
+
+      // If saving leadSource and it's "Referral", also save referralName if available
+      if (field === "leadSource" && value === "Referral") {
+        if (projectFields.referralName && projectFields.referralName.trim()) {
+          textFields.referralName = projectFields.referralName.trim();
+        }
+      }
+
+      // If saving referralName and leadSource is "Referral", also save leadSource
+      if (field === "referralName" && projectFields.leadSource === "Referral") {
+        textFields.leadSource = projectFields.leadSource;
+      }
 
       await updateLeadWithFormData(lead.leadId, textFields, {});
       // Optimistically update local lead display without refetch
@@ -840,6 +888,12 @@ const SalesDetailBody = ({
     try {
       const value = potentialFields[field];
       // Required validations for Potential fields
+      if (field === "firstMeetingDate") {
+        if (!String(value || "").trim()) {
+          toast.error("First Meeting Date is required");
+          return;
+        }
+      }
       if (field === "initialQuote") {
         if (value === undefined || value === null || String(value).trim() === "") {
           toast.error("Initial Quotation is required");
@@ -853,7 +907,7 @@ const SalesDetailBody = ({
         }
       }
       const textFields = {};
-      const numericFields = ["initialQuote"];
+      const numericFields = ["initialQuote", "area"];
       textFields[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
         ? Number(value)
         : value;
@@ -1820,11 +1874,11 @@ const SalesDetailBody = ({
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-8">
               {[
-                {
-                  label: "Property Name",
-                  field: "propertyName",
-                  type: "text",
-                },
+                // {
+                //   label: "Property Name",
+                //   field: "propertyName",
+                //   type: "text",
+                // },
                 {
                   label: "Property Type",
                   field: "propertyType",
@@ -1832,11 +1886,11 @@ const SalesDetailBody = ({
                   options: propertyTypes,
                 },
                 { label: "Address", field: "address", type: "text" },
-                {
-                  label: "Area (sq. ft.)",
-                  field: "area",
-                  type: "number",
-                },
+                // {
+                //   label: "Area (sq. ft.)",
+                //   field: "area",
+                //   type: "number",
+                // },
                 {
                   label: "Lead Source",
                   field: "leadSource",
@@ -1844,7 +1898,7 @@ const SalesDetailBody = ({
                   options: sources,
                   required: false,
                 },
-                { label: "Design Style", field: "designStyle", type: "text" },
+                // { label: "Design Style", field: "designStyle", type: "text" },
               ].filter(({ conditional, condition }) => !conditional || condition).map(({ label, field, type, options, required, optional, conditional, condition }) => (
                 <div key={field} className="relative group flex flex-col">
                   {/* Floating label */}
@@ -1931,34 +1985,61 @@ const SalesDetailBody = ({
                 </div>
               ))}
               
-              {/* Referral Name Field - Only show when editing and lead source is Referral */}
-              {isEditing && projectFields.leadSource === "Referral" && (
-                <div className="mt-4">
-                  <div className="relative group flex flex-col">
-                    <span className="text-xs font-semibold text-gray-500 mb-1 group-hover:text-blue-600 transition-all">
-                      Referral Name <span className="text-red-500">*</span>
-                    </span>
-                    <input
-                      type="text"
-                      value={projectFields.referralName || ""}
-                      onChange={(e) => handleProjectFieldChange("referralName", e.target.value)}
-                      className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-base"
-                      placeholder="Enter referral name"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {/* Show referral name when lead source is Referral but field is not in form */}
-              {!isEditing && lead.leadSource === "Referral" && (
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-blue-700">Referral Name:</span>
-                    <span className="text-sm font-semibold text-blue-900">
-                      {lead.referralName || "Not specified"}
-                    </span>
-                  </div>
+              {/* Referral Name Field - Only show when lead source is Referral */}
+              {projectFields.leadSource === "Referral" && (
+                <div className="relative group flex flex-col">
+                  <span className="text-xs font-semibold text-gray-500 mb-1 group-hover:text-blue-600 transition-all">
+                    Referral Name <span className="text-red-500">*</span>
+                  </span>
+                  {isEditing || inlineEditingField === 'referralName' ? (
+                    <div>
+                      <input
+                        type="text"
+                        value={projectFields.referralName || ""}
+                        onChange={(e) => handleProjectFieldChange("referralName", e.target.value)}
+                        className={`w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-base ${
+                          projectFields.leadSource === "Referral" && !projectFields.referralName?.trim() 
+                            ? 'border-red-300 focus:border-red-500 focus:ring-red-100' 
+                            : ''
+                        }`}
+                        placeholder="Enter referral name"
+                        autoFocus={inlineEditingField === 'referralName'}
+                        onBlur={() => { 
+                          if (projectFields.referralName && projectFields.referralName.trim()) {
+                            saveProjectField("referralName"); 
+                          }
+                          setInlineEditingField(null); 
+                        }}
+                        onKeyDown={(e) => { 
+                          if (e.key === 'Enter') { 
+                            e.preventDefault(); 
+                            if (projectFields.referralName && projectFields.referralName.trim()) {
+                              saveProjectField("referralName");
+                            }
+                            e.currentTarget.blur(); 
+                          } 
+                        }}
+                        required
+                      />
+                      {projectFields.leadSource === "Referral" && !projectFields.referralName?.trim() && (
+                        <div className="text-xs text-red-500 mt-1">
+                          Referral name is required when lead source is "Referral"
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      className={`w-full text-base font-semibold text-gray-900 truncate cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors ${
+                        projectFields.leadSource === "Referral" && !projectFields.referralName?.trim() 
+                          ? 'border border-red-300 bg-red-50' 
+                          : ''
+                      }`}
+                      onClick={() => setInlineEditingField('referralName')}
+                      title={projectFields.referralName || lead.referralName || "Click to add referral name"}
+                    >
+                      {projectFields.referralName || lead.referralName || "(click to add)"}
+                    </div>
+                  )}
                 </div>
               )}
           </div>
@@ -2027,7 +2108,7 @@ const SalesDetailBody = ({
               <h4 className="text-sm font-semibold text-gray-700 mb-3">Contacted</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 mb-1">Floor Plan</span>
+                  <span className="text-xs text-gray-500 mb-1">Floor Plan <span className="text-red-500">*</span></span>
                   <div className="relative">
                   <input
                       type="file"
@@ -2049,7 +2130,7 @@ const SalesDetailBody = ({
                   </div>
                   </div>
                 <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 mb-1">First Call Date</span>
+                  <span className="text-xs text-gray-500 mb-1">First Call Date <span className="text-red-500">*</span></span>
                   <input
                     type="datetime-local"
                     value={contactedFields.firstCallDate}
@@ -2085,7 +2166,7 @@ const SalesDetailBody = ({
               <h4 className="text-sm font-semibold text-gray-700 mb-3">Potential</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 mb-1">First Meeting Date</span>
+                  <span className="text-xs text-gray-500 mb-1">First Meeting Date <span className="text-red-500">*</span></span>
                 <input
                     type="date"
                     value={potentialFields.firstMeetingDate}
@@ -2093,6 +2174,7 @@ const SalesDetailBody = ({
                     onBlur={() => savePotentialField('firstMeetingDate')}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
                     className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    required
                   />
                 </div>
                 <div className="flex flex-col">
@@ -2108,7 +2190,35 @@ const SalesDetailBody = ({
                     required
                   />
                 </div>
-                <div className="flex flex-col md:col-span-1">
+                <div className="flex flex-col">
+                  <span className="text-xs text-gray-500 mb-1">Area (sq. ft.)</span>
+                <input
+                    type="number"
+                    value={potentialFields.area}
+                    onChange={(e) => handlePotentialFieldChange('area', e.target.value)}
+                    onBlur={() => savePotentialField('area')}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                    className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="0"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-gray-500 mb-1">Design Style</span>
+                <select
+                    value={potentialFields.designStyle}
+                    onChange={(e) => handlePotentialFieldChange('designStyle', e.target.value)}
+                    onBlur={() => savePotentialField('designStyle')}
+                    className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    <option value="">Select design style</option>
+                    {designStyles.map((style) => (
+                      <option key={style} value={style}>
+                        {style}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col md:col-span-2">
                   <span className="text-xs text-gray-500 mb-1">Requirements <span className="text-red-500">*</span></span>
                 <input
                     type="text"
@@ -2133,6 +2243,7 @@ const SalesDetailBody = ({
             <div className="mb-2">
               <h4 className="text-sm font-semibold text-gray-700 mb-3">High Potential</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500 mb-1">Quotation Details <span className="text-red-500">*</span></span>
                   <textarea
@@ -2141,10 +2252,12 @@ const SalesDetailBody = ({
                     onBlur={() => saveHighPotentialField('requirements')}
                     className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none"
                     placeholder="Enter detailed quotation information..."
-                    rows="3"
+                    rows="4"
                     required
                   />
                 </div>
+
+                <div className="grid grid-cols-1 gap-4">
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500 mb-1">Final Quoted Amount <span className="text-red-500">*</span></span>
                   <input
@@ -2158,6 +2271,25 @@ const SalesDetailBody = ({
                     required
                   />
                 </div>
+                <div className="flex flex-col">
+                  <span className="text-xs text-gray-500 mb-1">Design Timeline <span className="text-red-500">*</span></span>
+                  <input
+                    type="text"
+                    value={highPotentialFields.designTimeline || ""}
+                    onChange={(e) => handleHighPotentialFieldChange('designTimeline', e.target.value)}
+                    onBlur={() => saveHighPotentialField('designTimeline')}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                    className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    placeholder="e.g., 2-3 weeks"
+                    required
+                  />
+                </div>
+                </div>
+
+
+                <div className="grid grid-cols-1 gap-4">
+
+
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500 mb-1">Discount Percentage <span className="text-red-500">*</span></span>
                   <input
@@ -2173,21 +2305,6 @@ const SalesDetailBody = ({
                     required
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 mb-1">Design Timeline <span className="text-red-500">*</span></span>
-                  <input
-                    type="text"
-                    value={highPotentialFields.designTimeline || ""}
-                    onChange={(e) => handleHighPotentialFieldChange('designTimeline', e.target.value)}
-                    onBlur={() => saveHighPotentialField('designTimeline')}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-                    className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    placeholder="e.g., 2-3 weeks"
-                    required
-                  />
-                </div>
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500 mb-1">Completion Timeline <span className="text-red-500">*</span></span>
                   <input
@@ -2200,6 +2317,7 @@ const SalesDetailBody = ({
                     placeholder="e.g., 3-4 months"
                     required
                   />
+                </div>
                 </div>
               </div>
             </div>
