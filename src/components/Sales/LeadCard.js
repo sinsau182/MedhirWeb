@@ -189,6 +189,28 @@ const LeadCard = ({
     return false;
   };
 
+  // Check if lead has activities due today
+  const hasActivitiesDueToday = () => {
+    if (!Array.isArray(lead.pendingActivities)) return false;
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    return lead.pendingActivities.some(activity => activity.dueDate === today);
+  };
+
+  // Get activities due today
+  const getActivitiesDueToday = () => {
+    if (!Array.isArray(lead.pendingActivities)) return [];
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    return lead.pendingActivities.filter(activity => activity.dueDate === today);
+  };
+
+  // Get card styling based on due activities
+  const getCardStyling = () => {
+    if (hasActivitiesDueToday()) {
+      return "border-orange-300 bg-orange-50 shadow-orange-100 hover:shadow-orange-200";
+    }
+    return "border-gray-100 bg-white hover:shadow-md";
+  };
+
   // Handle freeze lead
   const handleFreezeLead = (e) => {
     e.stopPropagation();
@@ -254,7 +276,7 @@ const LeadCard = ({
   return (
     <div
       onClick={handleCardSingleClick}
-      className="p-3 rounded-lg shadow-sm border transition-all duration-200 cursor-pointer relative overflow-visible bg-white border-gray-100 hover:shadow-md"
+      className={`p-3 rounded-lg shadow-sm border transition-all duration-200 cursor-pointer relative overflow-visible ${getCardStyling()}`}
     >
 <div className="flex items-center gap-2 mb-2 text-xs text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis">
   <span className="flex items-center gap-1 font-medium truncate">
@@ -273,9 +295,17 @@ const LeadCard = ({
       {/* Header: Name and Priority */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 mr-2">
-          <h3 className="font-semibold text-sm truncate text-gray-900">
-            {lead.name}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-sm truncate text-gray-900">
+              {lead.name}
+            </h3>
+            {/* {hasActivitiesDueToday() && (
+              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200">
+                <FaRegClock className="text-xs" />
+                Due Today
+              </span>
+            )} */}
+          </div>
         </div>
       </div>
 
@@ -300,11 +330,22 @@ const LeadCard = ({
         <span className="flex items-center gap-1 font-medium">
           {lead.pendingActivities.length > 0 ? (
             <ul className="list-disc list-inside">
-              {lead.pendingActivities.map((activity, index) => (
-                <li key={index}>
-                  {activity.title}
-                </li>
-              ))}
+              {lead.pendingActivities.map((activity, index) => {
+                const today = new Date().toISOString().split('T')[0];
+                const isDueToday = activity.dueDate === today;
+                
+                return (
+                  <li 
+                    key={index}
+                    className={isDueToday ? "text-orange-700 font-semibold bg-orange-100 px-1 rounded" : ""}
+                  >
+                    {activity.title}
+                    {isDueToday && (
+                      <span className="ml-1 text-orange-600 font-bold">• DUE TODAY</span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <span>--</span>

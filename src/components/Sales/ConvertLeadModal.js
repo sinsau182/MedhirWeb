@@ -240,45 +240,40 @@ const ConvertLeadModal = ({ lead, onClose, onSuccess }) => {
     }
 
     try {
-      // Prepare FormData for file upload - ALWAYS use FormData since backend expects multipart/form-data
+      // Use the standardized FormData approach
+      const textFields = {
+        signupAmount: parseFloat(signupAmount),
+        paymentDate,
+        paymentMode,
+        paymentTransactionId,
+        panNumber,
+        gstAvailable,
+        gst
+      };
+      
+      const files = {};
+      if (paymentDetailsFile) files.paymentDetailsFile = paymentDetailsFile;
+      if (bookingFormFile) files.bookingFormFile = bookingFormFile;
+      
+      // Create FormData with standardized structure
       const formData = new FormData();
-      formData.append('signupAmount', signupAmount);
-      formData.append('paymentDate', paymentDate || '');
-      formData.append('paymentMode', paymentMode || '');
-      formData.append('paymentTransactionId', paymentTransactionId || '');
-      formData.append('panNumber', panNumber || '');
-      formData.append('gstAvailable', gstAvailable);
-      formData.append('gst', gst || '');
-
-      if (paymentDetailsFile) formData.append('paymentDetailsFile', paymentDetailsFile);
-      if (bookingFormFile) formData.append('bookingFormFile', bookingFormFile);
-
-      // If conversion details already exist, use PUT to update
-      if (lead.signupAmount || lead.paymentDate || lead.paymentMode || lead.panNumber || lead.paymentDetailsFileName || lead.bookingFormFileName) {
-        await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, {
-          signupAmount: parseFloat(signupAmount),
-          paymentDate,
-          paymentMode,
-          paymentTransactionId,
-          panNumber,
-          gstAvailable,
-          gst
-        }, {
-          headers: {
-            'Authorization': `Bearer ${getItemFromSessionStorage('token') || ''}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        // Optionally handle file uploads separately if needed
-      } else {
-        // Always use FormData since backend expects multipart/form-data
-        await axios.post(`${API_BASE_URL}/leads/${lead.leadId}/convert-with-docs`, formData, {
-          headers: {
-            'Authorization': `Bearer ${getItemFromSessionStorage('token') || ''}`
-            // Don't set Content-Type for FormData, let browser set it automatically to multipart/form-data
-          }
-        });
-      }
+      
+      // Always add leadData field, even if empty
+      formData.append('leadData', JSON.stringify(textFields));
+      
+      // Add files with their field names
+      Object.entries(files).forEach(([fieldName, file]) => {
+        if (file instanceof File) {
+          formData.append(fieldName, file);
+        }
+      });
+      
+      await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, formData, {
+        headers: {
+          'Authorization': `Bearer ${getItemFromSessionStorage('token') || ''}`
+          // Don't set Content-Type for FormData, let browser set it automatically
+        }
+      });
 
       // Move the lead to the converted stage (update stageId)
       if (lead.pipelineId || lead.stageId) {

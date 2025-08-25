@@ -99,6 +99,50 @@ const ManagerContent = ({ role }) => {
   const dispatch = useDispatch();
   const { pipelines } = useSelector((state) => state.pipelines);
   const { leads, loading, error } = useSelector((state) => state.leads);
+  
+  // Log the leads data from Redux state
+  useEffect(() => {
+    console.log('=== Manager Component - Leads Data ===');
+    console.log('Leads from Redux:', leads);
+    console.log('Loading State:', loading);
+    console.log('Error State:', error);
+    
+    // Filter leads with activities due today
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const leadsWithActivitiesDueToday = [];
+    
+    if (Array.isArray(leads) && leads.length > 0) {
+      leads.forEach((stageGroup) => {
+        if (Array.isArray(stageGroup.leads)) {
+          stageGroup.leads.forEach((lead) => {
+            if (Array.isArray(lead.pendingActivities)) {
+              const hasActivityDueToday = lead.pendingActivities.some(activity => 
+                activity.dueDate === today
+              );
+              
+              if (hasActivityDueToday) {
+                leadsWithActivitiesDueToday.push({
+                  leadId: lead.leadId,
+                  name: lead.name,
+                  stageName: stageGroup.formType || 'Unknown Stage',
+                  pendingActivities: lead.pendingActivities.filter(activity => 
+                    activity.dueDate === today
+                  )
+                });
+              }
+            }
+          });
+        }
+      });
+    }
+    
+    console.log('=== Leads with Activities Due Today ===');
+    console.log('Today\'s Date:', today);
+    console.log('Leads with activities due today:', leadsWithActivitiesDueToday);
+    console.log('Total leads with activities due today:', leadsWithActivitiesDueToday.length);
+    console.log('=== End Leads with Activities Due Today ===');
+    console.log('=== End Manager Component - Leads Data ===');
+  }, [leads, loading, error]);
   const { employees: managerEmployees, loading: managerEmployeesLoading } = useSelector((state) => state.managerEmployee);
 
   // Add pipeline modal state
@@ -611,7 +655,7 @@ const ManagerContent = ({ role }) => {
       await dispatch(updateLead({
         leadId: semiContactedData.leadId,
         floorPlan: semiContactedData.floorPlan,
-        estimatedBudget: semiContactedData.estimatedBudget,
+        budget: semiContactedData.budget,
         firstMeetingDate: semiContactedData.firstMeetingDate,
         priority: semiContactedData.priority
       }));
