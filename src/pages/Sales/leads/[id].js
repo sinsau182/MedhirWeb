@@ -40,6 +40,7 @@ import {
   FaCheckCircle,
   FaClipboardCheck,
   FaCheckDouble,
+  FaFilePdf,
 } from "react-icons/fa";
 import MainLayout from "@/components/MainLayout";
 import { toast } from "sonner";
@@ -70,6 +71,45 @@ import withAuth from "@/components/withAuth";
 
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
+
+// Helper function to update lead with FormData structure
+const updateLeadWithFormData = async (leadId, textFields = {}, files = {}) => {
+  const formData = new FormData();
+  
+  // Add text fields as JSON string in leadData field
+  if (Object.keys(textFields).length > 0) {
+    formData.append('leadData', JSON.stringify(textFields));
+  } else {
+    // Always include leadData field, even if empty
+    formData.append('leadData', JSON.stringify({}));
+  }
+  
+  // Add files with their field names
+  Object.entries(files).forEach(([fieldName, file]) => {
+    if (file instanceof File) {
+      formData.append(fieldName, file);
+    }
+  });
+  
+  const response = await axios.put(`${API_BASE_URL}/leads/${leadId}`, formData, {
+    headers: {
+      Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+      // Don't set Content-Type for FormData, let browser set it automatically
+    },
+  });
+  
+  return response.data;
+};
+
+// Silent refresh function for updating lead data without page reload
+const silentRefreshLead = async (dispatch, leadId) => {
+  try {
+    await dispatch(fetchLeadById({ id: leadId, silent: true }));
+  } catch (error) {
+    console.error("Silent refresh failed:", error);
+    // Don't show error toast for silent refresh failures
+  }
+};
 
 // Add these lists for dropdowns/selects
 // Note: salesPersons and designers will be populated from Redux managerEmployees
@@ -366,7 +406,7 @@ const SalesDetailBody = ({
   const [contactedFields, setContactedFields] = useState({
     floorPlan: lead.floorPlan || "",
     firstCallDate: lead.firstCallDate || "",
-    estimatedBudget: lead.estimatedBudget || lead.budget || "",
+    budget: lead.budget || lead.budget || "",
   });
   const [potentialFields, setPotentialFields] = useState({
     firstMeetingDate: lead.firstMeetingDate || "",
@@ -400,6 +440,8 @@ const SalesDetailBody = ({
   });
   const [paymentDetailsFile, setPaymentDetailsFile] = useState(null);
   const [bookingFormFile, setBookingFormFile] = useState(null);
+  const [existingPaymentDetailsFile, setExistingPaymentDetailsFile] = useState(null);
+  const [existingBookingFormFile, setExistingBookingFormFile] = useState(null);
   const [paymentTerms, setPaymentTerms] = useState([
     { stage: 1, percentage: 10, description: "Booking Amount to start the Design Phase" },
     { stage: 2, percentage: 10, description: "After 3D, Material selection & Before 2D details" },
@@ -454,7 +496,7 @@ const SalesDetailBody = ({
     setContactedFields({
       floorPlan: lead.floorPlan || "",
       firstCallDate: lead.firstCallDate || "",
-      estimatedBudget: lead.estimatedBudget || lead.budget || "",
+      budget: lead.budget || lead.budget || "",
     });
     setPotentialFields({
       firstMeetingDate: lead.firstMeetingDate || "",
@@ -482,6 +524,20 @@ const SalesDetailBody = ({
           gstAvailable: lead.gstAvailable || false,
           gst: lead.gst || "",
     });
+        
+        // Initialize existing uploaded files
+        if (lead.paymentDetailsFileName) {
+          setExistingPaymentDetailsFile({
+            name: lead.paymentDetailsFileName,
+            url: lead.paymentDetailsFileName
+          });
+        }
+        if (lead.bookingFormFileName) {
+          setExistingBookingFormFile({
+            name: lead.bookingFormFileName,
+            url: lead.bookingFormFileName
+          });
+        }
   }, [lead, isEditing]);
 
   console.log(activeRole);
@@ -662,20 +718,12 @@ const SalesDetailBody = ({
         return;
       }
       
-      await axios.put(
-        `${API_BASE_URL}/leads/${lead.leadId}`,
-        {
-          name: contactFields.name.trim(),
-          contactNumber: contactFields.contactNumber.trim(),
-          alternateContactNumber: contactFields.alternateContactNumber.trim(),
-          email: contactFields.email.trim(),
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
-          },
-        }
-      );
+      await updateLeadWithFormData(lead.leadId, {
+        name: contactFields.name.trim(),
+        contactNumber: contactFields.contactNumber.trim(),
+        alternateContactNumber: contactFields.alternateContactNumber.trim(),
+        email: contactFields.email.trim(),
+      }, {});
       onFieldChange("name", contactFields.name.trim());
       onFieldChange("contactNumber", contactFields.contactNumber.trim());
       onFieldChange("alternateContactNumber", contactFields.alternateContactNumber.trim());
@@ -716,16 +764,12 @@ const SalesDetailBody = ({
         return;
       }
 
-      await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, projectFields, {
-        headers: {
-          Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
-        },
-      });
+      await updateLeadWithFormData(lead.leadId, projectFields, {});
       Object.entries(projectFields).forEach(([field, value]) => {
         onFieldChange(field, value);
       });
       setIsEditing(false);
-      await dispatch(fetchLeadById(lead.leadId));
+      await silentRefreshLead(dispatch, lead.leadId);
       toast.success("Project details updated!");
     } catch (e) {
       console.error("Failed to update project details:", e);
@@ -737,17 +781,15 @@ const SalesDetailBody = ({
   const saveProjectField = async (field, valueOverride) => {
     try {
       const value = valueOverride !== undefined ? valueOverride : projectFields[field];
-      const payload = {};
+      const textFields = {};
       const numericFields = ["area", "budget"];
-      payload[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
+      textFields[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
         ? Number(value)
         : value;
 
-      await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, payload, {
-        headers: { Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}` },
-      });
+      await updateLeadWithFormData(lead.leadId, textFields, {});
       // Optimistically update local lead display without refetch
-      Object.entries(payload).forEach(([k, v]) => onFieldChange(k, v));
+      Object.entries(textFields).forEach(([k, v]) => onFieldChange(k, v));
       toast.success("Saved");
     } catch (e) {
       console.error("Auto-save failed for", field, e);
@@ -760,7 +802,7 @@ const SalesDetailBody = ({
       const value = fileValue || contactedFields[field];
       
       // Required validation for Estimated Budget
-      if (field === "estimatedBudget") {
+      if (field === "budget") {
         if (value === undefined || value === null || String(value).trim() === "") {
           toast.error("Estimated Budget is required");
           return;
@@ -769,16 +811,7 @@ const SalesDetailBody = ({
 
       // Handle file upload for floor plan
       if (field === "floorPlan" && value instanceof File) {
-        const formData = new FormData();
-        formData.append("floorPlan", value);
-        formData.append("leadId", lead.leadId);
-
-        await axios.put(`${API_BASE_URL}/leads/${lead.leadId}/upload-floor-plan`, formData, {
-          headers: { 
-            Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
-            'Content-Type': 'multipart/form-data'
-          },
-        });
+        await updateLeadWithFormData(lead.leadId, {}, { floorPlan: value });
         
         // Update local state with file name
         setContactedFields(prev => ({ ...prev, floorPlan: value.name }));
@@ -788,21 +821,14 @@ const SalesDetailBody = ({
       }
 
       // Handle regular field updates
-      const payload = {};
-      const numericFields = ["estimatedBudget"]; 
-      payload[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
+      const textFields = {};
+      const numericFields = ["budget"]; 
+      textFields[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
         ? Number(value)
         : value;
       
-      // Map estimatedBudget to backend if it uses a different key
-      if (field === "estimatedBudget") {
-        payload.estimatedBudget = payload.estimatedBudget;
-      }
-      
-      await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, payload, {
-        headers: { Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}` },
-      });
-      Object.entries(payload).forEach(([k, v]) => onFieldChange(k, v));
+      await updateLeadWithFormData(lead.leadId, textFields, {});
+      Object.entries(textFields).forEach(([k, v]) => onFieldChange(k, v));
       toast.success("Saved");
     } catch (e) {
       console.error("Auto-save failed for contacted", field, e);
@@ -826,15 +852,13 @@ const SalesDetailBody = ({
           return;
         }
       }
-      const payload = {};
+      const textFields = {};
       const numericFields = ["initialQuote"];
-      payload[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
+      textFields[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
         ? Number(value)
         : value;
-      await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, payload, {
-        headers: { Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}` },
-      });
-      Object.entries(payload).forEach(([k, v]) => onFieldChange(k, v));
+      await updateLeadWithFormData(lead.leadId, textFields, {});
+      Object.entries(textFields).forEach(([k, v]) => onFieldChange(k, v));
       toast.success("Saved");
     } catch (e) {
       console.error("Auto-save failed for potential", field, e);
@@ -901,15 +925,13 @@ const SalesDetailBody = ({
           return;
         }
       }
-      const payload = {};
+      const textFields = {};
       const numericFields = ["finalQuotation", "discount"];
-      payload[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
+      textFields[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
         ? Number(value)
         : value;
-      await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, payload, {
-        headers: { Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}` },
-      });
-      Object.entries(payload).forEach(([k, v]) => onFieldChange(k, v));
+      await updateLeadWithFormData(lead.leadId, textFields, {});
+      Object.entries(textFields).forEach(([k, v]) => onFieldChange(k, v));
       toast.success("Saved");
     } catch (e) {
       console.error("Auto-save failed for high potential", field, e);
@@ -976,16 +998,14 @@ const SalesDetailBody = ({
         }
       }
 
-      const payload = {};
+      const textFields = {};
       const numericFields = ["freezingAmount"];
-      payload[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
+      textFields[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
         ? Number(value)
         : value;
       
-      await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, payload, {
-        headers: { Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}` },
-      });
-      Object.entries(payload).forEach(([k, v]) => onFieldChange(k, v));
+      await updateLeadWithFormData(lead.leadId, textFields, {});
+      Object.entries(textFields).forEach(([k, v]) => onFieldChange(k, v));
       toast.success("Saved");
     } catch (e) {
       console.error("Auto-save failed for semi converted", field, e);
@@ -1006,8 +1026,6 @@ const SalesDetailBody = ({
     }
 
     try {
-      const formData = new FormData();
-      
       // Add lead data as JSON string (matching FreezeLeadModal structure)
       const leadData = {
         freezingAmount: semiConvertedFields.freezingAmount,
@@ -1015,15 +1033,7 @@ const SalesDetailBody = ({
         freezingPaymentMode: semiConvertedFields.freezingPaymentMode
       };
       
-      formData.append('leadData', JSON.stringify(leadData));
-      formData.append('freezingAmountProofFile', freezingProofFile);
-
-      await axios.put(`${API_BASE_URL}/leads/freeze/${lead.leadId}`, formData, {
-        headers: {
-          Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      await updateLeadWithFormData(lead.leadId, leadData, { freezingAmountProofFile: freezingProofFile });
       
       toast.success("Proof file uploaded successfully");
       setFreezingProofFile(null);
@@ -1078,16 +1088,14 @@ const SalesDetailBody = ({
         }
       }
 
-      const payload = {};
+      const textFields = {};
       const numericFields = ["signupAmount"];
-      payload[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
+      textFields[field] = numericFields.includes(field) && value !== "" && value !== null && value !== undefined
         ? Number(value)
         : value;
 
-      await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, payload, {
-        headers: { Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}` },
-      });
-      Object.entries(payload).forEach(([k, v]) => onFieldChange(k, v));
+      await updateLeadWithFormData(lead.leadId, textFields, {});
+      Object.entries(textFields).forEach(([k, v]) => onFieldChange(k, v));
       toast.success("Saved");
     } catch (e) {
       console.error("Auto-save failed for converted", field, e);
@@ -1101,40 +1109,15 @@ const SalesDetailBody = ({
       return;
     }
 
-    // Validate required fields before uploading
-    if (!convertedFields.signupAmount || !convertedFields.paymentDate || !convertedFields.paymentMode) {
-      toast.error("Please fill in all required fields (Sign-up Amount, Payment Date, Payment Mode) before uploading payment details file");
-      return;
-    }
-
     try {
-      const formData = new FormData();
-      
-      // Add lead data as JSON string (matching ConvertLeadModal structure)
-      const leadData = {
-        signupAmount: convertedFields.signupAmount,
-        paymentDate: convertedFields.paymentDate,
-        paymentMode: convertedFields.paymentMode,
-        paymentTransactionId: convertedFields.paymentTransactionId,
-        panNumber: convertedFields.panNumber,
-        gstAvailable: convertedFields.gstAvailable,
-        gst: convertedFields.gst
-      };
-      
-      formData.append('leadData', JSON.stringify(leadData));
-      formData.append('paymentDetailsFile', paymentDetailsFile);
-
-      await axios.post(`${API_BASE_URL}/leads/${lead.leadId}/convert-with-docs`, formData, {
-        headers: {
-          Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
-        },
-      });
+      // Only upload the file without requiring other fields
+      await updateLeadWithFormData(lead.leadId, {}, { paymentDetailsFile: paymentDetailsFile });
       
       toast.success("Payment details file uploaded successfully");
       setPaymentDetailsFile(null);
       
-      // Update the lead data in Redux store
-      Object.entries(leadData).forEach(([k, v]) => onFieldChange(k, v));
+      // Refresh lead data to get updated file information
+      await silentRefreshLead(dispatch, lead.leadId);
     } catch (e) {
       console.error("Failed to upload payment details file", e);
       toast.error("Failed to upload payment details file. Please try again.");
@@ -1147,40 +1130,15 @@ const SalesDetailBody = ({
       return;
     }
 
-    // Validate required fields before uploading
-    if (!convertedFields.signupAmount || !convertedFields.paymentDate || !convertedFields.paymentMode) {
-      toast.error("Please fill in all required fields (Sign-up Amount, Payment Date, Payment Mode) before uploading booking form file");
-      return;
-    }
-
     try {
-      const formData = new FormData();
-      
-      // Add lead data as JSON string (matching ConvertLeadModal structure)
-      const leadData = {
-        signupAmount: convertedFields.signupAmount,
-        paymentDate: convertedFields.paymentDate,
-        paymentMode: convertedFields.paymentMode,
-        paymentTransactionId: convertedFields.paymentTransactionId,
-        panNumber: convertedFields.panNumber,
-        gstAvailable: convertedFields.gstAvailable,
-        gst: convertedFields.gst
-      };
-      
-      formData.append('leadData', JSON.stringify(leadData));
-      formData.append('bookingFormFile', bookingFormFile);
-
-      await axios.post(`${API_BASE_URL}/leads/${lead.leadId}/convert-with-docs`, formData, {
-        headers: {
-          Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
-        },
-      });
+      // Only upload the file without requiring other fields
+      await updateLeadWithFormData(lead.leadId, {}, { bookingFormFile: bookingFormFile });
       
       toast.success("Booking form file uploaded successfully");
       setBookingFormFile(null);
       
-      // Update the lead data in Redux store
-      Object.entries(leadData).forEach(([k, v]) => onFieldChange(k, v));
+      // Refresh lead data to get updated file information
+      await silentRefreshLead(dispatch, lead.leadId);
     } catch (e) {
       console.error("Failed to upload booking form file", e);
       toast.error("Failed to upload booking form file. Please try again.");
@@ -1189,22 +1147,18 @@ const SalesDetailBody = ({
 
   const handleSaveTeam = async () => {
     try {
-      const body = {};
+      const textFields = {};
       // Always include both fields, even if they're empty strings (for unassigning)
-      body.salesRep = assignedSalesRepId || null;
-      body.designer = assignedDesignerId || null;
+      textFields.salesRep = assignedSalesRepId || null;
+      textFields.designer = assignedDesignerId || null;
       
       console.log("handleSaveTeam - Current state:", {
         assignedSalesRepId,
         assignedDesignerId,
-        body
+        textFields
       });
       
-      await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, body, {
-        headers: {
-          Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
-        },
-      });
+      await updateLeadWithFormData(lead.leadId, textFields, {});
       setIsEditingTeam(false);
       // Optimistic local update
       onFieldChange("salesRep", assignedSalesRepId || null);
@@ -1218,26 +1172,22 @@ const SalesDetailBody = ({
 
   const handleSaveTeamWithValues = async (salesRepId, designerId) => {
     try {
-      const body = {};
+      const textFields = {};
       // Always include both fields, even if they're empty strings (for unassigning)
-      body.salesRep = salesRepId || null;
-      body.designer = designerId || null;
+      textFields.salesRep = salesRepId || null;
+      textFields.designer = designerId || null;
       
       console.log("handleSaveTeamWithValues - Payload:", {
         salesRepId,
         designerId,
-        body
+        textFields
       });
       
-      await axios.put(`${API_BASE_URL}/leads/${lead.leadId}`, body, {
-        headers: {
-          Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
-        },
-      });
+      await updateLeadWithFormData(lead.leadId, textFields, {});
       setIsEditingTeam(false);
       
       // Update Redux store with new lead data
-      await dispatch(fetchLeadById(lead.leadId));
+      await silentRefreshLead(dispatch, lead.leadId);
       
       // Optimistic local update
       onFieldChange("salesRep", salesRepId || null);
@@ -1806,25 +1756,6 @@ const SalesDetailBody = ({
                    )}
                  </div>
                  <div>
-                   <label className="block text-xs font-medium text-gray-500 mb-0">Email Address</label>
-                   {contactEditingField === 'email' ? (
-                  <input
-                    value={contactFields.email}
-                    onChange={(e) => handleContactFieldChange("email", e.target.value)}
-                       className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                       autoFocus
-                    onBlur={async () => { setContactEditingField(null); await handleSaveContact(); }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
-                    placeholder="Email (Optional)"
-                  />
-                   ) : (
-                     <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors" onClick={() => { setContactEditingField('email'); }}>
-                    <FaEnvelope className="text-gray-400" />
-                    <span className="text-gray-900 font-medium">{(contactFields.email || "").trim() || "(click to add)"}</span>
-                  </div>
-                   )}
-                 </div>
-                 <div>
                    <label className="block text-xs font-medium text-gray-500 mb-0">Contact Number</label>
                    {contactEditingField === 'contactNumber' ? (
                      <input
@@ -1842,6 +1773,25 @@ const SalesDetailBody = ({
                     <span className="text-gray-900 font-medium">
                       {contactFields.contactNumber ? `+91 ${contactFields.contactNumber}` : "(click to add)"}
                     </span>
+                  </div>
+                   )}
+                 </div>
+                 <div>
+                   <label className="block text-xs font-medium text-gray-500 mb-0">Email Address</label>
+                   {contactEditingField === 'email' ? (
+                  <input
+                    value={contactFields.email}
+                    onChange={(e) => handleContactFieldChange("email", e.target.value)}
+                       className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                       autoFocus
+                    onBlur={async () => { setContactEditingField(null); await handleSaveContact(); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+                    placeholder="Email (Optional)"
+                  />
+                   ) : (
+                     <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-md transition-colors" onClick={() => { setContactEditingField('email'); }}>
+                    <FaEnvelope className="text-gray-400" />
+                    <span className="text-gray-900 font-medium">{(contactFields.email || "").trim() || "(click to add)"}</span>
                   </div>
                    )}
                  </div>
@@ -2113,9 +2063,9 @@ const SalesDetailBody = ({
                   <span className="text-xs text-gray-500 mb-1">Estimated Budget <span className="text-red-500">*</span></span>
                   <input
                     type="number"
-                    value={contactedFields.estimatedBudget}
-                    onChange={(e) => handleContactedFieldChange('estimatedBudget', e.target.value)}
-                    onBlur={() => saveContactedField('estimatedBudget')}
+                    value={contactedFields.budget}
+                    onChange={(e) => handleContactedFieldChange('budget', e.target.value)}
+                    onBlur={() => saveContactedField('budget')}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
                     className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     placeholder="0"
@@ -2460,6 +2410,24 @@ const SalesDetailBody = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500 mb-1">Upload Payment Proof</span>
+                  
+                  {/* Display existing payment proof file */}
+                  {existingPaymentDetailsFile && (
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 bg-gray-100 p-3 rounded border">
+                        <FaFilePdf className="text-red-600 text-xl" />
+                        <span className="text-sm text-gray-700 truncate">{existingPaymentDetailsFile.name}</span>
+                        <button
+                          onClick={() => handleOpenFile(existingPaymentDetailsFile.url, existingPaymentDetailsFile.name)}
+                          className="ml-auto px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                          title="View file"
+                        >
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="border-2 border-dashed border-gray-300 rounded-md p-3 text-center hover:border-blue-400 transition-colors">
                     <input
                       type="file"
@@ -2494,6 +2462,24 @@ const SalesDetailBody = ({
                 </div>
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500 mb-1">Upload Booking Form</span>
+                  
+                  {/* Display existing booking form file */}
+                  {existingBookingFormFile && (
+                    <div className="mb-3">
+                      <div className="flex items-center gap-2 bg-gray-100 p-3 rounded border">
+                        <FaFilePdf className="text-red-600 text-xl" />
+                        <span className="text-sm text-gray-700 truncate">{existingBookingFormFile.name}</span>
+                        <button
+                          onClick={() => handleOpenFile(existingBookingFormFile.url, existingBookingFormFile.name)}
+                          className="ml-auto px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                          title="View file"
+                        >
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="border-2 border-dashed border-gray-300 rounded-md p-3 text-center hover:border-blue-400 transition-colors">
                     <input
                       type="file"
@@ -2707,6 +2693,7 @@ const SalesDetailBody = ({
                               type="date"
                               value={newTaskDueDate}
                               onChange={(e) => setNewTaskDueDate(e.target.value)}
+                              min={new Date().toISOString().split('T')[0]}
                               className="px-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               required
                             />
@@ -3308,7 +3295,7 @@ const LeadDetailContent = () => {
           },
         }
       );
-      await dispatch(fetchLeadById(lead.leadId));
+      await silentRefreshLead(dispatch, lead.leadId);
       toast.success(`Lead moved to ${stage.name}`);
     } catch (error) {
       toast.error("Failed to update lead stage");
@@ -3503,7 +3490,7 @@ const LeadDetailContent = () => {
         }
       );
     }
-    await dispatch(fetchLeadById(lead.leadId));
+    await silentRefreshLead(dispatch, lead.leadId);
     toast.success("Lead marked as Junk!");
   };
   const handleLostSuccess = async (updatedLead) => {
@@ -3528,7 +3515,7 @@ const LeadDetailContent = () => {
     } else {
       console.error("Lost stage not found in pipelines!");
     }
-    await dispatch(fetchLeadById(lead.leadId));
+    await silentRefreshLead(dispatch, lead.leadId);
     toast.success("Lead marked as Lost!");
   };
   const handleConvertSuccess = async (updatedLead) => {
@@ -3545,7 +3532,7 @@ const LeadDetailContent = () => {
         }
       );
     }
-    await dispatch(fetchLeadById(lead.leadId));
+    await silentRefreshLead(dispatch, lead.leadId);
     toast.success("Lead marked as Converted!");
   };
 
@@ -3572,7 +3559,7 @@ const LeadDetailContent = () => {
         }
       );
     }
-    await dispatch(fetchLeadById(lead.leadId));
+    await silentRefreshLead(dispatch, lead.leadId);
     toast.success("Lead assigned successfully!");
   };
 
@@ -3583,7 +3570,7 @@ const LeadDetailContent = () => {
     await dispatch(updateLead({
       leadId: lead.leadId,
       floorPlan: semiContactedData.floorPlan,
-      estimatedBudget: semiContactedData.estimatedBudget,
+      budget: semiContactedData.budget,
       firstMeetingDate: semiContactedData.firstMeetingDate,
       priority: semiContactedData.priority
     }));
@@ -3601,7 +3588,7 @@ const LeadDetailContent = () => {
         }
       );
     }
-    await dispatch(fetchLeadById(lead.leadId));
+    await silentRefreshLead(dispatch, lead.leadId);
     toast.success("Semi contacted details saved!");
   };
 
@@ -3630,7 +3617,7 @@ const LeadDetailContent = () => {
         }
       );
     }
-    await dispatch(fetchLeadById(lead.leadId));
+    await silentRefreshLead(dispatch, lead.leadId);
     toast.success("Potential details saved!");
   };
 
@@ -3660,7 +3647,7 @@ const LeadDetailContent = () => {
         }
       );
     }
-    await dispatch(fetchLeadById(lead.leadId));
+    await silentRefreshLead(dispatch, lead.leadId);
     toast.success("High potential details saved!");
   };
 

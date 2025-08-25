@@ -41,6 +41,14 @@ export const fetchLeads = createAsyncThunk(
         const res = await axios.get(url, {
           headers: getAuthHeaders(),
         });
+        
+        // Log the API response for debugging
+        console.log('=== LeadManagement API Response ===');
+        console.log('API URL:', url);
+        console.log('Response Data:', res.data);
+        console.log('Response Status:', res.status);
+        console.log('=== End LeadManagement API Response ===');
+        
         return res.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -55,8 +63,10 @@ export const fetchLeadById = createAsyncThunk(
     async (id, { rejectWithValue }) => {
         try {
             const token = getItemFromSessionStorage("token", null);
+            const isSilent = id?.silent || false;
+            const actualId = isSilent ? id.id : id;
 
-            const response = await fetch(`${API_BASE_URL}/leads/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/leads/${actualId}`, {
                 headers: {
                     "Authorization": `Bearer ${token}`,
                     "Content-Type": "application/json"
@@ -66,7 +76,14 @@ export const fetchLeadById = createAsyncThunk(
             if (!response.ok) {
                 throw new Error("Failed to fetch lead by ID");
             }
-            return await response.json();
+            const result = await response.json();
+            
+            // Add silent flag to the result for the reducer
+            if (isSilent) {
+                result._silent = true;
+            }
+            
+            return result;
 
         } catch (error) {
             return rejectWithValue(error.message);
@@ -115,13 +132,22 @@ export const updateLead = createAsyncThunk(
             console.log('updateLead - Making API call to:', `${API_BASE_URL}/leads/${leadId}`);
             console.log('updateLead - Request body:', JSON.stringify(leadData, null, 2));
 
+            // Create FormData with standardized structure
+            const formData = new FormData();
+            
+            // Extract text fields (exclude leadId and any file fields)
+            const { leadId: _, ...textFields } = leadData;
+            
+            // Always add leadData field, even if empty
+            formData.append('leadData', JSON.stringify(textFields));
+
             const response = await fetch(`${API_BASE_URL}/leads/${leadId}`, {
                 method: "PUT",  
                 headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
+                    "Authorization": `Bearer ${token}`
+                    // Don't set Content-Type for FormData, let browser set it automatically
                 },
-                body: JSON.stringify(leadData)
+                body: formData
             });
 
             console.log('updateLead - Response status:', response.status);
@@ -189,6 +215,12 @@ const leadsSlice = createSlice({
                 state.status = 'loading';
             })
             .addCase(fetchLeads.fulfilled, (state, action) => {
+                // Log the data being stored in Redux state
+                console.log('=== Redux State Update ===');
+                console.log('Action Payload:', action.payload);
+                console.log('Is Silent Refresh:', action?.meta?.arg?.silent);
+                console.log('=== End Redux State Update ===');
+                
                 // Always update data, but avoid toggling loading/status on silent refresh
                 if (action?.meta?.arg?.silent) {
                     state.leads = action.payload;
@@ -251,18 +283,29 @@ const leadsSlice = createSlice({
                 state.error = action.error.message;
             })
 
-            .addCase(fetchLeadById.pending, (state) => {
-                state.loading = true;
-                state.lead = null;
+            .addCase(fetchLeadById.pending, (state, action) => {
+                // Only show loading if not silent refresh
+                if (!action.meta?.arg?.silent) {
+                    state.loading = true;
+                    state.lead = null;
+                }
             })
             .addCase(fetchLeadById.fulfilled, (state, action) => {
+                // Always update data, but avoid toggling loading on silent refresh
+                if (action.payload._silent) {
+                    state.lead = action.payload;
+                    return;
+                }
                 state.loading = false;
                 state.lead = action.payload;
             })
             .addCase(fetchLeadById.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.error.message;
-                state.lead = null;
+                // Only show error if not silent refresh
+                if (!action.meta?.arg?.silent) {
+                    state.loading = false;
+                    state.error = action.error.message;
+                    state.lead = null;
+                }
             })
             .addCase(moveLeadToPipeline.pending, (state) => {
                 // Keep UI stable during move; avoid global loading flips
