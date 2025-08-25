@@ -1283,6 +1283,11 @@ const SalesDetailBody = ({
   const [editingNoteIdx, setEditingNoteIdx] = useState(null);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [notesLoading, setNotesLoading] = useState(false);
+  
+  // Call history editing state
+  const [editingCallHistory, setEditingCallHistory] = useState(null);
+  const [editingCallHistoryType, setEditingCallHistoryType] = useState(null); // 'activity' or 'note'
+  const [editingCallHistoryContent, setEditingCallHistoryContent] = useState("");
 
   useEffect(() => {
     let combinedNotes = [];
@@ -1291,7 +1296,8 @@ const SalesDetailBody = ({
           user: n.user || lead.name || "User",
           content: n.content,
           time: n.timestamp || n.createdAt || n.time || new Date(),
-          noteId: n.noteId || n.id,
+          id: n.id, // Preserve the original id field
+          noteId: n.id, // Also keep noteId for backward compatibility
         }));
       }
     setNotes(combinedNotes);
@@ -1475,6 +1481,94 @@ const SalesDetailBody = ({
     setNotesLoading(false);
   };
 
+  // Call history editing functions
+  const handleEditCallHistory = (item, type) => {
+    console.log("Starting edit for:", { item, type });
+    setEditingCallHistory(item);
+    setEditingCallHistoryType(type);
+    setEditingCallHistoryContent(type === 'activity' ? item.summary : item.summary);
+  };
+
+  const handleSaveCallHistoryEdit = async () => {
+    if (!editingCallHistory || !editingCallHistoryContent.trim()) {
+      toast.error("Please enter some content");
+      return;
+    }
+
+    try {
+      if (editingCallHistoryType === 'activity') {
+        // Update activity
+        await axios.put(
+          `${API_BASE_URL}/leads/${lead.leadId}/activities/${editingCallHistory.id}`,
+          {
+            title: editingCallHistoryContent,
+            details: editingCallHistoryContent,
+            type: editingCallHistory.type
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+            },
+          }
+        );
+      } else if (editingCallHistoryType === 'note') {
+        // Update note
+        const typeLabel = editingCallHistory.type === 'PHONE_CALL' ? 'Phone' : 'Meeting';
+        const contentToSave = `[${typeLabel}] ${editingCallHistoryContent}`;
+        
+        await axios.put(
+          `${API_BASE_URL}/leads/${lead.leadId}/notes/${editingCallHistory.id}`,
+          { content: contentToSave },
+          {
+            headers: {
+              Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+            },
+          }
+        );
+      }
+
+      // Clear editing state
+      setEditingCallHistory(null);
+      setEditingCallHistoryType(null);
+      setEditingCallHistoryContent("");
+
+      // Update local state instead of full refresh
+      if (editingCallHistoryType === 'activity') {
+        // Update activity in local state
+        setActivities(prevActivities => 
+          prevActivities.map(activity => 
+            activity.id === editingCallHistory.id 
+              ? { ...activity, title: editingCallHistoryContent, details: editingCallHistoryContent }
+              : activity
+          )
+        );
+      } else if (editingCallHistoryType === 'note') {
+        // Update note in local state
+        const typeLabel = editingCallHistory.type === 'PHONE_CALL' ? 'Phone' : 'Meeting';
+        const contentToSave = `[${typeLabel}] ${editingCallHistoryContent}`;
+        
+        setNotes(prevNotes => 
+          prevNotes.map(note => 
+            note.id === editingCallHistory.id 
+              ? { ...note, content: contentToSave }
+              : note
+          )
+        );
+      }
+
+      toast.success("Call history updated successfully");
+    } catch (error) {
+      console.error("Failed to update call history:", error);
+      toast.error("Failed to update call history");
+    }
+  };
+
+  const handleCancelCallHistoryEdit = () => {
+    setEditingCallHistory(null);
+    setEditingCallHistoryType(null);
+    setEditingCallHistoryContent("");
+  };
+
   const completionLogs = [...(activityLogs || [])]
     .filter((log) => log.activityType === "ACTIVITY_COMPLETION")
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -1511,9 +1605,10 @@ const SalesDetailBody = ({
     const type = match[1].toUpperCase() === 'PHONE' ? 'PHONE_CALL' : 'MEETING';
     const summary = content.replace(/^\[(Phone|Meeting)\]\s*/i, "").trim();
     return { 
-      type, 
+      type,
       summary, 
-      time: note.timestamp || note.createdAt || note.time || new Date() 
+      time: note.timestamp || note.createdAt || note.time || new Date(),
+      id: note.id, // Use the original id field
     };
   }
   const convoFromNotes = (notes || [])
@@ -1523,11 +1618,17 @@ const SalesDetailBody = ({
   const normalize = (s) => (s || "").trim();
   const conversationGroups = [
     ...convoActivities.map((a) => ({
+      id: a.id,
       type: a.type,
       summary: a.details || a.title || "",
       time: a.createdAt || a.updatedAt || new Date(),
+      sourceType: 'activity',
+      originalActivity: a,
     })),
-    ...convoFromNotes,
+    ...convoFromNotes.map((note) => ({
+      ...note,
+      sourceType: 'note',
+    })),
   ]
     // de-duplicate by (type, summary)
     .filter((item, index, arr) =>
@@ -1549,6 +1650,13 @@ const SalesDetailBody = ({
       // Sort descending (newest first)
       return timeB.getTime() - timeA.getTime();
     });
+
+  console.log("Conversation Groups with IDs:", conversationGroups.map(c => ({
+    id: c.id,
+    type: c.type,
+    summary: c.summary?.substring(0, 50) + "...",
+    time: c.time
+  })));
 
   // Add state for section navigation
   const [currentSection, setCurrentSection] = useState(0);
@@ -2139,7 +2247,7 @@ const SalesDetailBody = ({
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
                     className="w-full p-2 border rounded-md focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
-                            </div>
+                </div>
                 <div className="flex flex-col">
                   <span className="text-xs text-gray-500 mb-1">Estimated Budget <span className="text-red-500">*</span></span>
                   <input
@@ -2152,9 +2260,9 @@ const SalesDetailBody = ({
                     placeholder="0"
                     required
                   />
-                              </div>
-          </div>
-        </div>
+                </div>
+              </div>
+            </div>
             </>
             )}
 
@@ -2892,9 +3000,13 @@ const SalesDetailBody = ({
             <div className="space-y-2">
               {conversationGroups && conversationGroups.length > 0 ? (
                 conversationGroups.map((c, idx) => (
-                  <div key={idx} className="bg-white border border-gray-200 rounded-lg hover:shadow-md hover:border-gray-300 transition-all duration-200">
+                  <div key={idx} className={`bg-white border rounded-lg hover:shadow-md hover:border-gray-300 transition-all duration-200 ${
+                    editingCallHistory && editingCallHistory.id === c.id ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
+                  }`}>
                     {/* Header */}
-                    <div className="px-3 py-1.5 bg-gradient-to-r from-gray-50 to-white">
+                    <div className={`px-3 py-1.5 bg-gradient-to-r ${
+                      editingCallHistory && editingCallHistory.id === c.id ? 'from-blue-50 to-blue-100' : 'from-gray-50 to-white'
+                    }`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1">
                           <span className={`w-4 h-4 rounded flex items-center justify-center text-xs ${
@@ -2912,23 +3024,63 @@ const SalesDetailBody = ({
                              c.type === 'MEETING' ? 'Meeting' :
                              c.type === 'EMAIL' ? 'Email' : 'Video Call'}
                           </h4>
+                          {editingCallHistory && editingCallHistory.id === c.id && (
+                            <span className="text-xs text-blue-600 font-medium">• Editing...</span>
+                          )}
                       </div>
 
-                        <div className="text-right">
-                          <p className="text-xs text-gray-500">
-                            {new Date(c.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • {new Date(c.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleEditCallHistory(c, c.sourceType)}
+                            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                            title="Edit"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-500">
+                              {new Date(c.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • {new Date(c.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
                     
                     {/* Content */}
                     <div className="p-2">
-                      <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                        {c.summary}
-                      </p>
-                      </div>
+                      {editingCallHistory && editingCallHistory.id === c.id ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={editingCallHistoryContent}
+                            onChange={(e) => setEditingCallHistoryContent(e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-md text-sm resize-none"
+                            rows="3"
+                            placeholder="Enter conversation summary..."
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleSaveCallHistoryEdit}
+                              className="px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={handleCancelCallHistoryEdit}
+                              className="px-3 py-1 bg-gray-500 text-white text-xs rounded-md hover:bg-gray-600 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                          {c.summary}
+                        </p>
+                      )}
                     </div>
+                  </div>
                   ))
               ) : (
                 <div className="text-center py-6">
