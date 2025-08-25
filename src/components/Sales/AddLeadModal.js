@@ -354,7 +354,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
               {errors.contactNumber && <p className="text-red-500 text-xs mt-1">{errors.contactNumber}</p>}
             </div>
             {/* Budget Field */}
-            <div>
+            {/* <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 Budget
               </label>
@@ -366,6 +366,19 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
                 className={`border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 ${errors.budget ? 'border-red-500' : ''}`}
               />
               {errors.budget && <p className="text-red-500 text-xs mt-1">{errors.budget}</p>}
+            </div> */}
+                        <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Alternate Contact Number
+              </label>
+              <Input
+                type="tel"
+                placeholder="Enter alternate contact number"
+                value={formData.alternateContactNumber}
+                onChange={(e) => handleInputChange('alternateContactNumber', e.target.value)}
+                className={`border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150 ${errors.alternateContactNumber ? 'border-red-500' : ''}`}
+              />
+              {errors.alternateContactNumber && <p className="text-red-500 text-xs mt-1">{errors.alternateContactNumber}</p>}
             </div>
 
             </div>
@@ -463,7 +476,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
             </div>
 
               {/* Area Field (optional) */}
-              <div className='grid grid-cols-2 gap-4'>
+              {/* <div className='grid grid-cols-2 gap-4'>
                 <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   Area (sq. ft.) <span className="text-gray-400 font-normal">(optional)</span>
@@ -476,9 +489,9 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
                   onChange={(e) => handleInputChange('area', e.target.value)}
                   className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
                 />
-              </div>
+              </div> */}
               {/* Date of Creation Row */}
-            <div>
+            {/* <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">
                 Date of Creation
               </label>
@@ -489,7 +502,7 @@ const AddLeadModal = ({ isOpen, onClose, onSubmit, initialData, isManagerView = 
               className="border-gray-300 text-xs rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-150"
                 />
             </div>
-            </div>
+            </div> */}
 
             {/* Notes Field */}
             <div>

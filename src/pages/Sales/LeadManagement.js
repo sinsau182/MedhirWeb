@@ -462,6 +462,28 @@ const LeadManagementContent = ({ role }) => {
     // Include all pipelines including "New" stage
     const filteredPipelines = pipelines;
 
+    // Helper function to check if lead has activities due today
+    const hasActivitiesDueToday = (lead) => {
+      if (!Array.isArray(lead.pendingActivities)) return false;
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      return lead.pendingActivities.some(activity => activity.dueDate === today);
+    };
+
+    // Helper function to sort leads (due today first, then by name)
+    const sortLeads = (leads) => {
+      return leads.sort((a, b) => {
+        const aHasDueToday = hasActivitiesDueToday(a);
+        const bHasDueToday = hasActivitiesDueToday(b);
+        
+        // If one has due today and the other doesn't, prioritize the one with due today
+        if (aHasDueToday && !bHasDueToday) return -1;
+        if (!aHasDueToday && bHasDueToday) return 1;
+        
+        // If both have the same due today status, sort by name
+        return (a.name || '').localeCompare(b.name || '');
+      });
+    };
+
     // Check if leads is in the new grouped format
     if (Array.isArray(leads) && leads.length > 0 && leads[0].stageId && leads[0].leads) {
       // New format: leads grouped by stageId
@@ -481,7 +503,8 @@ const LeadManagementContent = ({ role }) => {
             stageName: pipeline.name,
             formType: pipeline.formType
           }));
-          grouped[pipeline.name] = leadsWithStageInfo;
+          // Sort leads with due today activities first
+          grouped[pipeline.name] = sortLeads(leadsWithStageInfo);
         } else {
           // Create a fallback name if pipeline not found
           const originalPipeline = pipelines.find(p => 
@@ -493,7 +516,8 @@ const LeadManagementContent = ({ role }) => {
               stageName: originalPipeline.name,
               formType: originalPipeline.formType
             }));
-            grouped[`Stage-${stageId.slice(-8)}`] = leadsWithStageInfo;
+            // Sort leads with due today activities first
+            grouped[`Stage-${stageId.slice(-8)}`] = sortLeads(leadsWithStageInfo);
           }
         }
       });
@@ -525,7 +549,8 @@ const LeadManagementContent = ({ role }) => {
           formType: pipeline.formType
         }));
 
-        grouped[pipeline.name] = leadsWithStageInfo;
+        // Sort leads with due today activities first
+        grouped[pipeline.name] = sortLeads(leadsWithStageInfo);
       });
 
       // Handle leads without pipelineId - assign to first stage
@@ -550,7 +575,8 @@ const LeadManagementContent = ({ role }) => {
           if (!grouped[firstStage.name]) {
             grouped[firstStage.name] = [];
           }
-          grouped[firstStage.name] = [...grouped[firstStage.name], ...leadsWithStageInfo];
+          // Sort leads with due today activities first
+          grouped[firstStage.name] = sortLeads([...grouped[firstStage.name], ...leadsWithStageInfo]);
         }
       }
     }

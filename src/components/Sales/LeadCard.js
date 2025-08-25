@@ -14,6 +14,11 @@ import {
   FaRegClock,
   FaTrash,
   FaSnowflake,
+  FaPenNib,
+  FaMapPin,
+  FaPinterest,
+  FaPencilAlt,
+  FaClock,
 } from "react-icons/fa";
 import LeadActions from "./LeadActions";
 import { fetchPipelines } from "@/redux/slices/pipelineSlice";
@@ -299,12 +304,11 @@ const LeadCard = ({
             <h3 className="font-semibold text-sm truncate text-gray-900">
               {lead.name}
             </h3>
-            {/* {hasActivitiesDueToday() && (
+            {hasActivitiesDueToday() && (
               <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full border border-orange-200">
-                <FaRegClock className="text-xs" />
-                Due Today
+                <FaClock className="text-xs" />
               </span>
-            )} */}
+            )}
           </div>
         </div>
       </div>
@@ -328,7 +332,7 @@ const LeadCard = ({
       {/* Pending Activities */}
       <div className="flex items-center gap-2 mb-2 text-xs text-gray-600">
         <span className="flex items-center gap-1 font-medium">
-          {lead.pendingActivities.length > 0 ? (
+          {lead.pendingActivities?.length > 0 ? (
             <ul className="list-disc list-inside">
               {lead.pendingActivities.map((activity, index) => {
                 const today = new Date().toISOString().split('T')[0];
