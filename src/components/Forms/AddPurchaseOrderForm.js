@@ -426,19 +426,13 @@ const AddPurchaseOrderForm = ({ onSubmit, onCancel, mode = 'add', initialData = 
             </h2>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Company </label>
-              <select
+              <input
+                type="text"
                 className={`w-full border rounded-lg px-3 py-2 ${errors.company ? 'border-red-500' : 'border-gray-300'}`}
-                value={formData.company?._id || formData.company?.companyId || ''}
-                onChange={handleCompanyChange}
-                disabled={companiesLoading}
-              >
-                <option value="">{companiesLoading ? 'Loading companies...' : 'Select Company'}</option>
-                {companies && companies.map(c => (
-                  <option key={c._id || c.companyId} value={c._id || c.companyId}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                value={formData.company || ''}
+                onChange={e => handleChange('company', e.target.value)}
+                placeholder="Enter company name"
+              />
               {errors.company && <p className="text-xs text-red-500 mt-1">{errors.company}</p>}
             </div>
             <div>

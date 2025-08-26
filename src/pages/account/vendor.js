@@ -588,7 +588,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       return (
                         <tr 
                           key={vendor.id} 
-                          className="hover:bg-gray-50 transition-colors cursor-pointer"
+                          className={`transition-colors cursor-pointer ${selectedVendor && selectedVendor.vendorId === vendor.vendorId ? 'bg-blue-100' : 'hover:bg-gray-50'}`}
                           onClick={() => handleVendorClick(vendor)}
                         >
                           <td className="px-4 py-3 whitespace-nowrap">
@@ -698,8 +698,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Bill Date</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Due Date</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Total Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Reference/PO No.</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Attachments</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Attachments</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -725,11 +724,6 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{bill.dueDate}</td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span className="text-sm font-semibold text-gray-900">₹{(bill.finalAmount || 0).toLocaleString('en-IN')}</span>
-                      </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <span className={`text-sm ${bill.billReference ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
-                          {bill.billReference || '-'}
-                        </span>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-center">
                         <span 
@@ -757,7 +751,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                     </tr>
                               )) : (
                                 <tr>
-                                  <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                                  <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
                                     {loading ? 'Loading bills...' : 'No bills found for this vendor'}
                                   </td>
                                 </tr>
@@ -875,7 +869,6 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                   <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
                     <tr>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Payment Date</th>
-                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Bill Reference</th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Payment Method</th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Amount</th>
                               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">Payment Reference</th>
@@ -898,15 +891,6 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                                   }}
                                 >
                                   <td className="px-4 py-4 text-sm text-gray-700">{payment.paymentDate}</td>
-                                  <td className="px-4 py-4">
-                         <div className="flex flex-wrap gap-1">
-                           {payment?.billPayments?.map((bill) => (
-                             <span key={bill.billId} className="text-xs text-blue-600 font-medium">
-                               {bill.billId}
-                             </span>
-                           ))}
-                         </div>
-                       </td>
                                   <td className="px-4 py-4">
                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
                           payment.paymentMethod === 'Bank Transfer' 
@@ -944,7 +928,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
                     </tr>
                               )) : (
                                 <tr>
-                                  <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                                  <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
                                     No payments found for this vendor
                       </td>
                     </tr>
@@ -1366,9 +1350,7 @@ const [editingPO, setEditingPO] = useState(null); // Store the PO being edited
 
         {/* Fixed Vendors Header */}
         <div 
-          className={`fixed top-16 z-50 bg-white shadow-sm border-b border-gray-200 p-4 flex items-center justify-between transition-all duration-300 ${
-            isSidebarCollapsed ? "left-20 right-0" : "left-60 right-0"
-          }`}
+          className="fixed top-16 z-50 bg-white shadow-sm border-b border-gray-200 p-4 flex items-center justify-between transition-all duration-300 left-0 right-0"
         >
           {/* Left: Title + Search + Filter */}
           <div className="flex items-center space-x-4">

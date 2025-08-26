@@ -23,7 +23,7 @@ import { fetchCustomers } from '@/redux/slices/customerSlice';
 import { fetchVendors } from '@/redux/slices/vendorSlice';
 import { fetchReceipts } from '@/redux/slices/receiptSlice';
 import { fetchPurchaseOrders } from '@/redux/slices/PurchaseOrderSlice';
-import { fetchPayments } from '@/redux/slices/paymentSlice';
+import { fetchPaymentsByCompanyId } from '@/redux/slices/paymentSlice';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { AddInvoiceForm, AddReceiptForm, AddClientForm } from '@/components/Forms';
@@ -68,7 +68,7 @@ const AccountDashboard = () => {
           dispatch(fetchVendors()),
           dispatch(fetchReceipts()),
           dispatch(fetchPurchaseOrders()),
-          dispatch(fetchPayments())
+          dispatch(fetchPaymentsByCompanyId())
         ]);
       } catch (error) {
         console.error('Error loading dashboard data:', error);
@@ -85,10 +85,14 @@ const AccountDashboard = () => {
     const totalInvoices = invoices?.length || 0;
     const totalBills = bills?.length || 0;
 
-    // Calculate financial totals
-    const totalRevenue = invoices?.reduce((sum, invoice) => sum + (invoice.amount || 0), 0) || 0;
-    const totalExpenditure = bills?.reduce((sum, bill) => sum + (bill.amount || 0), 0) + 
-                            expenses?.reduce((sum, exp) => sum + (exp.amount || 0), 0) || 0;
+    // Calculate financial totals using totalAmount/finalAmount
+    const totalInvoiceAmount = invoices?.reduce((sum, invoice) => sum + (invoice.totalAmount || 0), 0) || 0;
+    const totalReceiptAmount = receipts?.reduce((sum, receipt) => sum + (receipt.amountReceived || 0), 0) || 0;
+    const totalBillAmount = bills?.reduce((sum, bill) => sum + (bill.finalAmount || 0), 0) || 0;
+    const totalPaymentAmount = payments?.reduce((sum, payment) => sum + (payment.totalAmount || 0), 0) || 0;
+
+    const totalRevenue = totalInvoiceAmount - totalReceiptAmount;
+    const totalExpenditure = totalBillAmount - totalPaymentAmount;
 
     setStats({
       totalInvoices,
@@ -96,7 +100,7 @@ const AccountDashboard = () => {
       totalRevenue,
       totalExpenditure
     });
-  }, [invoices, bills, expenses]);
+  }, [invoices, bills, receipts, payments]);
 
   useEffect(() => {
     if (invoices && bills && expenses) {
@@ -150,7 +154,7 @@ const AccountDashboard = () => {
 
   const handlePaymentSubmit = (data) => {
     toast.success('Payment added successfully!');
-    dispatch(fetchPayments());
+    dispatch(fetchPaymentsByCompanyId());
     handleModalClose();
   };
 
@@ -249,7 +253,7 @@ const AccountDashboard = () => {
               <div className="relative group">
                 <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
                   <FaBuilding />
-                  Vendors
+                  Purchase
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -292,7 +296,7 @@ const AccountDashboard = () => {
               <div className="relative group">
                 <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
                   <FaUsers />
-                  Customers
+                  Sales
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -371,7 +375,7 @@ const AccountDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {invoices?.slice(0, 5).map((invoice, index) => {
+                    {invoices?.slice(0, 6).map((invoice, index) => {
                       const status = invoice.status?.toLowerCase();
                       const statusColor = status === 'received' || status === 'paid' 
                         ? 'bg-green-100 text-green-800' 
@@ -434,7 +438,7 @@ const AccountDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {receipts?.slice(0, 5).map((receipt, index) => (
+                    {receipts?.slice(0, 6).map((receipt, index) => (
                       <tr key={receipt.id || index} className="hover:bg-gray-50">
                         <td className="py-2 px-2 text-gray-900 font-medium truncate max-w-20" title={receipt.customer?.customerName || 'N/A'}>
                           {receipt.customer?.customerName || 'N/A'}
@@ -481,7 +485,7 @@ const AccountDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {payments?.slice(0, 5).map((payment, index) => (
+                    {payments?.slice(0, 6).map((payment, index) => (
                       <tr key={payment.id || index} className="hover:bg-gray-50">
                         <td className="py-2 px-2 text-gray-900 font-medium truncate max-w-20" title={payment.vendorName || 'N/A'}>
                           {payment.vendorName || 'N/A'}
@@ -528,7 +532,7 @@ const AccountDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {bills?.slice(0, 5).map((bill, index) => {
+                    {bills?.slice(0, 6).map((bill, index) => {
                       const status = bill.paymentStatus?.toLowerCase();
                       const statusColor = status === 'paid' 
                         ? 'bg-green-100 text-green-800' 

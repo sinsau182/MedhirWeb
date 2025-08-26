@@ -186,6 +186,33 @@ export const updatePayment = createAsyncThunk(
     }
 );
 
+// fetch payments by companyId
+export const fetchPaymentsByCompanyId = createAsyncThunk(
+    "payments/fetchPaymentsByCompanyId",
+    async (_, { rejectWithValue }) => {
+        try {
+            const token = getItemFromSessionStorage("token", null);
+            const companyId = sessionStorage.getItem('employeeCompanyId');
+            if (!companyId) {
+                return rejectWithValue('Company ID not found in session storage');
+            }
+            const response = await fetch(`${API_BASE_URL}/company/${companyId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                return rejectWithValue(data.message || "Something went wrong");
+            }
+            return data;
+        } catch (error) {
+            return rejectWithValue(error.message || "Network Error");
+        }
+    }
+);
+
 const paymentSlice = createSlice({
     name: "payments",
     initialState: {
@@ -244,6 +271,18 @@ const paymentSlice = createSlice({
             }
         });
         builder.addCase(updatePayment.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload;
+        });
+        builder.addCase(fetchPaymentsByCompanyId.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+        });
+        builder.addCase(fetchPaymentsByCompanyId.fulfilled, (state, action) => {
+            state.loading = false;
+            state.payments = action.payload;
+        });
+        builder.addCase(fetchPaymentsByCompanyId.rejected, (state, action) => {
             state.loading = false;
             state.error = action.payload;
         });
