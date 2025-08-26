@@ -330,31 +330,78 @@ const LeadCard = ({
 
 
       {/* Pending Activities */}
-      <div className="flex items-center gap-2 mb-2 text-xs text-gray-600">
-        <span className="flex items-center gap-1 font-medium">
-          {lead.pendingActivities?.length > 0 ? (
-            <ul className="list-disc list-inside">
-              {lead.pendingActivities.map((activity, index) => {
-                const today = new Date().toISOString().split('T')[0];
-                const isDueToday = activity.dueDate === today;
-                
+      <div className="mb-2 text-xs text-gray-600">
+        {lead.pendingActivities?.length > 0 ? (
+          <div className="space-y-2">
+            {/* Due Today Section */}
+            {(() => {
+              const today = new Date().toISOString().split('T')[0];
+              const dueTodayActivities = lead.pendingActivities.filter(activity => activity.dueDate === today);
+              
+              if (dueTodayActivities.length > 0) {
                 return (
-                  <li 
-                    key={index}
-                    className={isDueToday ? "text-orange-700 font-semibold bg-orange-100 px-1 rounded" : ""}
-                  >
-                    {activity.title}
-                    {isDueToday && (
-                      <span className="ml-1 text-orange-600 font-bold">• DUE TODAY</span>
-                    )}
-                  </li>
+                  <div>
+                    <h4 className="text-xs font-semibold text-orange-600 mb-1 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
+                      Due Today
+                    </h4>
+                    <ul className="list-disc list-inside ml-2">
+                      {dueTodayActivities.map((activity, index) => (
+                        <li 
+                          key={`due-today-${index}`}
+                          className="text-orange-700 font-semibold bg-orange-100 px-1 rounded text-xs cursor-pointer hover:bg-orange-200 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/Sales/leads/${lead.leadId}?highlightActivity=${activity.id}`);
+                          }}
+                          title="Click to view activity details"
+                        >
+                          {activity.title}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 );
-              })}
-            </ul>
-          ) : (
-            <span>--</span>
-          )}
-        </span>
+              }
+              return null;
+            })()}
+
+            {/* Upcoming Section */}
+            {(() => {
+              const today = new Date().toISOString().split('T')[0];
+              const upcomingActivities = lead.pendingActivities.filter(activity => activity.dueDate !== today);
+              
+              if (upcomingActivities.length > 0) {
+                return (
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                      Upcoming
+                    </h4>
+                    <ul className="list-disc list-inside ml-2">
+                      {upcomingActivities.map((activity, index) => (
+                        <li 
+                          key={`upcoming-${index}`}
+                          className="text-gray-700 text-xs cursor-pointer hover:bg-gray-100 px-1 rounded transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/Sales/leads/${lead.leadId}?highlightActivity=${activity.id}`);
+                          }}
+                          title="Click to view activity details"
+                        >
+                          {activity.title}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+          </div>
+        ) : (
+          <span className="text-gray-500">--</span>
+        )}
       </div>
 
       {/* Team Members */}

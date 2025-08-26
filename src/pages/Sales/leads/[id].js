@@ -350,6 +350,7 @@ const SalesDetailBody = ({
   setActivityLogs,
 }) => {
   const dispatch = useDispatch();
+  const router = useRouter();
   const { employees: managerEmployees, loading: managerEmployeesLoading } =
     useSelector((state) => state.managerEmployee);
   const [activeTab, setActiveTab] = useState("activity");
@@ -518,6 +519,15 @@ const SalesDetailBody = ({
       firstCallDate: lead.firstCallDate || "",
       budget: lead.budget || lead.budget || "",
     });
+    console.log("Initializing potentialFields with lead data:", {
+      firstMeetingDate: lead.firstMeetingDate,
+      initialQuote: lead.initialQuote,
+      quotedAmount: lead.quotedAmount,
+      requirements: lead.requirements,
+      area: lead.area,
+      designStyle: lead.designStyle
+    });
+    
     setPotentialFields({
       firstMeetingDate: lead.firstMeetingDate || "",
       initialQuote: lead.initialQuote || lead.quotedAmount || "",
@@ -560,7 +570,7 @@ const SalesDetailBody = ({
             url: lead.bookingFormFileName
           });
         }
-  }, [lead, isEditing]);
+  }, [lead]);
 
   console.log(activeRole);
 
@@ -913,6 +923,14 @@ const SalesDetailBody = ({
         : value;
       await updateLeadWithFormData(lead.leadId, textFields, {});
       Object.entries(textFields).forEach(([k, v]) => onFieldChange(k, v));
+      
+      // Update local state to reflect the saved values
+      console.log("Updating potentialFields with saved data:", textFields);
+      setPotentialFields(prev => ({
+        ...prev,
+        ...textFields
+      }));
+      
       toast.success("Saved");
     } catch (e) {
       console.error("Auto-save failed for potential", field, e);
@@ -1288,6 +1306,9 @@ const SalesDetailBody = ({
   const [editingCallHistory, setEditingCallHistory] = useState(null);
   const [editingCallHistoryType, setEditingCallHistoryType] = useState(null); // 'activity' or 'note'
   const [editingCallHistoryContent, setEditingCallHistoryContent] = useState("");
+  
+  // Activity highlighting state
+  const [highlightedActivityId, setHighlightedActivityId] = useState(null);
 
   useEffect(() => {
     let combinedNotes = [];
@@ -1302,6 +1323,34 @@ const SalesDetailBody = ({
       }
     setNotes(combinedNotes);
   }, [lead]);
+
+  // Handle highlighted activity from URL query parameter
+  useEffect(() => {
+    const { highlightActivity } = router.query;
+    if (highlightActivity) {
+      setHighlightedActivityId(highlightActivity);
+      
+      // Scroll to the highlighted activity after a short delay
+      setTimeout(() => {
+        const activityElement = document.querySelector(`[data-activity-id="${highlightActivity}"]`);
+        if (activityElement) {
+          activityElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        }
+      }, 100);
+      
+      // Remove the highlight after 5 seconds
+      const timer = setTimeout(() => {
+        setHighlightedActivityId(null);
+        // Remove the query parameter from URL
+        router.replace(`/Sales/leads/${lead.leadId}`, undefined, { shallow: true });
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [router.query.highlightActivity, lead.leadId, router]);
 
   const handleEditNoteClick = (note, idx) => {
     setNoteContent(note.content);
@@ -1714,11 +1763,21 @@ const SalesDetailBody = ({
                   .map((activity, index) => (
                     <div
                       key={activity.id || `temp-${index}`}
-                      className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                      data-activity-id={activity.id}
+                      className={`flex items-center justify-between py-2 px-3 hover:bg-gray-50 transition-all duration-500 border-b border-gray-100 last:border-b-0 ${
+                        highlightedActivityId === activity.id 
+                          ? 'bg-blue-100 border-blue-300 shadow-md' 
+                          : ''
+                      }`}
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3">
-                          <span className="font-medium text-gray-800 text-sm truncate flex-1">
+                          {highlightedActivityId === activity.id && (
+                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                          )}
+                          <span className={`font-medium text-sm truncate flex-1 ${
+                            highlightedActivityId === activity.id ? 'text-blue-800 font-bold' : 'text-gray-800'
+                          }`}>
                           {activity.title}
                         </span>
                           {activity.dueDate && (
