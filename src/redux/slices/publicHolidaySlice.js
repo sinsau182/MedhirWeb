@@ -121,6 +121,7 @@ export const processCompanyMonthAttendance = createAsyncThunk(
       const token = getItemFromSessionStorage("token", null);
       const response = await axios.post(
         `${ATTENDANCE_URL}/attendance/daily/process-company-month/${companyId}/${yearNum}/${monthIdx}`,
+        {},
         {
           headers: {
             Authorization: `Bearer ${token}`,

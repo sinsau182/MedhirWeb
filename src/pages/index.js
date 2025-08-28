@@ -1,12 +1,15 @@
 import { useEffect } from "react";
-import { useRouter } from "next/router";
+// import { useRouter } from "next/router";
+import { useContext } from "react";
+import { AuthContext } from "../components/providers/AuthProvider"; 
 
 export default function Home() {
-  const router = useRouter();
+    const { handleLogin } = useContext(AuthContext);
 
   useEffect(() => {
-    router.replace("/login"); // Change '/dashboard' to any page you want
-  }, [router]);
+    // Immediately redirect to ZITADEL login
+    handleLogin();
+  }, [handleLogin]);
 
-  return null; // Or a loading screen if needed
+  return null; // Nothing to render, just redirect
 }

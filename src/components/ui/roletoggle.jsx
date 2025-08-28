@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/router";
+import { useUserRolesAndModules } from "@/hooks/useUserRolesAndModules";
 
 const roleLabels = {
   EMPLOYEE: "Employee",
@@ -37,38 +38,22 @@ const RoleToggle = () => {
   const [currentRole, setCurrentRole] = useState(null);
   const [availableRoles, setAvailableRoles] = useState([]);
   const [roleDisplayLabels, setRoleDisplayLabels] = useState(roleLabels);
+  const { userRoles, isLoading } = useUserRolesAndModules();
 
   useEffect(() => {
-    let roles = [];
-    try {
-      const rolesData = sessionStorage.getItem("roles");
-      if (rolesData) {
-        // Try to parse as JSON first, if it fails, use the raw string
-        try {
-          roles = JSON.parse(rolesData);
-        } catch (parseError) {
-          // If JSON parsing fails, treat it as a single role string
-          roles = [rolesData];
-        }
-      }
-    } catch (error) {
-      console.error('Error parsing roles from session storage:', error);
-      roles = [];
-    }
-
-    if (roles.length > 0) {
+    if (!isLoading && userRoles.length > 0) {
       // Sort roles according to the defined order
-      const sortedRoles = roleOrder.filter((role) => roles.includes(role));
+      const sortedRoles = roleOrder.filter((role) => userRoles.includes(role));
       setAvailableRoles(sortedRoles);
 
       const storedRole = sessionStorage.getItem("currentRole");
-      if (storedRole && roles.includes(storedRole)) {
+      if (storedRole && userRoles.includes(storedRole)) {
         setCurrentRole(storedRole);
       } else {
         setCurrentRole(sortedRoles[0]);
       }
     }
-  }, []);
+  }, [userRoles, isLoading]);
 
   const switchRole = (role) => {
     if (role !== currentRole) {
@@ -89,6 +74,15 @@ const RoleToggle = () => {
       }
     }
   };
+
+  // Show loading state while fetching roles
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="text-sm text-gray-500">Loading roles...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2">

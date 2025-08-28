@@ -1,11 +1,13 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useContext } from "react";
 import Link from "next/link";
 import { FaBuilding, FaCog, FaUserCircle } from "react-icons/fa";
 import { Grid2x2, ChevronDown, LogOut } from "lucide-react";
 import { useRouter } from "next/router";
 import { toast } from "sonner";
+import { AuthContext } from "./providers/AuthProvider";
 
 export default function SuperadminHeaders() {
+  const { handleLogout } = useContext(AuthContext);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -31,16 +33,16 @@ export default function SuperadminHeaders() {
     };
   }, []);
 
-  const handleLogout = () => {
-    // Clear all session storage
-    sessionStorage.clear();
-    // Clear localStorage
-    localStorage.clear();
-    // Show success message
-    toast.success("Logged out successfully");
-    // Redirect to login
-    router.push("/login");
-  };
+  // const handleLogout = () => {
+  //   // Clear all session storage
+  //   sessionStorage.clear();
+  //   // Clear localStorage
+  //   localStorage.clear();
+  //   // Show success message
+  //   toast.success("Logged out successfully");
+  //   // Redirect to login
+  //   router.push("/login");
+  // };
 
   return (
     <header className="fixed top-0 left-0 right-0 w-full bg-white shadow-sm border-b border-gray-200 px-6 py-4 flex justify-between items-center z-50">
