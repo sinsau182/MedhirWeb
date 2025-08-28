@@ -1,5 +1,5 @@
 import { jwtDecode } from "jwt-decode";
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import { AuthContext } from "@/components/providers/AuthProvider";
 
 export const updateSessionActivity = () => {
@@ -43,8 +43,32 @@ export const isTokenExpired = () => {
   }
 };
 
-export const handleTokenExpiration = () => {
-  clearSession();
-  window.location.href = "/login";
-  // handleLogout();
+// Custom hook for session management with AuthContext access
+export const useSessionManager = () => {
+  const { handleLogout } = useContext(AuthContext);
+
+  useEffect(() => {
+    const activityEvents = ["mousemove", "keydown", "click", "scroll"];
+    const handleActivity = () => updateSessionActivity();
+
+    activityEvents.forEach((event) =>
+      window.addEventListener(event, handleActivity)
+    );
+
+    const interval = setInterval(() => {
+      if (isSessionExpiredDueToInactivity()) {
+        clearSession();
+        handleLogout();
+      }
+    }, 60 * 1000);
+
+    return () => {
+      activityEvents.forEach((event) =>
+        window.removeEventListener(event, handleActivity)
+      );
+      clearInterval(interval);
+    };
+  }, [handleLogout]);
+
+  return null;
 };

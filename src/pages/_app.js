@@ -4,13 +4,15 @@ import { Provider } from "react-redux";
 import { store } from "../redux/store";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  updateSessionActivity,
-  isSessionExpiredDueToInactivity,
-  clearSession,
-} from "@/utils/sessionManager";
+import { useSessionManager } from "@/utils/sessionManager";
 import "../styles/globals.css";
 import Layout from '../components/Layout';
+
+// Wrapper component to use the session manager hook
+function SessionManagerWrapper() {
+  useSessionManager();
+  return null;
+}
 // import VersionDisplay from '../components/VersionDisplay';
 import CustomCacheBuster from '../components/CustomCacheBuster';
 import CacheBusterLoading from '../components/CacheBusterLoading';
@@ -19,7 +21,6 @@ import { AuthProvider } from '@/components/providers/AuthProvider';
 const queryClient = new QueryClient();
 
 function MyApp({ Component, pageProps }) {
-  const router = useRouter();
   const [version, setVersion] = useState(null);
 
   useEffect(() => {
@@ -38,29 +39,6 @@ function MyApp({ Component, pageProps }) {
         console.error("Failed to load meta.json", err);
       });
   }, []);
-
-  useEffect(() => {
-    const activityEvents = ["mousemove", "keydown", "click", "scroll"];
-    const handleActivity = () => updateSessionActivity();
-
-    activityEvents.forEach((event) =>
-      window.addEventListener(event, handleActivity)
-    );
-
-    const interval = setInterval(() => {
-      if (isSessionExpiredDueToInactivity()) {
-        clearSession();
-        router.push("/login");
-      }
-    }, 60 * 1000);
-
-    return () => {
-      activityEvents.forEach((event) =>
-        window.removeEventListener(event, handleActivity)
-      );
-      clearInterval(interval);
-    };
-  }, [router]);
 
   if (!version) return null; // or a loading spinner
 
@@ -84,6 +62,7 @@ function MyApp({ Component, pageProps }) {
               <Provider store={store}>
           <QueryClientProvider client={queryClient}>
             <AuthProvider> {/* ✅ Wrap everything with AuthProvider */}
+            <SessionManagerWrapper />
             <Layout>
               <Component {...pageProps} />
             </Layout>

@@ -240,7 +240,7 @@ const Navbar = () => {
               className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100 cursor-pointer"
             >
               <span className="text-sm font-medium text-gray-600">
-                Hi, {}
+                Hi, {sessionStorage.getItem("employeeName")}
               </span>
             </div>
           )}
