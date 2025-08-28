@@ -68,6 +68,7 @@ import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import MinioImage from "@/components/ui/MinioImage";
 import { fetchImageFromMinio } from "@/redux/slices/minioSlice";
 import withAuth from "@/components/withAuth";
+import { useUserRolesAndModules } from '@/hooks/useUserRolesAndModules';
 
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
@@ -410,7 +411,9 @@ const SalesDetailBody = ({
   };
 
   const token = getItemFromSessionStorage("token");
-  const isManager = jwtDecode(token).roles.includes("MANAGER");
+  // const isManager = jwtDecode(token).roles.includes("MANAGER");
+  const { userRoles, userModules, isLoading, error } = useUserRolesAndModules();
+  const isManager = userRoles.includes("MANAGER");
 
   const [contactFields, setContactFields] = useState({
     name: lead.name || "",
