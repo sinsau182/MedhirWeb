@@ -48,8 +48,8 @@ const LostLeadModal = ({ lead, onClose, onSuccess, position = { x: 0, y: 0 }, is
     const margin = 20; // margin from viewport edges
     
     // Position modal to the right of the click position
-    let adjustedX = position.x + 20; // 20px offset to the right
-    let adjustedY = position.y - 50; // 50px offset above the click
+    let adjustedX = position.x; // 20px offset to the right
+    let adjustedY = position.y; // 50px offset above the click
     
     // Calculate the popup boundaries
     const popupLeft = adjustedX;

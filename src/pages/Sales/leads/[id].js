@@ -41,6 +41,7 @@ import {
   FaClipboardCheck,
   FaCheckDouble,
   FaFilePdf,
+  FaTrash,
 } from "react-icons/fa";
 import MainLayout from "@/components/MainLayout";
 import { toast } from "sonner";
@@ -177,9 +178,25 @@ function formatRelativeTime(date) {
 
 // --- Sub-components for the new UI ---
 
-const SalesHeader = ({ lead, pipelines, onStatusChange }) => {
+const SalesHeader = ({ lead, pipelines, onStatusChange, onMoveToLost, onMoveToJunk }) => {
   const router = useRouter();
   const [moveBucketOpen, setMoveBucketOpen] = useState(false);
+  const [dustbinDropdownOpen, setDustbinDropdownOpen] = useState(false);
+  const dustbinRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dustbinRef.current && !dustbinRef.current.contains(event.target)) {
+        setDustbinDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Filter out LOST and JUNK stages
   const filteredPipelines = pipelines.filter(stage => stage.formType !== "LOST" && stage.formType !== "JUNK");
@@ -321,6 +338,46 @@ const SalesHeader = ({ lead, pipelines, onStatusChange }) => {
               })}
             </SelectContent>
           </Select>
+        </div>
+
+        {/* Dustbin Icon for Quick Move to Lost/Junk */}
+        <div className="relative" ref={dustbinRef}>
+          <button
+            onClick={() => setDustbinDropdownOpen(!dustbinDropdownOpen)}
+            className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors duration-200"
+            title="Move to Lost or Junk"
+          >
+            <FaTrash className="w-5 h-5" />
+          </button>
+          
+          {dustbinDropdownOpen && (
+            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+              <div className="py-1">
+                                  <button
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      onMoveToLost({ x: rect.right+150, y: rect.top });
+                      setDustbinDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                  >
+                    <FaTimes className="w-4 h-4" />
+                    Move to Lost
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      onMoveToJunk({ x: rect.right+150, y: rect.top });
+                      setDustbinDropdownOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2"
+                  >
+                    <FaTrash className="w-4 h-4" />
+                    Move to Junk
+                  </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -3445,6 +3502,7 @@ const LeadDetailContent = () => {
   const [fileModal, setFileModal] = useState({ open: false, url: null });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [activityToDelete, setActivityToDelete] = useState(null);
+  const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
 
   // Fetch pipelines on mount if not loaded
   useEffect(() => {
@@ -4030,6 +4088,14 @@ const LeadDetailContent = () => {
           lead={updatedLead}
           pipelines={pipelines}
           onStatusChange={handleStatusChange}
+          onMoveToLost={(position) => {
+            setModalPosition(position);
+            setShowLostModal(true);
+          }}
+          onMoveToJunk={(position) => {
+            setModalPosition(position);
+            setShowJunkModal(true);
+          }}
         />
       )}
       <SalesDetailBody
@@ -4084,13 +4150,17 @@ const LeadDetailContent = () => {
       />
       <JunkReasonModal
         lead={showJunkModal ? lead : null}
+        isOpen={showJunkModal}
         onClose={() => setShowJunkModal(false)}
         onSuccess={handleJunkSuccess}
+        position={modalPosition}
       />
       <LostLeadModal
         lead={showLostModal ? lead : null}
+        isOpen={showLostModal}
         onClose={() => setShowLostModal(false)}
         onSuccess={handleLostSuccess}
+        position={modalPosition}
       />
       <ConvertLeadModal
         lead={showConvertModal ? lead : null}
