@@ -261,11 +261,11 @@ const Navbar = () => {
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    {employeeData?.name || "User Name"}
+                    {sessionStorage.getItem("employeeName") || "User Name"}
                   </p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {employeeData?.sub || "user@email.com"}
-                  </p>
+                  {/* <p className="text-xs leading-none text-muted-foreground">
+                    {sessionStorage.getItem("employeeEmail") || "user@email.com"}
+                  </p> */}
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
