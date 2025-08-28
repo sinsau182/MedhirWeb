@@ -75,24 +75,6 @@ const modularMenus = {
         link: "/hradmin/payroll",
       },
       {
-        label: "Asset Management",
-        icon: <FaBoxes className="w-4 h-4" />,
-        hasSubmenu: true,
-        menuKey: "hr-asset",
-        subItems: [
-          {
-            label: "Home",
-            icon: <FaBuilding className="w-4 h-4" />,
-            link: "/asset-management",
-          },
-          {
-            label: "Settings",
-            icon: <Settings className="w-4 h-4" />,
-            link: "/asset-management/settings",
-          },
-        ],
-      },
-      {
         label: "Settings",
         icon: <Settings className="w-4 h-4" />,
         hasSubmenu: true,
