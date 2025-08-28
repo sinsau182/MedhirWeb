@@ -19,6 +19,8 @@ import {
   FaShieldAlt,
   FaChartBar,
   FaCrown,
+  FaTimes,
+  FaCheckCircle
 } from "react-icons/fa";
 import {
   Briefcase,
@@ -136,6 +138,16 @@ const modularMenus = {
         icon: <FaUsers className="w-4 h-4" />,
         link: "/SalesManager/Manager",
       },
+      {
+        label: "Lost & Junk Leads",
+        icon: <FaTimes className="w-4 h-4" />,
+        link: "/Sales/lostJunk",
+      },
+      {
+        label: "Converted Leads",
+        icon: <FaCheckCircle className="w-4 h-4" />,
+        link: "/Sales/closedConverted",
+      },
       // {
       //   label: "Sales Settings",
       //   icon: <Settings className="w-4 h-4" />,
@@ -174,6 +186,23 @@ const modularMenus = {
         label: "Account Settings",
         icon: <Settings className="w-4 h-4" />,
         link: "/account/settings",
+      },
+    ],
+  },
+
+  MOD_ASSETS: {
+    label: "Asset Management",
+    icon: <FaBoxes className="w-5 h-5" />,
+    items: [
+      {
+        label: "Home",
+        icon: <FaBuilding className="w-4 h-4" />,
+        link: "/asset-management",
+      },
+      {
+        label: "Settings",
+        icon: <Settings className="w-4 h-4" />,
+        link: "/asset-management/settings",
       },
     ],
   },
@@ -308,17 +337,17 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
               )
             };
             modules.push({ key, ...filteredModule });
-          } else if (key === "MOD_SALES") {
+          }  else if (key === "MOD_SALES") {
             const isManagerOrAdmin = hasManagerRole() || hasAdminRole();
             const filteredItems = module.items.filter(item => {
               if (item.label === "Sales Settings") {
                 return hasAdminRole();
               }
-              if (item.label === "Team Leads") {
-                return isManagerOrAdmin;
+              if (item.label === "My Leads") {
+                return !isManagerOrAdmin; // Hide My Leads for manager/admin
               }
-              if (item.label === "Lead Management") {
-                return true; // visible to everyone, including manager/admin
+              if (item.label === "All Leads") {
+                return isManagerOrAdmin; // Show All Leads only for manager/admin
               }
               // Keep Dashboard for everyone
               return true;
@@ -339,6 +368,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
               )
             };
             modules.push({ key, ...filteredModule });
+          }else if (key === "MOD_ASSETS") {
+            // Filter out Settings menu if user doesn't have admin role
+            modules.push({ key, ...module });
           } else {
             modules.push({ key, ...module });
           }
@@ -360,16 +392,16 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
             modules.push({ key: moduleId, ...filteredModule });
           } else if (moduleId === "MOD_SALES") {
             const isManagerOrAdmin = hasManagerRole() || hasAdminRole();
-            // Filter Sales items: Dashboard for all; Team Leads only for manager/admin; Lead Management for everyone
+            // Filter Sales items: Dashboard for all; My Leads only for non-manager/non-admin; All Leads for manager/admin
             const filteredItems = modularMenus[moduleId].items.filter(item => {
               if (item.label === "Sales Settings") {
                 return hasAdminRole();
               }
-              if (item.label === "Team Leads") {
-                return isManagerOrAdmin;
+              if (item.label === "My Leads") {
+                return !isManagerOrAdmin; // Hide My Leads for manager/admin
               }
-              if (item.label === "Lead Management") {
-                return true; // visible to everyone, including manager/admin
+              if (item.label === "All Leads") {
+                return isManagerOrAdmin; // Show All Leads only for manager/admin
               }
               return true; // Dashboard
             });
@@ -389,6 +421,9 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
               )
             };
             modules.push({ key: moduleId, ...filteredModule });
+          } else if (moduleId === "MOD_ASSETS") {
+            // Filter out Settings menu if user doesn't have admin role
+            modules.push({ key: moduleId, ...modularMenus[moduleId] });
           } else {
             modules.push({ key: moduleId, ...modularMenus[moduleId] });
           }
