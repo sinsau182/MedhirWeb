@@ -412,7 +412,7 @@ const SalesDetailBody = ({
 
   const token = getItemFromSessionStorage("token");
   // const isManager = jwtDecode(token).roles.includes("MANAGER");
-  const { userRoles, userModules, isLoading, error } = useUserRolesAndModules();
+  const { userRoles } = useUserRolesAndModules();
   const isManager = userRoles.includes("MANAGER");
 
   const [contactFields, setContactFields] = useState({
