@@ -74,7 +74,6 @@ const modularMenus = {
         icon: <ReceiptIcon className="w-4 h-4" />,
         link: "/hradmin/payroll",
       },
-      
       {
         label: "Settings",
         icon: <Settings className="w-4 h-4" />,
