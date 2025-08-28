@@ -240,7 +240,7 @@ const Navbar = () => {
               className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100 cursor-pointer"
             >
               <span className="text-sm font-medium text-gray-600">
-                Hi, {}
+                Hi, {sessionStorage.getItem("employeeName")}
               </span>
             </div>
           )}
@@ -261,11 +261,11 @@ const Navbar = () => {
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    {employeeData?.name || "User Name"}
+                    {sessionStorage.getItem("employeeName") || "User Name"}
                   </p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {employeeData?.sub || "user@email.com"}
-                  </p>
+                  {/* <p className="text-xs leading-none text-muted-foreground">
+                    {sessionStorage.getItem("employeeEmail") || "user@email.com"}
+                  </p> */}
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />

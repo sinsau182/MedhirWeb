@@ -143,6 +143,13 @@ const Leaves = () => {
   };
 
   useEffect(() => {
+    // Check if required data is available
+    const companyId = sessionStorage.getItem("employeeCompanyId");
+    if (!companyId) {
+      toast.error("Company ID not found. Please login again.");
+      return;
+    }
+    
     dispatch(fetchLeaveHistory());
     dispatch(fetchLeaveBalance(employeeId)); // Pass employeeId to fetchLeaveBalance action
     dispatch(fetchPublicHolidays());
@@ -184,6 +191,11 @@ const Leaves = () => {
     
     // Check payroll freeze status for date restrictions
     const companyId = sessionStorage.getItem("employeeCompanyId");
+    if (!companyId) {
+      toast.error("Company ID not found. Please login again.");
+      return;
+    }
+    
     if (companyId) {
       // Get current month - 1 (previous month) for payroll freeze check
       const currentDate = new Date();
@@ -214,6 +226,11 @@ const Leaves = () => {
     
     // Check payroll freeze status for date restrictions
     const companyId = sessionStorage.getItem("employeeCompanyId");
+    if (!companyId) {
+      toast.error("Company ID not found. Please login again.");
+      return;
+    }
+    
     if (companyId) {
       // Get current month - 1 (previous month) for payroll freeze check
       const currentDate = new Date();
@@ -359,23 +376,23 @@ const Leaves = () => {
             <div className="flex gap-4">
               <button
                 className={`px-4 py-2 rounded-lg transition ${
-                  balanceError 
+                  balanceError || !sessionStorage.getItem("employeeCompanyId")
                     ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
                 onClick={openCompOffModal}
-                disabled={!!balanceError}
+                disabled={!!balanceError || !sessionStorage.getItem("employeeCompanyId")}
               >
                 Apply for Comp-off
               </button>
               <button
                 className={`px-4 py-2 rounded-lg transition ${
-                  balanceError 
+                  balanceError || !sessionStorage.getItem("employeeCompanyId")
                     ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
                 onClick={openModal}
-                disabled={!!balanceError}
+                disabled={!!balanceError || !sessionStorage.getItem("employeeCompanyId")}
               >
                 Apply for Leave
               </button>

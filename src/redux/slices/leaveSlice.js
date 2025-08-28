@@ -172,7 +172,21 @@ export const applyLeave = createAsyncThunk(
       }
 
       const decodedToken = JSON.parse(atob(token.split(".")[1])); // Decode the JWT token
-      const companyId = decodedToken.companyId; // Extract companyId from token
+      let companyId = decodedToken.companyId; // Extract companyId from token
+      
+      console.log('[LeaveSlice] Token companyId:', companyId);
+      console.log('[LeaveSlice] Session storage companyId:', sessionStorage.getItem("employeeCompanyId"));
+      
+      // Fallback to session storage if companyId is not in token
+      if (!companyId) {
+        companyId = sessionStorage.getItem("employeeCompanyId");
+        console.log('[LeaveSlice] Using fallback companyId:', companyId);
+      }
+      
+      if (!companyId) {
+        throw new Error("Company ID not found in token or session storage");
+      }
+      
       const employeeId = sessionStorage.getItem("employeeId"); // Get employeeId from session storage
 
       const response = await axios.post(
@@ -278,7 +292,21 @@ export const applyCompOffLeave = createAsyncThunk(
       }
 
       const decodedToken = JSON.parse(atob(token.split(".")[1])); // Decode the JWT token
-      const companyId = decodedToken.companyId; // Extract companyId from token
+      let companyId = decodedToken.companyId; // Extract companyId from token
+      
+      console.log('[LeaveSlice] Token companyId:', companyId);
+      console.log('[LeaveSlice] Session storage companyId:', sessionStorage.getItem("employeeCompanyId"));
+      
+      // Fallback to session storage if companyId is not in token
+      if (!companyId) {
+        companyId = sessionStorage.getItem("employeeCompanyId");
+        console.log('[LeaveSlice] Using fallback companyId:', companyId);
+      }
+      
+      if (!companyId) {
+        throw new Error("Company ID not found in token or session storage");
+      }
+      
       const employeeId = sessionStorage.getItem("employeeId"); // Get employeeId from session storage
 
       const response = await axios.post(

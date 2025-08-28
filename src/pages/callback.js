@@ -91,6 +91,7 @@ export default function CallbackPage() {
                 const passwordChanged = decodeBase64(metadata.passwordChanged);
                 const decodedModules = decodeBase64(metadata.modules);
                 const decodedCompanyName = decodeBase64(metadata.companyName);
+                const decodedEmployeeName = decodeBase64(metadata.employeeName);
 
                 // EmployeeId: from metadata if provided, otherwise fallback to sub claim
                 // const decodedEmployeeId = metadata.employeeId
@@ -119,6 +120,9 @@ export default function CallbackPage() {
 
                 if (decodedCompanyName) {
                   sessionStorage.setItem("companyName", decodedCompanyName);
+                }
+                if (decodedEmployeeName) {
+                  sessionStorage.setItem("employeeName", decodedEmployeeName);
                 }
                 console.log("User roles:", roles); // ['COMPANY_HEAD', 'EMPLOYEE', 'MANAGER', 'SUPERADMIN']
                 if (roles.includes("SUPERADMIN")) {
