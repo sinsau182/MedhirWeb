@@ -33,6 +33,7 @@ import { fetchPipelines } from '@/redux/slices/pipelineSlice';
 import { fetchDashboard } from '@/redux/slices/leadsDashboardSlice';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
 import { jwtDecode } from 'jwt-decode';
+import { useUserRolesAndModules } from '@/hooks/useUserRolesAndModules';
 
 // --- MOCK DATA (Replace with API data) ---
 const MOCK_DATA = {
@@ -508,7 +509,9 @@ function MainDashboard() {
   const companyId = sessionStorage.getItem("employeeCompanyId");
   const employeeId = sessionStorage.getItem("employeeId");
   const token = getItemFromSessionStorage("token");
-  const isManager = jwtDecode(token).roles.includes("MANAGER");
+  const { userRoles, userModules, isLoading, error } = useUserRolesAndModules();
+  const isManager = userRoles.includes("MANAGER");  
+  // const isManager = jwtDecode(token).roles.includes("MANAGER");
 
   useEffect(() => {
     dispatch(fetchManagerEmployees());
