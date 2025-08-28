@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { FaSave, FaTimes, FaPlus, FaTrash, FaFileInvoiceDollar, FaChevronDown, FaChevronRight, FaInfoCircle } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
-import { fetchProjectCustomerList, getNextInvoiceNumber, generateNextInvoiceNumber } from '../../redux/slices/invoiceSlice';
+import { getNextInvoiceNumber, generateNextInvoiceNumber } from '../../redux/slices/invoiceSlice';
+import { getCustomerBasicDetails } from '../../redux/slices/customerSlice'; // <-- Import new thunk
 import { ToWords } from 'to-words';
 
 const AddInvoiceForm = ({ onSubmit, onCancel }) => {
@@ -26,12 +27,9 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
     const [selectedOption, setSelectedOption] = useState(null);
     const [isOpen, setIsOpen] = useState(false);
 
-    // Remove static customers and projects arrays
-    // const customers = [...];
-    // const projects = [...];
-
     const dispatch = useDispatch();
-    const { projectCustomerList, nextInvoiceNumber, loading } = useSelector(state => state.invoices);
+    const { customers, loading } = useSelector(state => state.customers); // <-- Use customers from customerSlice
+    const { nextInvoiceNumber } = useSelector(state => state.invoices);
 
     // Initialize ToWords for converting numbers to words
     const toWords = new ToWords({
@@ -43,20 +41,26 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
         }
     });
 
-    // Extract unique projects from projectCustomerList
-    const projects = projectCustomerList?.map(p => ({
-        projectId: p.projectId,
-        projectName: p.projectName,
-        customerId: p.customerId,
-        customerName: p.customerName,
-        address: p.address
-    })) || [];
-
     // Get company ID from session storage
     const companyId = typeof window !== 'undefined' ? 
         sessionStorage.getItem("employeeCompanyId") || 
         sessionStorage.getItem("companyId") || 
         sessionStorage.getItem("company") : null;
+
+    useEffect(() => {
+        if (companyId) {
+            dispatch(getCustomerBasicDetails());
+        }
+    }, [dispatch, companyId]);
+
+    // Map projects from customers response
+    const projects = customers?.map(p => ({
+        projectId: p.projectId,
+        projectName: p.projectId, // <-- Use projectId as name if needed, or add a projectName field if available
+        customerId: p.customerId,
+        customerName: p.customerName,
+        address: p.address
+    })) || [];
 
     // Function to fetch next invoice number (generates and increments)
     const fetchNextInvoiceNumber = async () => {
@@ -69,12 +73,6 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
             }
         }
     };
-
-    useEffect(() => {
-        if (!projectCustomerList || projectCustomerList.length === 0) {
-            dispatch(fetchProjectCustomerList(companyId));
-        }
-    }, [dispatch, projectCustomerList]);
 
     // Auto-fill invoice number on form load
     useEffect(() => {
@@ -276,7 +274,7 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
                                 onClick={() => setIsOpen(!isOpen)}
                                 className="w-full px-4 py-3 text-left bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                             >
-                                {selectedOption?.projectName || "Select Project"||customerId}
+                                {selectedOption?.projectId || "Select Project"}
                                 <span className="float-right">
                                     <svg className={`w-4 h-4 inline transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
@@ -286,25 +284,25 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
 
                             {isOpen && (
                                 <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded max-h-60 overflow-y-auto">
-                                    {projects.map((project) => (
+                                    {projects.map((cusomter) => (
                                         <li
-                                            key={project.projectId}
+                                            key={customer.projectId}
                                             onClick={() => {
                                                 setSelectedOption(project);
                                                 setFormData(prev => ({
                                                     ...prev,
-                                                    projectName: project.projectName,
-                                                    projectId: project.projectId,
-                                                    customerName: project.customerName,
-                                                    customerId: project.customerId,
-                                                    address: project.address,
+                                                    projectName: customer.projectId, // <-- Set projectId as name
+                                                    projectId: customer.projectId,
+                                                    customerName: customer.customerName,
+                                                    customerId: customer.customerId,
+                                                    address: customer.address,
                                                 }));
                                                 setIsOpen(false);
                                                 if (errors.projectName) setErrors(prev => ({ ...prev, projectName: '' }));
                                             }}
                                             className="px-4 py-2 cursor-pointer hover:bg-gray-100"
                                         >
-                                            {project.projectName}
+                                            {customer.projectId}
                                         </li>
                                     ))}
                                 </ul>

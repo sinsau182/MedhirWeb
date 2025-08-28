@@ -243,6 +243,31 @@ export const getCustomersByLeadId = createAsyncThunk(
   }
 );
 
+// Get customer basic details
+export const getCustomerBasicDetails = createAsyncThunk(
+  "customers/getCustomerBasicDetails",
+  async (_, { rejectWithValue }) => {
+    try {
+      const token = getItemFromSessionStorage("token", null);
+      const companyId = sessionStorage.getItem("employeeCompanyId");
+
+      const response = await fetch(`${API_BASE_URL}/${companyId}/basic-details`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return rejectWithValue(data.message || "Something went wrong");
+      }
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Network Error");
+    }
+  }
+);
+
 export const customerSlice = createSlice({
   name: "customers",
   initialState: {
@@ -385,6 +410,20 @@ export const customerSlice = createSlice({
       state.customers = action.payload;
     });
     builder.addCase(getCustomersByLeadId.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload;
+    });
+
+    // Get customer basic details
+    builder.addCase(getCustomerBasicDetails.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(getCustomerBasicDetails.fulfilled, (state, action) => {
+      state.loading = false;
+      state.customers = action.payload;
+    });
+    builder.addCase(getCustomerBasicDetails.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload;
     });

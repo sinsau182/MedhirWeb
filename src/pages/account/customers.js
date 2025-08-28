@@ -871,7 +871,7 @@ const handleInvoiceSubmit = (data) => {
                                     <td className="px-4 py-4 whitespace-nowrap">
                                       <span className="text-sm font-medium text-blue-600">{invoice.invoiceNumber}</span>
                                     </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{invoice.project?.projectName || 'N/A'}</td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{invoice.customer?.projectId || 'N/A'}</td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{invoice.invoiceDate}</td>
                                     <td className="px-4 py-4 whitespace-nowrap">
                                 <span className="text-sm font-semibold text-gray-900">₹{invoice.totalAmount}</span>
