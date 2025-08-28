@@ -68,6 +68,7 @@ import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import MinioImage from "@/components/ui/MinioImage";
 import { fetchImageFromMinio } from "@/redux/slices/minioSlice";
 import withAuth from "@/components/withAuth";
+import { useUserRolesAndModules } from '@/hooks/useUserRolesAndModules';
 
 const { publicRuntimeConfig } = getConfig();
 const API_BASE_URL = publicRuntimeConfig.apiURL;
@@ -410,7 +411,9 @@ const SalesDetailBody = ({
   };
 
   const token = getItemFromSessionStorage("token");
-  const isManager = jwtDecode(token).roles.includes("MANAGER");
+  // const isManager = jwtDecode(token).roles.includes("MANAGER");
+  const { userRoles, userModules, isLoading, error } = useUserRolesAndModules();
+  const isManager = userRoles.includes("MANAGER");
 
   const [contactFields, setContactFields] = useState({
     name: lead.name || "",
@@ -505,71 +508,73 @@ const SalesDetailBody = ({
   // --- End Assigned Team Edit State ---
 
   useEffect(() => {
-    setProjectFields({
-      name: lead.name || "",
-      propertyType: lead.propertyType || "",
-      address: lead.address || "",
-      area: lead.area || "",
-      leadSource: lead.leadSource || "",
-      referralName: lead.referralName || "",
-      designStyle: lead.designStyle || "",
-    });
-    setContactedFields({
-      floorPlan: lead.floorPlan || "",
-      firstCallDate: lead.firstCallDate || "",
-      budget: lead.budget || lead.budget || "",
-    });
-    console.log("Initializing potentialFields with lead data:", {
-      firstMeetingDate: lead.firstMeetingDate,
-      initialQuote: lead.initialQuote,
-      quotedAmount: lead.quotedAmount,
-      requirements: lead.requirements,
-      area: lead.area,
-      designStyle: lead.designStyle
-    });
-    
-    setPotentialFields({
-      firstMeetingDate: lead.firstMeetingDate || "",
-      initialQuote: lead.initialQuote || lead.quotedAmount || "",
-      requirements: lead.requirements || "",
-      area: lead.area || "",
-      designStyle: lead.designStyle || "",
-    });
-            setHighPotentialFields({
-          requirements: lead.requirements || "",
-          finalQuotation: lead.finalQuotation || "",
-          discount: lead.discount || "",
-          designTimeline: lead.designTimeline || "",
-          completionTimeline: lead.completionTimeline || "",
+    if (lead) {
+      setProjectFields({
+        name: lead.name || "",
+        propertyType: lead.propertyType || "",
+        address: lead.address || "",
+        area: lead.area || "",
+        leadSource: lead.leadSource || "",
+        referralName: lead.referralName || "",
+        designStyle: lead.designStyle || "",
+      });
+      setContactedFields({
+        floorPlan: lead.floorPlan || "",
+        firstCallDate: lead.firstCallDate || "",
+        budget: lead.budget || lead.budget || "",
+      });
+      console.log("Initializing potentialFields with lead data:", {
+        firstMeetingDate: lead.firstMeetingDate,
+        initialQuote: lead.initialQuote,
+        quotedAmount: lead.quotedAmount,
+        requirements: lead.requirements,
+        area: lead.area,
+        designStyle: lead.designStyle
+      });
+      
+      setPotentialFields({
+        firstMeetingDate: lead.firstMeetingDate || "",
+        initialQuote: lead.initialQuote || lead.quotedAmount || "",
+        requirements: lead.requirements || "",
+        area: lead.area || "",
+        designStyle: lead.designStyle || "",
+      });
+      setHighPotentialFields({
+        requirements: lead.requirements || "",
+        finalQuotation: lead.finalQuotation || "",
+        discount: lead.discount || "",
+        designTimeline: lead.designTimeline || "",
+        completionTimeline: lead.completionTimeline || "",
+      });
+      setSemiConvertedFields({
+        freezingAmount: lead.freezingAmount || "",
+        freezingPaymentDate: lead.freezingPaymentDate || "",
+        freezingPaymentMode: lead.freezingPaymentMode || "",
+      });
+      setConvertedFields({
+        signupAmount: lead.signupAmount || "",
+        paymentDate: lead.paymentDate || "",
+        paymentMode: lead.paymentMode || "",
+        paymentTransactionId: lead.paymentTransactionId || "",
+        panNumber: lead.panNumber || "",
+        gstAvailable: lead.gstAvailable || false,
+        gst: lead.gst || "",
+      });
+      
+      // Initialize existing uploaded files
+      if (lead.paymentDetailsFileName) {
+        setExistingPaymentDetailsFile({
+          name: lead.paymentDetailsFileName,
+          url: lead.paymentDetailsFileName
         });
-        setSemiConvertedFields({
-          freezingAmount: lead.freezingAmount || "",
-          freezingPaymentDate: lead.freezingPaymentDate || "",
-          freezingPaymentMode: lead.freezingPaymentMode || "",
-    });
-        setConvertedFields({
-          signupAmount: lead.signupAmount || "",
-          paymentDate: lead.paymentDate || "",
-          paymentMode: lead.paymentMode || "",
-          paymentTransactionId: lead.paymentTransactionId || "",
-          panNumber: lead.panNumber || "",
-          gstAvailable: lead.gstAvailable || false,
-          gst: lead.gst || "",
-    });
-        
-        // Initialize existing uploaded files
-        if (lead.paymentDetailsFileName) {
-          setExistingPaymentDetailsFile({
-            name: lead.paymentDetailsFileName,
-            url: lead.paymentDetailsFileName
-          });
-        }
-        if (lead.bookingFormFileName) {
-          setExistingBookingFormFile({
-            name: lead.bookingFormFileName,
-            url: lead.bookingFormFileName
-          });
-        }
+      }
+      if (lead.bookingFormFileName) {
+        setExistingBookingFormFile({
+          name: lead.bookingFormFileName,
+          url: lead.bookingFormFileName
+        });
+      }
+    }
   }, [lead]);
 
   console.log(activeRole);
@@ -760,6 +765,9 @@ const SalesDetailBody = ({
       onFieldChange("contactNumber", contactFields.contactNumber.trim());
       onFieldChange("alternateContactNumber", contactFields.alternateContactNumber.trim());
       onFieldChange("email", contactFields.email.trim());
+      
+      // Silent refresh to ensure data consistency
+      await silentRefreshLead(dispatch, lead.leadId);
       toast.success("Contact details updated!");
     } catch (e) {
       console.error("Failed to update contact details:", e);
@@ -848,6 +856,9 @@ const SalesDetailBody = ({
       await updateLeadWithFormData(lead.leadId, textFields, {});
       // Optimistically update local lead display without refetch
       Object.entries(textFields).forEach(([k, v]) => onFieldChange(k, v));
+      
+      // Silent refresh to ensure data consistency
+      await silentRefreshLead(dispatch, lead.leadId);
       toast.success("Saved");
     } catch (e) {
       console.error("Auto-save failed for", field, e);
@@ -874,6 +885,9 @@ const SalesDetailBody = ({
         // Update local state with file name
         setContactedFields(prev => ({ ...prev, floorPlan: value.name }));
         onFieldChange("floorPlan", value.name);
+        
+        // Silent refresh to ensure data consistency
+        await silentRefreshLead(dispatch, lead.leadId);
         toast.success("Floor plan uploaded successfully");
         return;
       }
@@ -887,6 +901,9 @@ const SalesDetailBody = ({
       
       await updateLeadWithFormData(lead.leadId, textFields, {});
       Object.entries(textFields).forEach(([k, v]) => onFieldChange(k, v));
+      
+      // Silent refresh to ensure data consistency
+      await silentRefreshLead(dispatch, lead.leadId);
       toast.success("Saved");
     } catch (e) {
       console.error("Auto-save failed for contacted", field, e);
@@ -931,6 +948,8 @@ const SalesDetailBody = ({
         ...textFields
       }));
       
+      // Silent refresh to ensure data consistency
+      await silentRefreshLead(dispatch, lead.leadId);
       toast.success("Saved");
     } catch (e) {
       console.error("Auto-save failed for potential", field, e);
@@ -1004,6 +1023,9 @@ const SalesDetailBody = ({
         : value;
       await updateLeadWithFormData(lead.leadId, textFields, {});
       Object.entries(textFields).forEach(([k, v]) => onFieldChange(k, v));
+      
+      // Silent refresh to ensure data consistency
+      await silentRefreshLead(dispatch, lead.leadId);
       toast.success("Saved");
     } catch (e) {
       console.error("Auto-save failed for high potential", field, e);
@@ -1078,6 +1100,9 @@ const SalesDetailBody = ({
       
       await updateLeadWithFormData(lead.leadId, textFields, {});
       Object.entries(textFields).forEach(([k, v]) => onFieldChange(k, v));
+      
+      // Silent refresh to ensure data consistency
+      await silentRefreshLead(dispatch, lead.leadId);
       toast.success("Saved");
     } catch (e) {
       console.error("Auto-save failed for semi converted", field, e);
@@ -1168,6 +1193,9 @@ const SalesDetailBody = ({
 
       await updateLeadWithFormData(lead.leadId, textFields, {});
       Object.entries(textFields).forEach(([k, v]) => onFieldChange(k, v));
+      
+      // Silent refresh to ensure data consistency
+      await silentRefreshLead(dispatch, lead.leadId);
       toast.success("Saved");
     } catch (e) {
       console.error("Auto-save failed for converted", field, e);

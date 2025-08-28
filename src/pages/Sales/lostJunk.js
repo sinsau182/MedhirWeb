@@ -6,12 +6,15 @@ import DateFilter from '@/components/Sales/filter';
 import { fetchLeads } from '@/redux/slices/leadsSlice';
 import { jwtDecode } from 'jwt-decode';
 import { getItemFromSessionStorage } from '@/redux/slices/sessionStorageSlice';
+import { useUserRolesAndModules } from '@/hooks/useUserRolesAndModules';
 
 const LostJunkPage = () => {
   const token = getItemFromSessionStorage("token");
   const decodedToken = jwtDecode(token);
   const roles = decodedToken.roles;
-  const isManager = roles.includes('MANAGER');
+  // const isManager = roles.includes('MANAGER');
+  const { userRoles, userModules, isLoading, error } = useUserRolesAndModules();
+  const isManager = userRoles.includes("MANAGER");
   
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');

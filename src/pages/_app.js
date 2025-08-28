@@ -14,6 +14,7 @@ import Layout from '../components/Layout';
 // import VersionDisplay from '../components/VersionDisplay';
 import CustomCacheBuster from '../components/CustomCacheBuster';
 import CacheBusterLoading from '../components/CacheBusterLoading';
+import { AuthProvider } from '@/components/providers/AuthProvider';
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,7 @@ function MyApp({ Component, pageProps }) {
     >
               <Provider store={store}>
           <QueryClientProvider client={queryClient}>
+            <AuthProvider> {/* ✅ Wrap everything with AuthProvider */}
             <Layout>
               <Component {...pageProps} />
             </Layout>
@@ -161,6 +163,7 @@ function MyApp({ Component, pageProps }) {
               closeButton
               duration={4000}
             />
+            </AuthProvider>
           </QueryClientProvider>
         </Provider>
     </CustomCacheBuster>

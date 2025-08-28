@@ -17,6 +17,7 @@ import { Loader2 } from "lucide-react";
 import { setItem } from "@/redux/slices/sessionStorageSlice"; // Import setItem action
 import { updateSessionActivity } from "@/utils/sessionManager";
 import { toast } from "sonner";
+import { useUserRolesAndModules } from "@/hooks/useUserRolesAndModules";
 
 export function LoginForm({ className, ...props }) {
   const router = useRouter();
@@ -24,6 +25,7 @@ export function LoginForm({ className, ...props }) {
   const [isLoading, setIsLoading] = useState(false);
   const dispatch = useDispatch();
   const { loading, error } = useSelector((state) => state.auth);
+  const { userRoles } = useUserRolesAndModules();
 
   const handleChange = (e) => {
     setCredentials({ ...credentials, [e.target.name]: e.target.value });
@@ -55,11 +57,10 @@ export function LoginForm({ className, ...props }) {
           updateSessionActivity();
         }
 
-        const roles = sessionStorage.getItem("roles");
-
-        if (roles.includes("SUPERADMIN")) {
+        // Use userRoles from the hook instead of sessionStorage
+        if (userRoles.includes("SUPERADMIN")) {
           router.push("/superadmin/companies");
-        } else if (roles.includes("EMPLOYEE")) {
+        } else if (userRoles.includes("EMPLOYEE")) {
           router.push("/employee/dashboard");
           sessionStorage.setItem("currentRole", "EMPLOYEE");
         } else {

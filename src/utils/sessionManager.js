@@ -1,4 +1,6 @@
 import { jwtDecode } from "jwt-decode";
+import { useContext } from "react";
+import { AuthContext } from "@/components/providers/AuthProvider";
 
 export const updateSessionActivity = () => {
   const now = new Date().getTime();
@@ -18,7 +20,6 @@ export const clearSession = () => {
   sessionStorage.removeItem("lastActivity");
   sessionStorage.removeItem("token");
   sessionStorage.removeItem("currentRole");
-  sessionStorage.removeItem("roles");
   sessionStorage.removeItem("employeeId");
   sessionStorage.removeItem("passwordChanged");
   sessionStorage.removeItem("departmentName");
@@ -45,4 +46,5 @@ export const isTokenExpired = () => {
 export const handleTokenExpiration = () => {
   clearSession();
   window.location.href = "/login";
+  // handleLogout();
 };

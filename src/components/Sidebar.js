@@ -20,8 +20,7 @@ import {
   FaChartBar,
   FaCrown,
   FaTimes,
-  FaExclamationTriangle,
-  FaCheckCircle,
+  FaCheckCircle
 } from "react-icons/fa";
 import {
   Briefcase,
@@ -41,13 +40,12 @@ import {
   TrendingUp,
   Database,
   Layers,
-  List,
-  Building,
 } from "lucide-react";
 import Link from "next/link";
 import { getItemFromSessionStorage } from "@/redux/slices/sessionStorageSlice";
 import { jwtDecode } from "jwt-decode";
 import version from "../version";
+import { useUserRolesAndModules } from "@/hooks/useUserRolesAndModules";
 
 // Define modular menu structure outside component to avoid recreation
 const modularMenus = {
@@ -191,7 +189,6 @@ const modularMenus = {
     ],
   },
 
-
   // Employee Module
   EMPLOYEE: {
     label: "My Portal",
@@ -253,9 +250,11 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
   const [currentRole, setCurrentRole] = useState("");
   const [expandedMenus, setExpandedMenus] = useState({});
   const [department, setDepartment] = useState("");
-  const [userRoles, setUserRoles] = useState([]);
-  const [userModules, setUserModules] = useState([]);
   const router = useRouter();
+  
+  // Use the custom hook to get roles and modules
+  const { userRoles, userModules, isLoading, error } = useUserRolesAndModules();
+
 
   // Helper functions defined as regular functions instead of useCallback
   const hasAdminRole = () => {
@@ -320,7 +319,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
               )
             };
             modules.push({ key, ...filteredModule });
-          } else if (key === "MOD_SALES") {
+          }  else if (key === "MOD_SALES") {
             const isManagerOrAdmin = hasManagerRole() || hasAdminRole();
             const filteredItems = module.items.filter(item => {
               if (item.label === "Sales Settings") {
@@ -351,7 +350,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
               )
             };
             modules.push({ key, ...filteredModule });
-          } else if (key === "MOD_ASSETS") {
+          }else if (key === "MOD_ASSETS") {
             // Filter out Settings menu if user doesn't have admin role
             modules.push({ key, ...module });
           } else {
@@ -449,26 +448,10 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
   useEffect(() => {
     const role = sessionStorage.getItem("currentRole");
     const dept = sessionStorage.getItem("departmentName");
-    const token = getItemFromSessionStorage("token");
-    
+
     setCurrentRole(role);
     setDepartment(dept);
 
-    // Decode JWT token to get roles and moduleIds
-    if (token) {
-      try {
-        const decodedToken = jwtDecode(token);
-        if (decodedToken) {
-          setUserRoles(decodedToken.roles || []);
-          setUserModules(decodedToken.module_ids || []);
-          console.log(decodedToken.module_ids);
-        }
-      } catch (error) {
-        console.error('Error decoding token:', error);
-      }
-    }
-
-    // Initialize Settings menu as expanded
     setExpandedMenus((prev) => ({
       ...prev,
       settings: true,
@@ -477,7 +460,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
 
   // Auto-expand sidebar and select correct module based on current route
   useEffect(() => {
-    if (userRoles.length > 0 && userModules.length >= 0 && router.pathname) {
+    if (!isLoading && userRoles.length > 0 && userModules.length >= 0 && router.pathname) {
       // Special case: if on /hradmin/addNewEmployee, force expand MOD_HR and select Employees
       if (router.pathname === "/hradmin/addNewEmployee") {
         setExpandedMenus((prev) => ({
@@ -522,11 +505,11 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
         });
       }
     }
-  }, [userRoles, userModules, router.pathname]);
+  }, [userRoles, userModules, router.pathname, isLoading]);
 
   // Auto-expand modules when sidebar is collapsed
   useEffect(() => {
-    if (isCollapsed && userRoles.length > 0) {
+    if (isCollapsed && !isLoading && userRoles.length > 0) {
       const availableModules = getAvailableModules();
       const expandedModules = {};
       availableModules.forEach((module) => {
@@ -540,7 +523,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
       });
       setExpandedMenus(expandedModules);
     }
-  }, [isCollapsed, userRoles, userModules]);
+  }, [isCollapsed, userRoles, userModules, isLoading]);
 
   const toggleMenu = (menuKey) => {
     setExpandedMenus((prev) => ({
@@ -548,6 +531,23 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
       [menuKey]: !prev[menuKey], // Toggle between true and false
     }));
   };
+
+  console.log(userModules);
+
+  // Show loading state while fetching roles and modules
+  if (isLoading) {
+    return (
+      <aside
+        className={`fixed top-16 left-0 h-[calc(100vh-64px)] bg-white shadow-md transition-all duration-300 ease-in-out flex flex-col z-40 ${
+          isCollapsed ? "w-16" : "w-56"
+        }`}
+      >
+        <div className="flex items-center justify-center h-full">
+          <div className="text-sm text-gray-500">Loading...</div>
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside
@@ -565,7 +565,7 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
             hover:text-blue-600 hover:bg-blue-50 shadow-md 
             transition-all duration-300 ease-in-out
             border border-gray-200
-            transform hover:scale-105 active:scale-95 z-[9999]
+            transform hover:scale-105 active:scale-95
           `}
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >

@@ -1,5 +1,5 @@
-import { User } from "lucide-react";
-import { useState, useEffect } from "react";
+import { User, Settings } from "lucide-react";
+import { useState, useEffect, useContext } from "react";
 import axios from "axios"; // Import axios for API requests
 import {
   DropdownMenu,
@@ -19,9 +19,11 @@ import { toast } from "sonner";
 import getConfig from "next/config";
 import { clearSession } from "@/utils/sessionManager";
 import { jwtDecode } from "jwt-decode";
+import { AuthContext } from "./providers/AuthProvider";
 
 const Navbar = () => {
   const router = useRouter();
+  const { handleLogout } = useContext(AuthContext);
   const dispatch = useDispatch();
   const [employeeData, setEmployeeData] = useState(null);
   const { items } = useSelector((state) => state.sessionStorage);
@@ -78,11 +80,11 @@ const Navbar = () => {
     setCurrentRole(role);
   }, []);
 
-  const handleLogout = () => {
-    clearSession();
-    router.push("/login");
-    toast.success("Logged out successfully");
-  };
+  // const handleLogout = () => {
+  //   clearSession();
+  //   router.push("/login");
+  //   toast.success("Logged out successfully");
+  // };
 
   const handleProfileClick = () => {
     router.push("/employee/profile");
@@ -226,7 +228,7 @@ const Navbar = () => {
           {employeeData && (
             <div className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100 mr-4">
               <span className="text-base font-semibold text-blue-900">
-                {employeeData.companyName}
+                {sessionStorage.getItem("companyName")}
               </span>
             </div>
           )}
@@ -238,7 +240,7 @@ const Navbar = () => {
               className="h-10 px-5 flex items-center justify-between rounded-xl shadow-md hover:shadow-lg transition-all duration-200 bg-gray-100 backdrop-blur-sm hover:bg-gray-100 cursor-pointer"
             >
               <span className="text-sm font-medium text-gray-600">
-                Hi, {employeeData.name}
+                Hi, {}
               </span>
             </div>
           )}
@@ -274,7 +276,12 @@ const Navbar = () => {
                 <User className="mr-2 h-4 w-4" />
                 <span>My Profile</span>
               </DropdownMenuItem>
-
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}
                 className="text-destructive cursor-pointer"

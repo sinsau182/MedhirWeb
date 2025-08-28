@@ -18,13 +18,15 @@ import { fetchLeads } from "@/redux/slices/leadsSlice";
 import DateFilter from "@/components/Sales/filter";
 import { fetchManagerEmployees } from "@/redux/slices/managerEmployeeSlice";
 import SearchBar from "@/components/Sales/SearchBar";
+import { useUserRolesAndModules } from '@/hooks/useUserRolesAndModules';
 
 const ClosedConvertedPage = () => {
   const token = getItemFromSessionStorage("token");
   const decodedToken = jwtDecode(token);
   const roles = decodedToken.roles;
-
-  const isManager = roles.includes("MANAGER");
+  // const isManager = roles.includes("MANAGER");
+  const { userRoles } = useUserRolesAndModules();
+  const isManager = userRoles.includes("MANAGER");
 
   const router = useRouter();
   const { leads, loading, error } = useSelector((state) => state.leads);
