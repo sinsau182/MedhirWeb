@@ -186,16 +186,104 @@ export const updatePayment = createAsyncThunk(
     }
 );
 
+// fetch payments by companyId
+export const fetchPaymentsByCompanyId = createAsyncThunk(
+    "payments/fetchPaymentsByCompanyId",
+    async (companyId, { rejectWithValue }) => {
+        try {
+            const token = getItemFromSessionStorage("token", null);
+            const response = await fetch(`${API_BASE_URL}/company/${companyId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+            });
+            const data = await response.json();
+            if (!response.ok) {
+                return rejectWithValue(data.message || "Something went wrong");
+            }
+            return data; // List<PaymentModel>
+        } catch (error) {
+            return rejectWithValue(error.message || "Network Error");
+        }
+    }
+);
+
+// const paymentSlice = createSlice({
+//     name: "payments",
+//     initialState: {
+//         payments: [],
+//         vendorPayments: {}, // Store vendor payments by vendorId
+//         loading: false,
+//         error: null,
+//     },
+//     reducers: {},
+//     extraReducers: (builder) => {
+//         builder.addCase(fetchPayments.pending, (state) => {
+//             state.loading = true;
+//             state.error = null;
+//         });
+//         builder.addCase(fetchPayments.fulfilled, (state, action) => {
+//             state.loading = false;
+//             state.payments = action.payload;
+//         });
+//         builder.addCase(fetchPayments.rejected, (state, action) => {
+//             state.loading = false;
+//             state.error = action.payload;
+//         });
+//         builder.addCase(fetchPaymentsOfVendor.pending, (state) => {
+//             state.loading = true;
+//             state.error = null;
+//         });
+//         builder.addCase(fetchPaymentsOfVendor.fulfilled, (state, action) => {
+//             state.loading = false;
+//             state.vendorPayments[action.payload.vendorId] = action.payload.payments;
+//         });
+//         builder.addCase(fetchPaymentsOfVendor.rejected, (state, action) => {
+//             state.loading = false;
+//             state.error = action.payload;
+//         });
+//         builder.addCase(addPayment.pending, (state) => {
+//             state.loading = true;
+//             state.error = null;
+//         });
+//         builder.addCase(addPayment.fulfilled, (state, action) => {
+//             state.loading = false;
+//             state.payments.push(action.payload);
+//         });
+//         builder.addCase(addPayment.rejected, (state, action) => {
+//             state.loading = false;
+//             state.error = action.payload;
+//         });
+//         builder.addCase(updatePayment.pending, (state) => {
+//             state.loading = true;
+//             state.error = null;
+//         });
+//         builder.addCase(updatePayment.fulfilled, (state, action) => {
+//             state.loading = false;
+//             const index = state.payments.findIndex(p => p.id === action.payload.id);
+//             if (index !== -1) {
+//                 state.payments[index] = action.payload;
+//             }
+//         });
+//         builder.addCase(updatePayment.rejected, (state, action) => {
+//             state.loading = false;
+//             state.error = action.payload;
+//         });
+//     },
+// });
+
 const paymentSlice = createSlice({
     name: "payments",
     initialState: {
         payments: [],
-        vendorPayments: {}, // Store vendor payments by vendorId
+        vendorPayments: {}, // keyed by vendorId
         loading: false,
         error: null,
     },
     reducers: {},
     extraReducers: (builder) => {
+        // fetchPayments
         builder.addCase(fetchPayments.pending, (state) => {
             state.loading = true;
             state.error = null;
@@ -208,6 +296,8 @@ const paymentSlice = createSlice({
             state.loading = false;
             state.error = action.payload;
         });
+
+        // fetchPaymentsOfVendor
         builder.addCase(fetchPaymentsOfVendor.pending, (state) => {
             state.loading = true;
             state.error = null;
@@ -220,6 +310,22 @@ const paymentSlice = createSlice({
             state.loading = false;
             state.error = action.payload;
         });
+
+        // fetchPaymentsByCompanyId
+        builder.addCase(fetchPaymentsByCompanyId.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+        });
+        builder.addCase(fetchPaymentsByCompanyId.fulfilled, (state, action) => {
+            state.loading = false;
+            state.payments = action.payload;
+        });
+        builder.addCase(fetchPaymentsByCompanyId.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload;
+        });
+
+        // addPayment
         builder.addCase(addPayment.pending, (state) => {
             state.loading = true;
             state.error = null;
@@ -232,13 +338,17 @@ const paymentSlice = createSlice({
             state.loading = false;
             state.error = action.payload;
         });
+
+        // updatePayment
         builder.addCase(updatePayment.pending, (state) => {
             state.loading = true;
             state.error = null;
         });
         builder.addCase(updatePayment.fulfilled, (state, action) => {
             state.loading = false;
-            const index = state.payments.findIndex(p => p.id === action.payload.id);
+            const index = state.payments.findIndex(
+                (p) => p.id === action.payload.id || p.paymentId === action.payload.paymentId
+            );
             if (index !== -1) {
                 state.payments[index] = action.payload;
             }
@@ -249,5 +359,6 @@ const paymentSlice = createSlice({
         });
     },
 });
+
 
 export default paymentSlice.reducer;

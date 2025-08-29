@@ -23,7 +23,7 @@ import { fetchCustomers } from '@/redux/slices/customerSlice';
 import { fetchVendors } from '@/redux/slices/vendorSlice';
 import { fetchReceipts } from '@/redux/slices/receiptSlice';
 import { fetchPurchaseOrders } from '@/redux/slices/PurchaseOrderSlice';
-import { fetchPayments } from '@/redux/slices/paymentSlice';
+import { fetchPayments,fetchPaymentsByCompanyId } from '@/redux/slices/paymentSlice';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { AddInvoiceForm, AddReceiptForm, AddClientForm } from '@/components/Forms';
@@ -55,9 +55,17 @@ const AccountDashboard = () => {
   const { receipts } = useSelector(state => state.receipts);
   const { purchaseOrders } = useSelector(state => state.purchaseOrders);
   const { payments } = useSelector(state => state.payments);
+  // const { payments, loading } = useSelector((state) => state.payment);
+    // Get company ID from session storage
+    const companyId = typeof window !== 'undefined' ? 
+        sessionStorage.getItem("employeeCompanyId") || 
+        sessionStorage.getItem("companyId") || 
+        sessionStorage.getItem("company") : null;
+
 
   useEffect(() => {
     const loadDashboardData = async () => {
+      const companyId = sessionStorage.getItem("employeeCompanyId");
       try {
         setIsLoading(true);
         await Promise.all([
@@ -68,7 +76,8 @@ const AccountDashboard = () => {
           dispatch(fetchVendors()),
           dispatch(fetchReceipts()),
           dispatch(fetchPurchaseOrders()),
-          dispatch(fetchPayments())
+          // dispatch(fetchPayments())
+        companyId ? dispatch(fetchPaymentsByCompanyId(companyId)) : dispatch(fetchPayments())
         ]);
       } catch (error) {
         console.error('Error loading dashboard data:', error);
