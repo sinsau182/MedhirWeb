@@ -1531,7 +1531,6 @@ const SalesDetailBody = ({
             },
           }
         );
-
         // Add new note to local state
         const currentTime = new Date();
         newNote = {
