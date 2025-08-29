@@ -1530,8 +1530,7 @@ const SalesDetailBody = ({
               Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
             },
           }
-        );
-        
+        );        
         // Add new note to local state
         const currentTime = new Date();
         newNote = {
