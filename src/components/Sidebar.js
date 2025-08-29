@@ -287,6 +287,16 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
       return router.pathname === link || router.pathname.startsWith("/hradmin/addNewEmployee");
     }
     
+    // Special handling for Sales leads routes
+    if (link === "/Sales/LeadManagement") {
+      return router.pathname === link || router.pathname.startsWith("/Sales/leads/");
+    }
+    
+    // Special handling for SalesManager Manager route
+    if (link === "/SalesManager/Manager") {
+      return router.pathname === link || router.pathname.startsWith("/Sales/leads/");
+    }
+    
     // For other routes, use the existing logic
     return router.pathname === link || router.pathname.startsWith(link);
   };
@@ -477,10 +487,10 @@ const Sidebar = ({ isCollapsed, toggleSidebar, autoExpand = true }) => {
         module.items.some(item => {
           if (item.hasSubmenu) {
             return item.subItems.some(subItem => 
-              currentPath.startsWith(subItem.link)
+              isActiveLink(subItem.link)
             );
           }
-          return currentPath.startsWith(item.link);
+          return isActiveLink(item.link);
         })
       );
       if (activeModule) {
