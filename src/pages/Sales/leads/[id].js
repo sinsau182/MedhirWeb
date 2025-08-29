@@ -269,7 +269,7 @@ const SalesHeader = ({ lead, pipelines, onStatusChange, onMoveToLost, onMoveToJu
         </div>
         
         {/* Move to Bucket Feature */}
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-gray-600">Move to:</span>
           <Select
             value=""
@@ -317,7 +317,7 @@ const SalesHeader = ({ lead, pipelines, onStatusChange, onMoveToLost, onMoveToJu
                   >
                     <div className="flex items-center gap-3 w-full">
                       {/* <span className="text-lg">{stageIcons[stage.formType] || '📋'}</span> */}
-                      <div className="flex-1">
+                      {/* <div className="flex-1">
                         <span className={`${isCurrentStage ? 'text-gray-400' : 'text-gray-900'} font-medium text-sm`}>
                           {stage.name}
                         </span>
@@ -337,8 +337,8 @@ const SalesHeader = ({ lead, pipelines, onStatusChange, onMoveToLost, onMoveToJu
                 );
               })}
             </SelectContent>
-          </Select>
-        </div>
+          </Select> 
+        </div> */}
 
         {/* Dustbin Icon for Quick Move to Lost/Junk */}
         <div className="relative" ref={dustbinRef}>
@@ -1386,6 +1386,7 @@ const SalesDetailBody = ({
   const [editingNoteIdx, setEditingNoteIdx] = useState(null);
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [notesLoading, setNotesLoading] = useState(false);
+  const [isAddingNote, setIsAddingNote] = useState(false);
   
   // Call history editing state
   const [editingCallHistory, setEditingCallHistory] = useState(null);
@@ -1396,18 +1397,37 @@ const SalesDetailBody = ({
   const [highlightedActivityId, setHighlightedActivityId] = useState(null);
 
   useEffect(() => {
-    let combinedNotes = [];
-          if (Array.isArray(lead.notesList)) {
-        combinedNotes = lead.notesList.map((n) => ({
-          user: n.user || lead.name || "User",
-          content: n.content,
-          time: n.timestamp || n.createdAt || n.time || new Date(),
-          id: n.id, // Preserve the original id field
-          noteId: n.id, // Also keep noteId for backward compatibility
-        }));
-      }
-    setNotes(combinedNotes);
-  }, [lead]);
+    // Don't update notes if we're currently adding a note
+    if (isAddingNote) {
+      return;
+    }
+    // Only initialize notes if notes state is empty or if lead.notesList has changed significantly
+    if (Array.isArray(lead.notesList)) {
+      const combinedNotes = lead.notesList.map((n) => ({
+        user: n.user || lead.name || "User",
+        content: n.content,
+        time: n.timestamp || n.createdAt || n.time || new Date(),
+        id: n.id, // Preserve the original id field
+        noteId: n.id, // Also keep noteId for backward compatibility
+      }));
+      
+      // Only update if the notes are actually different (to avoid overwriting newly added notes)
+      setNotes(prevNotes => {
+        // If we have no previous notes, initialize with the new ones
+        if (prevNotes.length === 0) {
+          return combinedNotes;
+        }
+        
+        // If the backend has more notes than we have locally, update
+        if (combinedNotes.length > prevNotes.length) {
+          return combinedNotes;
+        }
+        
+        // Otherwise, keep the current notes (preserve newly added ones)
+        return prevNotes;
+      });
+    }
+  }, [lead.notesList, isAddingNote]); // Depend on isAddingNote as well
 
   // Handle highlighted activity from URL query parameter
   useEffect(() => {
@@ -1456,7 +1476,11 @@ const SalesDetailBody = ({
     }
     
     setNotesLoading(true);
-    const typeLabel = noteConvoType === 'PHONE_CALL' ? 'Phone' : noteConvoType === 'MEETING' ? 'Meeting' : '';
+    setIsAddingNote(true);
+    const typeLabel = noteConvoType === 'PHONE_CALL' ? 'Phone' : 
+                     noteConvoType === 'MEETING' ? 'Meeting' : 
+                     noteConvoType === 'EMAIL' ? 'Email' : 
+                     noteConvoType === 'VIDEO_CALL' ? 'Video Call' : '';
     const contentToSave = typeLabel ? `[${typeLabel}] ${noteContent}` : noteContent;
     try {
       let newNote;
@@ -1488,6 +1512,7 @@ const SalesDetailBody = ({
             },
           }
         );
+
         // Add new note to local state
         const currentTime = new Date();
         newNote = {
@@ -1496,7 +1521,8 @@ const SalesDetailBody = ({
           time: currentTime,
           createdAt: currentTime.toISOString(),
           timestamp: currentTime.toISOString(),
-          noteId: res.data?.noteId || undefined,
+          id: res.data?.noteId || res.data?.id || undefined, // Try both noteId and id
+          noteId: res.data?.noteId || res.data?.id || undefined, // Also set noteId for consistency
         };
         setNotes((prev) => [newNote, ...prev]);
       }
@@ -1525,9 +1551,11 @@ const SalesDetailBody = ({
             toast.error(`Failed to create task: ${task.text}`);
           }
         }
+        // Store task count before clearing
+        const taskCount = summaryTasks.length;
         // Clear tasks after creation
         setSummaryTasks([]);
-        toast.success(`Summary saved with ${summaryTasks.length} task(s) created!`);
+        toast.success(`Summary saved with ${taskCount} task(s) created!`);
       } else {
         toast.success("Summary saved successfully!");
       }
@@ -1540,34 +1568,8 @@ const SalesDetailBody = ({
       setNewTaskText("");
       setNewTaskDueDate("");
       
-      // Silent reload - refresh data without showing loading state
+      // Refresh activities and activity logs silently (but don't overwrite notes)
       if (lead && lead.leadId) {
-        // Refresh lead data silently to get updated notes
-        const fetchLeadSilently = async () => {
-          try {
-            const token = getItemFromSessionStorage("token") || "";
-            const response = await axios.get(
-              `${API_BASE_URL}/leads/${lead.leadId}`,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              }
-            );
-            // Update lead data without showing loading
-            const updatedLead = response.data;
-            if (updatedLead.notesList) {
-              const combinedNotes = updatedLead.notesList.map((n) => ({
-                user: n.user || updatedLead.name || "User",
-                content: n.content,
-                time: n.timestamp || n.createdAt || n.time || new Date(),
-                noteId: n.noteId || n.id,
-              }));
-              setNotes(combinedNotes);
-            }
-          } catch (err) {
-            console.error("Silent lead refresh failed:", err);
-          }
-        };
-        
         // Refresh activities silently
         const fetchActivitiesSilently = async () => {
           try {
@@ -1602,10 +1604,11 @@ const SalesDetailBody = ({
           }
         };
         
-        // Execute silent refreshes
-        fetchLeadSilently();
-        fetchActivitiesSilently();
-        fetchActivityLogsSilently();
+        // Execute silent refreshes (but not notes) with a small delay
+        setTimeout(() => {
+          fetchActivitiesSilently();
+          fetchActivityLogsSilently();
+        }, 500);
       }
       
     } catch (e) {
@@ -1613,6 +1616,10 @@ const SalesDetailBody = ({
       toast.error("Failed to save summary");
     }
     setNotesLoading(false);
+    // Add a small delay before allowing notes updates to ensure the new note is properly added
+    setTimeout(() => {
+      setIsAddingNote(false);
+    }, 1000);
   };
 
   // Call history editing functions
@@ -1647,7 +1654,10 @@ const SalesDetailBody = ({
         );
       } else if (editingCallHistoryType === 'note') {
         // Update note
-        const typeLabel = editingCallHistory.type === 'PHONE_CALL' ? 'Phone' : 'Meeting';
+        const typeLabel = editingCallHistory.type === 'PHONE_CALL' ? 'Phone' : 
+                         editingCallHistory.type === 'MEETING' ? 'Meeting' :
+                         editingCallHistory.type === 'EMAIL' ? 'Email' :
+                         editingCallHistory.type === 'VIDEO_CALL' ? 'Video Call' : 'Meeting';
         const contentToSave = `[${typeLabel}] ${editingCallHistoryContent}`;
         
         await axios.put(
@@ -1678,7 +1688,10 @@ const SalesDetailBody = ({
         );
       } else if (editingCallHistoryType === 'note') {
         // Update note in local state
-        const typeLabel = editingCallHistory.type === 'PHONE_CALL' ? 'Phone' : 'Meeting';
+        const typeLabel = editingCallHistory.type === 'PHONE_CALL' ? 'Phone' : 
+                         editingCallHistory.type === 'MEETING' ? 'Meeting' :
+                         editingCallHistory.type === 'EMAIL' ? 'Email' :
+                         editingCallHistory.type === 'VIDEO_CALL' ? 'Video Call' : 'Meeting';
         const contentToSave = `[${typeLabel}] ${editingCallHistoryContent}`;
         
         setNotes(prevNotes => 
@@ -1730,14 +1743,16 @@ const SalesDetailBody = ({
     (a) => (a.type && (a.type.toUpperCase() === "TO-DO" || a.type.toUpperCase() === "TODO"))
   );
   const convoActivities = (activities || []).filter(
-    (a) => a.type && (a.type.toUpperCase() === "PHONE_CALL" || a.type.toUpperCase() === "MEETING")
+    (a) => a.type && (a.type.toUpperCase() === "PHONE_CALL" || a.type.toUpperCase() === "MEETING" || a.type.toUpperCase() === "EMAIL" || a.type.toUpperCase() === "VIDEO_CALL")
   );
   function parseNoteConversation(note) {
     const content = note?.content || "";
-    const match = content.match(/^\[(Phone|Meeting)\]\s*/i);
+    const match = content.match(/^\[(Phone|Meeting|Email|Video Call)\]\s*/i);
     if (!match) return null;
-    const type = match[1].toUpperCase() === 'PHONE' ? 'PHONE_CALL' : 'MEETING';
-    const summary = content.replace(/^\[(Phone|Meeting)\]\s*/i, "").trim();
+    const type = match[1].toUpperCase() === 'PHONE' ? 'PHONE_CALL' : 
+                 match[1].toUpperCase() === 'MEETING' ? 'MEETING' :
+                 match[1].toUpperCase() === 'EMAIL' ? 'EMAIL' : 'VIDEO_CALL';
+    const summary = content.replace(/^\[(Phone|Meeting|Email|Video Call)\]\s*/i, "").trim();
     return { 
       type,
       summary, 
@@ -3136,7 +3151,7 @@ const SalesDetailBody = ({
             </div>
             
           {/* Call History */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2.5">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2.5 overflow-y-auto max-h-[600px]">
             <div className="mb-2">
               <h3 className="text-md font-medium text-gray-900">Call History</h3>
                         </div>
@@ -3174,6 +3189,12 @@ const SalesDetailBody = ({
                       </div>
 
                         <div className="flex items-center gap-2">
+
+                          <div className="text-right">
+                            <p className="text-xs text-gray-500">
+                              {new Date(c.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • {new Date(c.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
                           <button
                             onClick={() => handleEditCallHistory(c, c.sourceType)}
                             className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
@@ -3183,11 +3204,6 @@ const SalesDetailBody = ({
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
-                          <div className="text-right">
-                            <p className="text-xs text-gray-500">
-                              {new Date(c.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • {new Date(c.time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
                         </div>
                       </div>
                     </div>
