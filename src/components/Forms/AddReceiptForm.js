@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { addReceipt, getNextReceiptNumber, generateNextReceiptNumber } from "../../redux/slices/receiptSlice";
 import { fetchProjectCustomerList, fetchInvoicesByProject, fetchReceiptsByProject } from "@/redux/slices/receiptSlice";
+import { getCustomerBasicDetails } from '../../redux/slices/customerSlice';
 import FilePreviewer from "../ui/FilePreviewer";
 import { ToWords } from 'to-words';
 
@@ -21,7 +22,8 @@ const AddReceiptForm = ({ onSubmit, onCancel, initialData }) => {
     upiTransactionId: '',
   });
 const dispatch = useDispatch();
-  const { projectCustomerList, invoicesByProject, receiptsByProject, nextReceiptNumber, loading } = useSelector((state) => state.receipts);
+  const { customers } = useSelector(state => state.customers);  
+  const {  invoicesByProject, receiptsByProject, nextReceiptNumber, loading } = useSelector((state) => state.receipts);
   const [errors, setErrors] = useState({});
   const [isAccountingCollapsed, setIsAccountingCollapsed] = useState(true);
 
@@ -48,18 +50,28 @@ const dispatch = useDispatch();
     }
   });
 
-  // Static data - in real app, these would come from APIs
-  const customers = [
-    { id: 1, name: 'Evergreen Solar' },
-    { id: 2, name: 'Horizon Dynamics' },
-    { id: 3, name: 'Pioneer Builders' }
-  ];
 
   // Get company ID from session storage
   const companyId = typeof window !== 'undefined' ? 
     sessionStorage.getItem("employeeCompanyId") || 
     sessionStorage.getItem("companyId") || 
     sessionStorage.getItem("company") : null;
+
+    useEffect(() => {
+        if (companyId) {
+            dispatch(getCustomerBasicDetails());
+        }
+    }, [dispatch, companyId]);
+
+    
+    const projects = customers?.map(p => ({
+        projectId: p.projectId,
+        projectName: p.projectId, // <-- Use projectId as name if needed, or add a projectName field if available
+        customerId: p.customerId,
+        customerName: p.customerName,
+        address: p.address
+    })) || [];
+
 
   // Function to fetch next receipt number (generates and increments)
   const fetchNextReceiptNumber = async () => {
@@ -107,9 +119,7 @@ const dispatch = useDispatch();
   }
 }, [initialData]);
 
-useEffect(() => {
-  dispatch(fetchProjectCustomerList(companyId));
-}, [dispatch]);
+
 
 // Calculate project-specific receipt data when receiptsByProject changes
 useEffect(() => {
@@ -330,25 +340,25 @@ const handleSubmit = async (e) => {
 
                     {isOpen && (
                       <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded max-h-60 overflow-y-auto">
-                        {projectCustomerList.map((project) => (
+                        {projects.map((customer) => (
                           <li
-                            key={project.projectId}
+                            key={customer.projectId}
                             onClick={async () => {
-                              setSelectedOption(project);
+                              setSelectedOption(customer);
                               setFormData(prev => ({
                                 ...prev,
-                                projectName: project.projectName,
-                                customerName: project.customerName,
-                                customerId: project.customerId,
-                                leadId: project.projectId,
+                                projectName: customer.projectName,
+                                customerName: customer.customerName,
+                                customerId: customer.customerId,
+                                leadId: customer.projectId,
                               }));
                               setIsOpen(false);
                               // Fetch receipts for this project
-                              dispatch(fetchReceiptsByProject(project.projectId));
+                              dispatch(fetchReceiptsByProject(customer.projectId));
                             }}
                             className="px-4 py-2 cursor-pointer hover:bg-gray-100"
                           >
-                            {project.projectName}
+                            {customer.projectName}
                           </li>
                         ))}
                       </ul>

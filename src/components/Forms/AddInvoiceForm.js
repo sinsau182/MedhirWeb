@@ -284,11 +284,11 @@ const AddInvoiceForm = ({ onSubmit, onCancel }) => {
 
                             {isOpen && (
                                 <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded max-h-60 overflow-y-auto">
-                                    {projects.map((cusomter) => (
+                                    {projects.map((customer) => (
                                         <li
                                             key={customer.projectId}
                                             onClick={() => {
-                                                setSelectedOption(project);
+                                                setSelectedOption(customer);
                                                 setFormData(prev => ({
                                                     ...prev,
                                                     projectName: customer.projectId, // <-- Set projectId as name

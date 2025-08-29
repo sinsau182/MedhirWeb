@@ -260,7 +260,7 @@ const InvoicePreviewModal = ({ invoice, receipts: allReceipts, onClose }) => {
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Invoice Details</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
-              <div><strong>Project:</strong> {invoice.project?.projectName}</div>
+              <div><strong>Project:</strong> {invoice.customer?.projectId}</div>
               <div><strong>Customer:</strong> {invoice.customer?.customerName}</div>
               <div><strong>Invoice Date:</strong> {invoice.invoiceDate}</div>
               <div><strong>Status:</strong> <span className={`font-semibold ${invoice.status?.toLowerCase() === 'received' || invoice.status?.toLowerCase() === 'paid' ? 'text-green-600' : invoice.status?.toLowerCase() === 'partial received' || invoice.status?.toLowerCase() === 'partial paid' || invoice.status?.toLowerCase() === 'partially paid' || invoice.status?.toLowerCase() === 'partiallypaid' ? 'text-yellow-600' : 'text-red-600'}`}>{invoice.status}</span></div>
@@ -354,7 +354,7 @@ const ReceiptPreviewModal = ({ receipt, onClose }) => {
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <strong className="text-gray-600">Project:</strong>
-                  <span className="font-medium">{receipt.project?.projectName || receipt.project}</span>
+                  <span className="font-medium">{receipt.customer?.projectId || receipt.project}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <strong className="text-gray-600">Receipt Date:</strong>
@@ -508,16 +508,7 @@ const Customers = () => {
     }
   }, [customStartDate, customEndDate, selectedDateRange]);
 
-  // const [invoices, setInvoices] = useState([
-  //   { id: 'INV-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', totalAmount: 1200.00, amountReceived: 1200.00, status: 'Received', receiptGenerated: 'Yes' },
-  //   { id: 'INV-002', projectName: 'Internal HRMS', client: 'Client B', date: '2024-07-28', totalAmount: 800.00, amountReceived: 0.00, status: 'Due', receiptGenerated: 'No' },
-  //   { id: 'INV-003', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-27', totalAmount: 1500.00, amountReceived: 1000.00, status: 'Partial received', receiptGenerated: 'Yes' },
-  // ]);
-  // const [receipts, setReceipts] = useState([
-  //   { id: 'REC-001', projectName: 'Project Medhit', client: 'Client A', date: '2024-07-29', amount: 1200.00, method: 'Credit Card', paymentTransId: 'TXN12345', status: 'Received', allocations: [{ invoiceId: 'INV-001', allocatedAmount: 1200.00 }], invoiceGenerated: 'Yes' },
-  //   { id: 'REC-002', projectName: 'Marketing Website', client: 'Client A', date: '2024-07-28', amount: 1000.00, method: 'Bank Transfer', paymentTransId: 'TXN67890', status: 'Partial received', allocations: [{ invoiceId: 'INV-003', allocatedAmount: 1000.00 }], invoiceGenerated: 'Yes' }
-  // ]);
-  // Remove the static clients state since we're now using Redux
+
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
@@ -946,7 +937,7 @@ const handleInvoiceSubmit = (data) => {
                                     <td className="px-4 py-4 whitespace-nowrap">
                                       <span className="text-sm font-medium text-blue-600">{receipt.receiptNumber}</span>
                                     </td>
-                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{receipt.project?.projectName || 'N/A'}</td>
+                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{receipt.customer?.projectId || 'N/A'}</td>
                                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-700">{receipt.receiptDate}</td>
                                     <td className="px-4 py-4 whitespace-nowrap">
                                 <span className="text-sm font-semibold text-green-600">₹{receipt.amountReceived}</span>
