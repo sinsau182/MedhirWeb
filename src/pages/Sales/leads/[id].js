@@ -1189,11 +1189,30 @@ const SalesDetailBody = ({
       
       await updateLeadWithFormData(lead.leadId, leadData, { freezingAmountProofFile: freezingProofFile });
       
-      toast.success("Proof file uploaded successfully");
+      // Move to Converted stage after successful upload
+      const convertedStage = pipelines.find((p) => p.formType === "CONVERTED");
+      if (convertedStage) {
+        await axios.patch(
+          `${API_BASE_URL}/leads/${lead.leadId}/stage/${convertedStage.stageId}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${getItemFromSessionStorage("token") || ""}`,
+            },
+          }
+        );
+        toast.success("Proof file uploaded successfully and lead moved to Converted stage!");
+      } else {
+        toast.success("Proof file uploaded successfully!");
+      }
+      
       setFreezingProofFile(null);
       
       // Update the lead data in Redux store
       Object.entries(leadData).forEach(([k, v]) => onFieldChange(k, v));
+      
+      // Refresh lead data to get updated stage
+      await silentRefreshLead(dispatch, lead.leadId);
     } catch (e) {
       console.error("Failed to upload proof file", e);
       toast.error("Failed to upload proof file. Please try again.");
@@ -1818,6 +1837,45 @@ const SalesDetailBody = ({
     { id: 'semiConverted', name: 'Semi Converted' },
     { id: 'converted', name: 'Converted' }
   ];
+
+  // Auto-set current section based on lead stage (open next section)
+  useEffect(() => {
+    // Reset section when lead changes
+    if (!lead || !lead.leadId) {
+      setCurrentSection(0);
+      return;
+    }
+
+    // Wait for lead data to be fully loaded
+    if (lead && lead.stageName && lead.leadId) {
+      const stageName = lead.stageName.toLowerCase();
+      console.log("Auto-setting section for stage:", stageName, "Lead ID:", lead.leadId);
+      
+      // Map stage names to NEXT section indices
+      if (stageName.includes('contacted') && !stageName.includes('semi converted')) {
+        console.log("Setting section to Potential (1)");
+        setCurrentSection(1); // Open Potential section (next after Contacted)
+      } else if (stageName.includes('potential') && !stageName.includes('high')) {
+        console.log("Setting section to High Potential (2)");
+        setCurrentSection(2); // Open High Potential section (next after Potential)
+      } else if (stageName.includes('high') && stageName.includes('potential')) {
+        console.log("Setting section to Semi Converted (3)");
+        setCurrentSection(3); // Open Semi Converted section (next after High Potential)
+      } else if (stageName.includes('semi converted')) {
+        console.log("Setting section to Converted (4)");
+        setCurrentSection(4); // Open Converted section (next after Semi Converted)
+      } else if (stageName.includes('converted') && !stageName.includes('semi converted')) {
+        console.log("Setting section to Converted (4) - final stage");
+        setCurrentSection(4); // Stay on Converted section (final stage)
+      } else {
+        console.log("Unknown stage, defaulting to Contacted (0)");
+        // Default to first section for unknown stages
+        setCurrentSection(0);
+      }
+    } else {
+      console.log("No lead or stageName available", { lead: !!lead, stageName: lead?.stageName, leadId: lead?.leadId });
+    }
+  }, [lead?.stageName, lead?.stageId, lead?.leadId]);
 
   const nextSection = () => {
     if (currentSection < sections.length - 1) {
